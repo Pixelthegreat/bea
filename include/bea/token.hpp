@@ -7,7 +7,7 @@ namespace bea {
 	/*
 	 * Token type
 	 */
-	enum TokenType {
+	enum class TokenType {
 		Integer = 0,
 		Float,
 		String,
@@ -17,6 +17,8 @@ namespace bea {
 
 		Count,
 	};
+
+	std::ostream& operator<<(std::ostream& stream, TokenType type);
 
 	/*
 	 * Token

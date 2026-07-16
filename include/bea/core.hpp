@@ -18,6 +18,8 @@ namespace bea {
 	using Boolean = uint8_t;
 	using None = uint8_t;
 
+	using Hash = uint32_t;
+
 	/*
 	 * Error position
 	 */

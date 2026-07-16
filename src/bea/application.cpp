@@ -2,7 +2,7 @@
 #include <iostream>
 #include <format>
 #include <bea/core.hpp>
-#include <bea/token.hpp>
+#include <bea/type.hpp>
 #include <bea/application.hpp>
 
 namespace bea {
@@ -19,10 +19,24 @@ namespace bea {
 			printHelp(argv[0]);
 			return Result<None>();
 		}
-		Position p{};
-		Token t = Token(p, TokenType::Keyword, "Hello, world!");
 
-		std::cout << t << std::endl;
+		bea::Type type(BaseType::Function);
+		type.function.returnType = std::make_unique<bea::Type>(BaseType::Int);
+
+		type.generics = bea::DynFixed<GenericInfo>(1);
+
+		type.generics[0].type = bea::GenericType::Type;
+		type.generics[0].name = "T";
+		type.generics[0].substitutedType = std::make_unique<bea::Type>(BaseType::Int);
+
+		type.function.parameters = bea::DynFixed<VariableInfo>(2);
+
+		type.function.parameters[0].type = std::make_unique<bea::Type>(BaseType::Int);
+		type.function.parameters[0].name = "x";
+		type.function.parameters[1].type = std::make_unique<bea::Type>(BaseType::Int);
+		type.function.parameters[1].name = "y";
+
+		std::cout << type << std::endl;
 
 		return Result<None>();
 	}

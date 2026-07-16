@@ -3,6 +3,20 @@
 
 namespace bea {
 
+	/* output type to stream */
+	std::ostream& operator<<(std::ostream& stream, TokenType type) {
+		switch (type) {
+			using enum TokenType;
+			case Integer: return stream << "Integer";
+			case Float: return stream << "Float";
+			case String: return stream << "String";
+			case Symbol: return stream << "Symbol";
+			case Identifier: return stream << "Identifier";
+			case Keyword: return stream << "Keyword";
+		}
+		return stream;
+	}
+
 	/* match against a type and value */
 	bool Token::match(TokenType type, const char *value) {
 
