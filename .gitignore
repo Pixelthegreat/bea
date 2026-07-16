@@ -1,0 +1,11 @@
+# Build files #
+/obj
+/lib
+/bin
+/*.make
+/Makefile
+
+# Miscellaneous #
+/notes
+/old
+**.swp

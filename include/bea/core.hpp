@@ -1,0 +1,79 @@
+#pragma once
+
+#include <cstddef>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <string>
+#include <memory>
+#include <vector>
+
+namespace bea {
+
+	/*
+	 * Common types and values
+	 */
+	using Int = int64_t;
+	using UInt = uint64_t;
+	using Boolean = uint8_t;
+	using None = uint8_t;
+
+	/*
+	 * Error position
+	 */
+	struct Position {
+		const char *path;
+		long line;
+		long column;
+		long lineStart;
+		long lineEnd;
+	};
+
+	/*
+	 * Error type
+	 */
+	struct Error {
+		Position position;
+		std::string message;
+
+		Error(std::string message) : message(message) {}
+
+		Error(Position position, std::string message)
+			: position(position), message(message) {}
+	};
+
+	/*
+	 * Result type
+	 */
+	template <typename T>
+	struct Result {
+		bool okay;
+		union {
+			T value;
+			std::unique_ptr<Error> error;
+		};
+
+		Result() : okay(true) {}
+
+		Result(T value) : value(value), okay(true) {}
+
+		~Result() {}
+
+		Result(std::unique_ptr<Error> error)
+			: error(std::move(error)), okay(false) {}
+
+		Result(std::string message)
+			: error(std::make_unique<Error>(message)),
+			  okay(false) {}
+
+		Result(Position position, std::string message)
+			: error(std::make_unique<Error>(position, message)),
+			  okay(false) {}
+	};
+}
+
+#define BEA_OK(T, p_result) ({\
+		auto __result = (p_result);\
+		if (!__result.okay) return ::bea::Result<T>(::std::move(__result.error));\
+		(__result).value;\
+	})
