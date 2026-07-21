@@ -50,7 +50,7 @@ namespace bea {
 		TypeNode(const Name& name) : m_name(name) {}
 		TypeNode(Name&& name) : m_name(name) {}
 
-		std::vector<std::unique_ptr<Node>> m_genericArguments;
+		std::vector<std::unique_ptr<Node>> m_genericArgumentNodes;
 
 		const Name& getName() const { return m_name; }
 	private:

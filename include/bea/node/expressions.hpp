@@ -29,7 +29,7 @@ namespace bea {
 		UnaryOperationNode(
 			const std::string& operation,
 			std::unique_ptr<Node>&& node,
-			bool postfix
+			bool postfix = false
 		)
 			: m_operation(operation),
 			  m_node(std::move(node)),
@@ -90,12 +90,14 @@ namespace bea {
 	 */
 	class NewNode : public Node {
 	public:
-		NewNode(std::unique_ptr<Node>&& node)
-			: m_node(std::move(node)) {}
+		NewNode(std::unique_ptr<Node>&& typeNode)
+			: m_typeNode(std::move(typeNode)) {}
 
-		Node& getNode() const { return *m_node; }
+		std::vector<std::unique_ptr<Node>> m_argumentNodes;
+
+		Node& getTypeNode() const { return *m_typeNode; }
 	private:
-		std::unique_ptr<Node> m_node;
+		std::unique_ptr<Node> m_typeNode;
 	protected:
 		virtual Result<None> visit(NodeVisitor& visitor) override;
 	};

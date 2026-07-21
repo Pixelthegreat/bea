@@ -51,7 +51,7 @@ namespace bea {
 		m_stream << node.getName();
 
 		std::size_t i = 0;
-		for (std::unique_ptr<Node>& argument: node.m_genericArguments) {
+		for (std::unique_ptr<Node>& argument: node.m_genericArgumentNodes) {
 
 			if (not i++) m_stream << "<";
 			else m_stream << ", ";
@@ -77,10 +77,10 @@ namespace bea {
 
 			m_stream << "(";
 			visit(node.getNode());
-			m_stream << " " << node.m_operation << ")";
+			m_stream << node.m_operation << ")";
 		}
 		else {
-			m_stream << "(" << node.m_operation << " ";
+			m_stream << "(" << node.m_operation;
 			visit(node.getNode());
 			m_stream << ")";
 		}
@@ -112,7 +112,16 @@ namespace bea {
 	Result<None> NodePrinter::visitNew(NewNode& node) {
 
 		m_stream << "new ";
-		visit(node.getNode());
+		visit(node.getTypeNode());
+
+		m_stream << "(";
+		std::size_t i = 0;
+		for (std::unique_ptr<Node>& argument: node.m_argumentNodes) {
+
+			if (i++) m_stream << ", ";
+			visit(*argument);
+		}
+		m_stream << ")";
 
 		return Result<None>();
 	}
@@ -125,6 +134,93 @@ namespace bea {
 		m_stream << ">(";
 		visit(node.getValueNode());
 		m_stream << ")";
+
+		return Result<None>();
+	}
+
+	/* Print "if" statement */
+	Result<None> NodePrinter::visitIfStatement(IfStatementNode& node) {
+
+		const char *keyword = "if";
+
+		std::size_t i = 0;
+		for (const Pair<std::unique_ptr<Node>>& clause: node.m_conditionalClauseNodes) {
+
+			if (i++) keyword = " elif";
+
+			m_stream << keyword << " ";
+			visit(*clause[0]);
+			m_stream << " ";
+			visit(*clause[1]);
+		}
+		if (node.m_elseClauseNode) {
+
+			m_stream << " else ";
+			visit(*node.m_elseClauseNode);
+		}
+
+		return Result<None>();
+	}
+
+	/* Print normal "case" statement */
+	Result<None> NodePrinter::visitCaseStatement(CaseStatementNode& node) {
+
+		m_stream << "case ";
+		visit(node.getCaseNode());
+
+		Node& bodyNode = node.getBodyNode();
+		if (!isInstance<BlockNode>(bodyNode)) /* -> statement */
+			m_stream << " -> ";
+		else m_stream << " ";
+		visit(bodyNode);
+
+		return Result<None>();
+	}
+
+	/* Print "case let" statement */
+	Result<None> NodePrinter::visitCaseLetStatement(CaseLetStatementNode& node) {
+
+		m_stream << "case let " << node.getName() << " = ";
+		visit(node.getCaseNode());
+
+		Node& bodyNode = node.getBodyNode();
+		if (!isInstance<BlockNode>(bodyNode))
+			m_stream << " -> ";
+		else m_stream << " ";
+		visit(bodyNode);
+
+		return Result<None>();
+	}
+
+	/* Print "which" statement */
+	Result<None> NodePrinter::visitWhichStatement(WhichStatementNode& node) {
+
+		m_stream << "which ";
+		visit(node.getValueNode());
+		m_stream << " ";
+		visit(node.getBodyNode());
+
+		return Result<None>();
+	}
+
+	/* Print "for" statement */
+	Result<None> NodePrinter::visitForStatement(ForStatementNode& node) {
+
+		m_stream << "for " << node.getName() << " in ";
+		visit(node.getIterableNode());
+		m_stream << " ";
+		visit(node.getBodyNode());
+
+		return Result<None>();
+	}
+
+	/* Print "while" statement */
+	Result<None> NodePrinter::visitWhileStatement(WhileStatementNode& node) {
+
+		m_stream << "while ";
+		visit(node.getConditionNode());
+		m_stream << " ";
+		visit(node.getBodyNode());
 
 		return Result<None>();
 	}

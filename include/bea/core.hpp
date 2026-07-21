@@ -8,8 +8,10 @@
 #include <cstring>
 #include <string>
 #include <memory>
+#include <array>
 #include <vector>
 #include <list>
+#include <utility>
 
 namespace bea {
 
@@ -77,6 +79,15 @@ namespace bea {
 			: error(std::make_unique<Error>(position, message)),
 			  okay(false) {}
 	};
+
+	/*
+	 * Is instance
+	 */
+	template <typename T, typename U>
+	inline bool isInstance(U& value) {
+
+		return !!dynamic_cast<T*>(&value);
+	}
 }
 
 #define BEA_OK(T, p_result) ({\

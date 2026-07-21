@@ -31,5 +31,15 @@ namespace bea {
 		virtual Result<None> visitCarryResult(CarryResultNode& node);
 		virtual Result<None> visitNew(NewNode& node);
 		virtual Result<None> visitCast(CastNode& node);
+
+		/*
+		 * Control flow
+		 */
+		virtual Result<None> visitIfStatement(IfStatementNode& node);
+		virtual Result<None> visitCaseStatement(CaseStatementNode& node);
+		virtual Result<None> visitCaseLetStatement(CaseLetStatementNode& node);
+		virtual Result<None> visitWhichStatement(WhichStatementNode& node);
+		virtual Result<None> visitForStatement(ForStatementNode& node);
+		virtual Result<None> visitWhileStatement(WhileStatementNode& node);
 	};
 }

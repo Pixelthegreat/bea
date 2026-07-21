@@ -29,11 +29,9 @@ namespace bea {
 		Lexer lexer(path, stream);
 		BEA_OK(None, lexer.makeTokens());
 
-		std::string operation = "+";
-		auto node = std::make_unique<BinaryOperationNode>(
-				operation,
-				std::make_unique<IntegerNode>(10),
-				std::make_unique<IntegerNode>(11)
+		auto node = std::make_unique<WhileStatementNode>(
+			std::make_unique<VariableAccessNode>("true"),
+			std::make_unique<BlockNode>()
 		);
 		std::cout << *node << std::endl;
 

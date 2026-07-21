@@ -94,4 +94,8 @@ namespace bea {
 		T *m_items = nullptr;
 		std::size_t m_size = 0;
 	};
+
+	/* Two items of the same type */
+	template <typename T>
+	using Pair = std::array<T, 2>;
 }

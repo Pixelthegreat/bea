@@ -24,8 +24,14 @@ namespace bea {
 		virtual Result<None> visitCarryResult(CarryResultNode& node) override;
 		virtual Result<None> visitNew(NewNode& node) override;
 		virtual Result<None> visitCast(CastNode& node) override;
+		virtual Result<None> visitIfStatement(IfStatementNode& node) override;
+		virtual Result<None> visitCaseStatement(CaseStatementNode& node) override;
+		virtual Result<None> visitCaseLetStatement(CaseLetStatementNode& node) override;
+		virtual Result<None> visitWhichStatement(WhichStatementNode& node) override;
+		virtual Result<None> visitForStatement(ForStatementNode& node) override;
+		virtual Result<None> visitWhileStatement(WhileStatementNode& node) override;
 	private:
 		std::ostream& m_stream;
-		std::size_t m_tabLevel;
+		std::size_t m_tabLevel = 0;
 	};
 }

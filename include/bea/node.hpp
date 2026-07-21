@@ -35,3 +35,4 @@ namespace bea {
 
 #include <bea/node/constants.hpp>
 #include <bea/node/expressions.hpp>
+#include <bea/node/controlflow.hpp>

@@ -23,4 +23,10 @@ namespace bea {
 	DEFAULT_IMPL(CarryResult);
 	DEFAULT_IMPL(New);
 	DEFAULT_IMPL(Cast);
+	DEFAULT_IMPL(IfStatement);
+	DEFAULT_IMPL(CaseStatement);
+	DEFAULT_IMPL(CaseLetStatement);
+	DEFAULT_IMPL(WhichStatement);
+	DEFAULT_IMPL(ForStatement);
+	DEFAULT_IMPL(WhileStatement);
 }
