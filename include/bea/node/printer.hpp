@@ -20,10 +20,16 @@ namespace bea {
 		virtual Result<None> visitType(TypeNode& node) override;
 		virtual Result<None> visitVariableAccess(VariableAccessNode& node) override;
 		virtual Result<None> visitUnaryOperation(UnaryOperationNode& node) override;
+		virtual Result<None> visitAssignment(AssignmentNode& node) override;
 		virtual Result<None> visitBinaryOperation(BinaryOperationNode& node) override;
 		virtual Result<None> visitCarryResult(CarryResultNode& node) override;
 		virtual Result<None> visitNew(NewNode& node) override;
 		virtual Result<None> visitCast(CastNode& node) override;
+		virtual Result<None> visitList(ListNode& node) override;
+		virtual Result<None> visitCall(CallNode& node) override;
+		virtual Result<None> visitNamedAccess(NamedAccessNode& node) override;
+		virtual Result<None> visitIndexedAccess(IndexedAccessNode& node) override;
+		virtual Result<None> visitRange(RangeNode& node) override;
 		virtual Result<None> visitIfStatement(IfStatementNode& node) override;
 		virtual Result<None> visitCaseStatement(CaseStatementNode& node) override;
 		virtual Result<None> visitCaseLetStatement(CaseLetStatementNode& node) override;

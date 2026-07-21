@@ -87,6 +87,18 @@ namespace bea {
 		return Result<None>();
 	}
 
+	/* Print assignment */
+	Result<None> NodePrinter::visitAssignment(AssignmentNode& node) {
+
+		m_stream << "(";
+		visit(node.getLeftNode());
+		m_stream << " " << node.m_operation << " ";
+		visit(node.getRightNode());
+		m_stream << ")";
+
+		return Result<None>();
+	}
+
 	/* Print binary operation */
 	Result<None> NodePrinter::visitBinaryOperation(BinaryOperationNode& node) {
 
@@ -134,6 +146,70 @@ namespace bea {
 		m_stream << ">(";
 		visit(node.getValueNode());
 		m_stream << ")";
+
+		return Result<None>();
+	}
+
+	/* Print list initializer */
+	Result<None> NodePrinter::visitList(ListNode& node) {
+
+		m_stream << "[";
+
+		std::size_t i = 0;
+		for (const std::unique_ptr<Node>& item: node.m_itemNodes) {
+
+			if (i++) m_stream << ", ";
+			visit(*item);
+		}
+		m_stream << "]";
+
+		return Result<None>();
+	}
+
+	/* Print function call */
+	Result<None> NodePrinter::visitCall(CallNode& node) {
+
+		visit(node.getNode());
+
+		m_stream << "(";
+
+		std::size_t i = 0;
+		for (const std::unique_ptr<Node>& argument: node.m_argumentNodes) {
+
+			if (i++) m_stream << ", ";
+			visit(*argument);
+		}
+		m_stream << ")";
+
+		return Result<None>();
+	}
+
+	/* Print named member access */
+	Result<None> NodePrinter::visitNamedAccess(NamedAccessNode& node) {
+
+		visit(node.getNode());
+		m_stream << "." << node.getName();
+
+		return Result<None>();
+	}
+
+	/* Print indexed member access */
+	Result<None> NodePrinter::visitIndexedAccess(IndexedAccessNode& node) {
+
+		visit(node.getNode());
+		m_stream << "[";
+		visit(node.getIndexNode());
+		m_stream << "]";
+
+		return Result<None>();
+	}
+
+	/* Print range */
+	Result<None> NodePrinter::visitRange(RangeNode& node) {
+
+		visit(node.getStartNode());
+		m_stream << "..";
+		visit(node.getEndNode());
 
 		return Result<None>();
 	}

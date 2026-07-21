@@ -46,6 +46,31 @@ namespace bea {
 	};
 
 	/*
+	 * Assignment
+	 */
+	class AssignmentNode : public Node {
+	public:
+		AssignmentNode(
+			const std::string& operation,
+			std::unique_ptr<Node>&& leftNode,
+			std::unique_ptr<Node>&& rightNode
+		)
+			: m_operation(operation),
+			  m_leftNode(std::move(leftNode)),
+			  m_rightNode(std::move(rightNode)) {}
+
+		const std::string& m_operation;
+
+		Node& getLeftNode() const { return *m_leftNode; }
+		Node& getRightNode() const { return *m_rightNode; }
+	private:
+		std::unique_ptr<Node> m_leftNode;
+		std::unique_ptr<Node> m_rightNode;
+	protected:
+		virtual Result<None> visit(NodeVisitor& visitor) override;
+	};
+
+	/*
 	 * Binary operation
 	 */
 	class BinaryOperationNode : public Node {
@@ -119,6 +144,104 @@ namespace bea {
 	private:
 		std::unique_ptr<Node> m_typeNode;
 		std::unique_ptr<Node> m_valueNode;
+	protected:
+		virtual Result<None> visit(NodeVisitor& visitor) override;
+	};
+
+	/*
+	 * List initializer
+	 */
+	class ListNode : public Node {
+	public:
+		ListNode() {}
+
+		std::vector<std::unique_ptr<Node>> m_itemNodes;
+	protected:
+		virtual Result<None> visit(NodeVisitor& visitor) override;
+	};
+
+	/*
+	 * Function call
+	 */
+	class CallNode : public Node {
+	public:
+		CallNode(std::unique_ptr<Node>&& node) : m_node(std::move(node)) {}
+
+		std::vector<std::unique_ptr<Node>> m_argumentNodes;
+
+		Node& getNode() const { return *m_node; }
+	private:
+		std::unique_ptr<Node> m_node;
+	protected:
+		virtual Result<None> visit(NodeVisitor& visitor) override;
+	};
+
+	/*
+	 * Named member access
+	 */
+	class NamedAccessNode : public Node {
+	public:
+		NamedAccessNode(
+			std::unique_ptr<Node>&& node,
+			const Name& name
+		)
+			: m_node(std::move(node)),
+			  m_name(name) {}
+
+		NamedAccessNode(
+			std::unique_ptr<Node>&& node,
+			Name&& name
+		)
+			: m_node(std::move(node)),
+			  m_name(std::move(name)) {}
+
+		Node& getNode() const { return *m_node; }
+		const Name& getName() const { return m_name; }
+	private:
+		std::unique_ptr<Node> m_node;
+		Name m_name;
+	protected:
+		virtual Result<None> visit(NodeVisitor& visitor) override;
+	};
+
+	/*
+	 * Indexed member access
+	 */
+	class IndexedAccessNode : public Node {
+	public:
+		IndexedAccessNode(
+			std::unique_ptr<Node>&& node,
+			std::unique_ptr<Node>&& indexNode
+		)
+			: m_node(std::move(node)),
+			  m_indexNode(std::move(indexNode)) {}
+
+		Node& getNode() const { return *m_node; }
+		Node& getIndexNode() const { return *m_indexNode; }
+	private:
+		std::unique_ptr<Node> m_node;
+		std::unique_ptr<Node> m_indexNode;
+	protected:
+		virtual Result<None> visit(NodeVisitor& visitor) override;
+	};
+
+	/*
+	 * Range
+	 */
+	class RangeNode : public Node {
+	public:
+		RangeNode(
+			std::unique_ptr<Node>&& startNode,
+			std::unique_ptr<Node>&& endNode
+		)
+			: m_startNode(std::move(startNode)),
+			  m_endNode(std::move(endNode)) {}
+
+		Node& getStartNode() const { return *m_startNode; }
+		Node& getEndNode() const { return *m_endNode; }
+	private:
+		std::unique_ptr<Node> m_startNode;
+		std::unique_ptr<Node> m_endNode;
 	protected:
 		virtual Result<None> visit(NodeVisitor& visitor) override;
 	};
