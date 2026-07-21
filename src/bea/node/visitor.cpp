@@ -1,0 +1,26 @@
+#include <bea/core.hpp>
+#include <bea/node/visitor.hpp>
+
+namespace bea {
+
+	Result<None> NodeVisitor::visit(Node& node) {
+
+		return node.visit(*this);
+	}
+
+#define DEFAULT_IMPL(p_name) Result<None> NodeVisitor::visit##p_name(p_name##Node& node) {\
+		return Result<None>();\
+	}
+
+	DEFAULT_IMPL(Block);
+	DEFAULT_IMPL(Integer);
+	DEFAULT_IMPL(Float);
+	DEFAULT_IMPL(String);
+	DEFAULT_IMPL(Type);
+	DEFAULT_IMPL(VariableAccess);
+	DEFAULT_IMPL(UnaryOperation);
+	DEFAULT_IMPL(BinaryOperation);
+	DEFAULT_IMPL(CarryResult);
+	DEFAULT_IMPL(New);
+	DEFAULT_IMPL(Cast);
+}

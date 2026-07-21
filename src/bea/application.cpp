@@ -4,6 +4,7 @@
 #include <format>
 #include <bea/core.hpp>
 #include <bea/lexer.hpp>
+#include <bea/node.hpp>
 #include <bea/application.hpp>
 
 namespace bea {
@@ -28,10 +29,14 @@ namespace bea {
 		Lexer lexer(path, stream);
 		BEA_OK(None, lexer.makeTokens());
 
-		const std::vector<std::unique_ptr<Token>>& tokens = lexer.getTokens();
+		std::string operation = "+";
+		auto node = std::make_unique<BinaryOperationNode>(
+				operation,
+				std::make_unique<IntegerNode>(10),
+				std::make_unique<IntegerNode>(11)
+		);
+		std::cout << *node << std::endl;
 
-		for (const std::unique_ptr<Token>& token : tokens)
-			std::cout << *token.get() << std::endl;
 		return Result<None>();
 	}
 
