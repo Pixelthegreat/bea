@@ -1,8 +1,9 @@
 #include <cstring>
 #include <iostream>
+#include <fstream>
 #include <format>
 #include <bea/core.hpp>
-#include <bea/type.hpp>
+#include <bea/lexer.hpp>
 #include <bea/application.hpp>
 
 namespace bea {
@@ -19,25 +20,18 @@ namespace bea {
 			printHelp(argv[0]);
 			return Result<None>();
 		}
+		const char *path = "examples/hello/src/main.bea";
 
-		bea::Type type(BaseType::Function);
-		type.function.returnType = std::make_unique<bea::Type>(BaseType::Int);
+		std::ifstream stream(path, std::ios::binary);
+		if (!stream.is_open()) return Result<None>("Can't open file");
 
-		type.generics = bea::DynFixed<GenericInfo>(1);
+		Lexer lexer(path, stream);
+		BEA_OK(None, lexer.makeTokens());
 
-		type.generics[0].type = bea::GenericType::Type;
-		type.generics[0].name = "T";
-		type.generics[0].substitutedType = std::make_unique<bea::Type>(BaseType::Int);
+		const std::vector<std::unique_ptr<Token>>& tokens = lexer.getTokens();
 
-		type.function.parameters = bea::DynFixed<VariableInfo>(2);
-
-		type.function.parameters[0].type = std::make_unique<bea::Type>(BaseType::Int);
-		type.function.parameters[0].name = "x";
-		type.function.parameters[1].type = std::make_unique<bea::Type>(BaseType::Int);
-		type.function.parameters[1].name = "y";
-
-		std::cout << type << std::endl;
-
+		for (const std::unique_ptr<Token>& token : tokens)
+			std::cout << *token.get() << std::endl;
 		return Result<None>();
 	}
 

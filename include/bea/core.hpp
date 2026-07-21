@@ -4,9 +4,11 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <string>
 #include <memory>
 #include <vector>
+#include <list>
 
 namespace bea {
 
@@ -27,9 +29,9 @@ namespace bea {
 		const char *path;
 		long line;
 		long column;
-		long lineStart;
-		long lineEnd;
 	};
+
+	std::ostream& operator<<(std::ostream& stream, const Position& position);
 
 	/*
 	 * Error type
@@ -43,6 +45,8 @@ namespace bea {
 		Error(Position position, std::string message)
 			: position(position), message(message) {}
 	};
+
+	std::ostream& operator<<(std::ostream& stream, const Error& error);
 
 	/*
 	 * Result type

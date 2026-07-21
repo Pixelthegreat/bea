@@ -10,9 +10,13 @@ namespace bea {
 			case Integer: return stream << "Integer";
 			case Float: return stream << "Float";
 			case String: return stream << "String";
+			case Character: return stream << "Character";
 			case Symbol: return stream << "Symbol";
 			case Identifier: return stream << "Identifier";
 			case Keyword: return stream << "Keyword";
+			case Comment: return stream << "Comment";
+			case EndLine: return stream << "EndLine";
+			case EndFile: return stream << "EndFile";
 		}
 		return stream;
 	}
@@ -36,8 +40,8 @@ namespace bea {
 	}
 
 	/* output to stream */
-	std::ostream& operator<<(std::ostream& stream, Token& token) {
+	std::ostream& operator<<(std::ostream& stream, const Token& token) {
 
-		return stream << token.type << ":" << token.value;
+		return stream << token.type << ":'" << token.value << "'";
 	}
 }

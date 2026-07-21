@@ -9,7 +9,7 @@ int main(int argc, const char **argv) {
 
 	if (!result.okay) {
 
-		std::cerr << result.error->message << std::endl;
+		std::cerr << *result.error.get() << std::endl;
 		return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;
