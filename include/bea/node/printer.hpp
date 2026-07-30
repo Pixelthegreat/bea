@@ -1,5 +1,6 @@
 #pragma once
 
+#include <bea/core.hpp>
 #include <bea/node.hpp>
 #include <bea/node/visitor.hpp>
 
@@ -36,8 +37,22 @@ namespace bea {
 		virtual Result<None> visitWhichStatement(WhichStatementNode& node) override;
 		virtual Result<None> visitForStatement(ForStatementNode& node) override;
 		virtual Result<None> visitWhileStatement(WhileStatementNode& node) override;
+		virtual Result<None> visitReturnStatement(ReturnStatementNode& node) override;
+		virtual Result<None> visitContinueStatement(ContinueStatementNode& node) override;
+		virtual Result<None> visitBreakStatement(BreakStatementNode& node) override;
+		virtual Result<None> visitModuleStatement(ModuleStatementNode& node) override;
+		virtual Result<None> visitPubStatement(PubStatementNode& node) override;
+		virtual Result<None> visitUseStatement(UseStatementNode& node) override;
+		virtual Result<None> visitLetStatement(LetStatementNode& node) override;
+		virtual Result<None> visitFuncExprStatement(FuncExprStatementNode& node) override;
+		virtual Result<None> visitFuncBlockStatement(FuncBlockStatementNode& node) override;
+		virtual Result<None> visitClassFieldStatement(ClassFieldStatementNode& node) override;
+		virtual Result<None> visitImplStatement(ImplStatementNode& node) override;
+		virtual Result<None> visitClassStatement(ClassStatementNode& node) override;
 	private:
 		std::ostream& m_stream;
 		std::size_t m_tabLevel = 0;
+
+		void visitFuncStatementCommon(FuncStatementNode& node);
 	};
 }

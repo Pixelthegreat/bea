@@ -148,4 +148,40 @@ namespace bea {
 	protected:
 		virtual Result<None> visit(NodeVisitor& visitor) override;
 	};
+
+	/*
+	 * "return" statement
+	 */
+	class ReturnStatementNode : public Node {
+	public:
+		ReturnStatementNode() {}
+
+		ReturnStatementNode(std::unique_ptr<Node>&& node) : m_node(std::move(node)) {}
+
+		Node& getNode() const { return *m_node; }
+	private:
+		std::unique_ptr<Node> m_node;
+	protected:
+		virtual Result<None> visit(NodeVisitor& visitor) override;
+	};
+
+	/*
+	 * "continue" statement
+	 */
+	class ContinueStatementNode : public Node {
+	public:
+		ContinueStatementNode() {}
+	protected:
+		virtual Result<None> visit(NodeVisitor& visitor) override;
+	};
+
+	/*
+	 * "break" statement
+	 */
+	class BreakStatementNode : public Node {
+	public:
+		BreakStatementNode() {}
+	protected:
+		virtual Result<None> visit(NodeVisitor& visitor) override;
+	};
 }

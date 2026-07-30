@@ -39,7 +39,7 @@ namespace bea {
 		virtual Result<None> visitRange(RangeNode& node);
 
 		/*
-		 * Control flow
+		 * Control flow statements
 		 */
 		virtual Result<None> visitIfStatement(IfStatementNode& node);
 		virtual Result<None> visitCaseStatement(CaseStatementNode& node);
@@ -47,5 +47,25 @@ namespace bea {
 		virtual Result<None> visitWhichStatement(WhichStatementNode& node);
 		virtual Result<None> visitForStatement(ForStatementNode& node);
 		virtual Result<None> visitWhileStatement(WhileStatementNode& node);
+		virtual Result<None> visitReturnStatement(ReturnStatementNode& node);
+		virtual Result<None> visitContinueStatement(ContinueStatementNode& node);
+		virtual Result<None> visitBreakStatement(BreakStatementNode& node);
+
+		/*
+		 * Miscellaneous statements
+		 */
+		virtual Result<None> visitModuleStatement(ModuleStatementNode& node);
+		virtual Result<None> visitPubStatement(PubStatementNode& node);
+		virtual Result<None> visitUseStatement(UseStatementNode& node);
+		virtual Result<None> visitLetStatement(LetStatementNode& node);
+
+		/*
+		 * Functions and classes
+		 */
+		virtual Result<None> visitFuncExprStatement(FuncExprStatementNode& node);
+		virtual Result<None> visitFuncBlockStatement(FuncBlockStatementNode& node);
+		virtual Result<None> visitClassFieldStatement(ClassFieldStatementNode& node);
+		virtual Result<None> visitImplStatement(ImplStatementNode& node);
+		virtual Result<None> visitClassStatement(ClassStatementNode& node);
 	};
 }

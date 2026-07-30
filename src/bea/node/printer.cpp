@@ -300,4 +300,205 @@ namespace bea {
 
 		return Result<None>();
 	}
+
+	/* Print "return" statement */
+	Result<None> NodePrinter::visitReturnStatement(ReturnStatementNode& node) {
+
+		m_stream << "return";
+
+		Node& value = node.getNode();
+		if (&value) {
+
+			m_stream << " ";
+			visit(value);
+		}
+		return Result<None>();
+	}
+
+	/* Print "continue" statement */
+	Result<None> NodePrinter::visitContinueStatement(ContinueStatementNode& node) {
+
+		m_stream << "continue";
+		return Result<None>();
+	}
+
+	/* Print "break" statement */
+	Result<None> NodePrinter::visitBreakStatement(BreakStatementNode& node) {
+
+		m_stream << "break";
+		return Result<None>();
+	}
+
+	/* Print "module" statement */
+	Result<None> NodePrinter::visitModuleStatement(ModuleStatementNode& node) {
+
+		m_stream << "module " << node.getName();
+		return Result<None>();
+	}
+
+	/* Print "pub" statement */
+	Result<None> NodePrinter::visitPubStatement(PubStatementNode& node) {
+
+		m_stream << "pub ";
+		visit(node.getNode());
+
+		return Result<None>();
+	}
+
+	/* Print "use" statement */
+	Result<None> NodePrinter::visitUseStatement(UseStatementNode& node) {
+
+		m_stream << "use " << node.getName();
+
+		const Name& alias = node.getAlias();
+		if (!alias.empty()) m_stream << " as " << alias;
+
+		return Result<None>();
+	}
+
+	/* Print "let" statement */
+	Result<None> NodePrinter::visitLetStatement(LetStatementNode& node) {
+
+		m_stream << "let ";
+
+		std::size_t i = 0;
+		for (const Name& name: node.getNames()) {
+
+			if (i++) m_stream << ", ";
+			m_stream << name;
+		}
+		Node& type = node.getTypeNode();
+		if (&type) {
+
+			if (i > 1) m_stream << " ";
+			m_stream << ": ";
+			visit(type);
+		}
+		Node& value = node.getValueNode();
+		if (&value) {
+
+			m_stream << " = ";
+			visit(value);
+		}
+		return Result<None>();
+	}
+
+	/* Print "func" statement with expression for body */
+	Result<None> NodePrinter::visitFuncExprStatement(FuncExprStatementNode& node) {
+
+		visitFuncStatementCommon(static_cast<FuncStatementNode&>(node));
+
+		m_stream << " => ";
+		visit(node.getBodyNode());
+
+		return Result<None>();
+	}
+
+	/* Print "func" statement with block for body */
+	Result<None> NodePrinter::visitFuncBlockStatement(FuncBlockStatementNode& node) {
+
+		visitFuncStatementCommon(static_cast<FuncStatementNode&>(node));
+
+		Node& returnType = node.getReturnTypeNode();
+		if (&returnType) {
+
+			m_stream << " -> ";
+			visit(returnType);
+		}
+		m_stream << " ";
+		visit(node.getBodyNode());
+
+		return Result<None>();
+	}
+
+	/* Visit common aspects of "func" statement */
+	void NodePrinter::visitFuncStatementCommon(FuncStatementNode& node) {
+
+		if (node.m_abstract)
+			m_stream << "abstract ";
+		if (node.m_static)
+			m_stream << "static ";
+
+		m_stream << "func " << node.getName();
+
+		std::size_t i = 0;
+		for (NodeGenericParameter& parameter: node.m_genericParameters) {
+
+			if (!i++) m_stream << "<";
+			else m_stream << ", ";
+
+			m_stream << parameter.name << ": " << parameter.type;
+			if (parameter.defaultNode) {
+
+				m_stream << " = ";
+				visit(*parameter.defaultNode);
+			}
+		}
+		if (i) m_stream << ">";
+
+		i = 0;
+		m_stream << "(";
+		for (NodeFuncParameter& parameter: node.m_parameters) {
+
+			if (i++) m_stream << ", ";
+
+			m_stream << parameter.name << ": ";
+			visit(*parameter.typeNode);
+
+			if (parameter.valueNode) {
+
+				m_stream << " = ";
+				visit(*parameter.valueNode);
+			}
+		}
+		m_stream << ")";
+
+		if (node.m_useDefault)
+			m_stream << "!";
+	}
+
+	/* Visit class field statement */
+	Result<None> NodePrinter::visitClassFieldStatement(ClassFieldStatementNode& node) {
+
+		m_stream << node.getName();
+
+		Node& typeNode = node.getTypeNode();
+		if (&typeNode) {
+
+			m_stream << ": ";
+			visit(typeNode);
+		}
+		Node& valueNode = node.getValueNode();
+		if (&valueNode) {
+
+			m_stream << " = ";
+			visit(valueNode);
+		}
+		return Result<None>();
+	}
+
+	/* Visit "impl" statement */
+	Result<None> NodePrinter::visitImplStatement(ImplStatementNode& node) {
+
+		m_stream << "impl ";
+		visit(node.getTypeNode());
+		m_stream << " ";
+		visit(node.getBodyNode());
+
+		return Result<None>();
+	}
+
+	/* Visit "class" statement */
+	Result<None> NodePrinter::visitClassStatement(ClassStatementNode& node) {
+
+		if (node.m_copy)
+			m_stream << "struct ";
+		else
+			m_stream << "class ";
+		m_stream << node.getName() << " ";
+
+		visit(node.getBodyNode());
+
+		return Result<None>();
+	}
 }

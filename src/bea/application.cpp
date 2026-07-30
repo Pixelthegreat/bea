@@ -29,12 +29,8 @@ namespace bea {
 		Lexer lexer(path, stream);
 		BEA_OK(None, lexer.makeTokens());
 
-		auto node = std::make_unique<ForStatementNode>(
-			"i",
-			std::make_unique<RangeNode>(
-				std::make_unique<IntegerNode>(0),
-				std::make_unique<IntegerNode>(10)
-			),
+		auto node = std::make_unique<ClassStatementNode>(
+			"Animal",
 			std::make_unique<BlockNode>()
 		);
 		std::cout << *node << std::endl;

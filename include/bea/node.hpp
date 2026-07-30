@@ -15,6 +15,8 @@ namespace bea {
 	 */
 	class Node {
 	public:
+		Position m_position;
+
 		virtual Result<None> visit(NodeVisitor& visitor) = 0;
 	};
 
@@ -36,3 +38,6 @@ namespace bea {
 #include <bea/node/constants.hpp>
 #include <bea/node/expressions.hpp>
 #include <bea/node/controlflow.hpp>
+#include <bea/node/miscellaneous.hpp>
+#include <bea/node/functions.hpp>
+#include <bea/node/classes.hpp>

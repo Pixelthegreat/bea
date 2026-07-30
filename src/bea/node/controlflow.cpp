@@ -33,4 +33,19 @@ namespace bea {
 
 		return visitor.visitWhileStatement(*this);
 	}
+
+	Result<None> ReturnStatementNode::visit(NodeVisitor& visitor) {
+
+		return visitor.visitReturnStatement(*this);
+	}
+
+	Result<None> ContinueStatementNode::visit(NodeVisitor& visitor) {
+
+		return visitor.visitContinueStatement(*this);
+	}
+
+	Result<None> BreakStatementNode::visit(NodeVisitor& visitor) {
+
+		return visitor.visitBreakStatement(*this);
+	}
 }

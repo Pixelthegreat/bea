@@ -35,4 +35,16 @@ namespace bea {
 	DEFAULT_IMPL(WhichStatement);
 	DEFAULT_IMPL(ForStatement);
 	DEFAULT_IMPL(WhileStatement);
+	DEFAULT_IMPL(ReturnStatement);
+	DEFAULT_IMPL(ContinueStatement);
+	DEFAULT_IMPL(BreakStatement);
+	DEFAULT_IMPL(ModuleStatement);
+	DEFAULT_IMPL(PubStatement);
+	DEFAULT_IMPL(UseStatement);
+	DEFAULT_IMPL(LetStatement);
+	DEFAULT_IMPL(FuncExprStatement);
+	DEFAULT_IMPL(FuncBlockStatement);
+	DEFAULT_IMPL(ClassFieldStatement);
+	DEFAULT_IMPL(ImplStatement);
+	DEFAULT_IMPL(ClassStatement);
 }
