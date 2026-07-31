@@ -64,7 +64,7 @@ namespace bea {
 
 		Result() : okay(true) {}
 
-		Result(T value) : value(value), okay(true) {}
+		Result(T value) : value(std::move(value)), okay(true) {}
 
 		~Result() {}
 
@@ -93,5 +93,5 @@ namespace bea {
 #define BEA_OK(T, p_result) ({\
 		auto __result = (p_result);\
 		if (!__result.okay) return ::bea::Result<T>(::std::move(__result.error));\
-		(__result).value;\
+		std::move(__result.value);\
 	})

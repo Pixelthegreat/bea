@@ -4,7 +4,7 @@
 #include <format>
 #include <bea/core.hpp>
 #include <bea/lexer.hpp>
-#include <bea/node.hpp>
+#include <bea/parser.hpp>
 #include <bea/application.hpp>
 
 namespace bea {
@@ -29,11 +29,10 @@ namespace bea {
 		Lexer lexer(path, stream);
 		BEA_OK(None, lexer.makeTokens());
 
-		auto node = std::make_unique<ClassStatementNode>(
-			"Animal",
-			std::make_unique<BlockNode>()
-		);
-		std::cout << *node << std::endl;
+		Parser parser(lexer.getTokens());
+
+		std::unique_ptr<Node> node = BEA_OK(None, parser.parse());
+		if (node) std::cout << *node << std::endl;
 
 		return Result<None>();
 	}

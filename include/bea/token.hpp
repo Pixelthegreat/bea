@@ -40,11 +40,11 @@ namespace bea {
 		Token(Position& position, TokenType type, const char *value)
 			: position(position), type(type), value(value) {}
 
-		bool match(TokenType type, const char *value);
+		bool match(TokenType type, const char *value) const;
 
-		bool matchKeyword(const char *value);
+		bool matchKeyword(const char *value) const;
 
-		bool matchSymbol(const char *value);
+		bool matchSymbol(const char *value) const;
 	};
 
 	std::ostream& operator<<(std::ostream& stream, const Token& token);

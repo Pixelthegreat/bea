@@ -22,19 +22,19 @@ namespace bea {
 	}
 
 	/* match against a type and value */
-	bool Token::match(TokenType type, const char *value) {
+	bool Token::match(TokenType type, const char *value) const {
 
 		return this->type == type and this->value == value;
 	}
 
 	/* match against a keyword value */
-	bool Token::matchKeyword(const char *value) {
+	bool Token::matchKeyword(const char *value) const {
 
 		return match(TokenType::Keyword, value);
 	}
 
 	/* match against a symbol value */
-	bool Token::matchSymbol(const char *value) {
+	bool Token::matchSymbol(const char *value) const {
 
 		return match(TokenType::Symbol, value);
 	}
