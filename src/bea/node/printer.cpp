@@ -77,10 +77,10 @@ namespace bea {
 
 			m_stream << "(";
 			visit(node.getNode());
-			m_stream << node.m_operation << ")";
+			m_stream << " " << node.m_operation << ")";
 		}
 		else {
-			m_stream << "(" << node.m_operation;
+			m_stream << "(" << node.m_operation << " ";
 			visit(node.getNode());
 			m_stream << ")";
 		}
@@ -229,10 +229,11 @@ namespace bea {
 			m_stream << " ";
 			visit(*clause[1]);
 		}
-		if (node.m_elseClauseNode) {
+		Node& elseClauseNode = node.getElseClauseNode();
+		if (&elseClauseNode) {
 
 			m_stream << " else ";
-			visit(*node.m_elseClauseNode);
+			visit(elseClauseNode);
 		}
 
 		return Result<None>();
@@ -491,11 +492,30 @@ namespace bea {
 	/* Visit "class" statement */
 	Result<None> NodePrinter::visitClassStatement(ClassStatementNode& node) {
 
+		if (node.m_abstract)
+			m_stream << "abstract ";
+
 		if (node.m_copy)
 			m_stream << "struct ";
 		else
 			m_stream << "class ";
-		m_stream << node.getName() << " ";
+		m_stream << node.getName();
+
+		std::size_t i = 0;
+		for (NodeGenericParameter& parameter: node.m_genericParameters) {
+
+			if (!i++) m_stream << "<";
+			else m_stream << ", ";
+
+			m_stream << parameter.name << ": " << parameter.type;
+			if (parameter.defaultNode) {
+
+				m_stream << " = ";
+				visit(*parameter.defaultNode);
+			}
+		}
+		if (i) m_stream << ">";
+		m_stream << " ";
 
 		visit(node.getBodyNode());
 

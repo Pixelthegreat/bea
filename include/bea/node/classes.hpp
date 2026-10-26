@@ -2,6 +2,7 @@
 
 #include <bea/core.hpp>
 #include <bea/node.hpp>
+#include <bea/node/functions.hpp>
 
 namespace bea {
 
@@ -63,7 +64,7 @@ namespace bea {
 	/*
 	 * "class" statement
 	 */
-	class ClassStatementNode : public Node {
+	class ClassStatementNode : public ExportableNode {
 	public:
 		ClassStatementNode(
 			const Name& name,
@@ -84,6 +85,7 @@ namespace bea {
 			  m_copy(copy) {}
 
 		bool m_copy;
+		std::vector<NodeGenericParameter> m_genericParameters;
 
 		const Name& getName() const { return m_name; }
 		Node& getBodyNode() const { return *m_bodyNode; }

@@ -6,29 +6,54 @@ namespace bea {
 
 	using NodeP = std::unique_ptr<Node>;
 
-	/* Skip newlines, requiring at least one to be present */
-	Parser::NoneResult Parser::skipNewlines() {
-
-		if (m_token->type != TokenType::EndLine)
-			return NoneResult(m_token->position, "Expected new line");
-
-		skipNewlinesOpt();
-		return NoneResult();
-	}
-
-	void Parser::skipNewlinesOpt() {
+	/* Skip newlines */
+	void Parser::skipNewlines() {
 
 		while (m_token->type == TokenType::EndLine)
 			advance();
 	}
 
-#define skipNewlines() BEA_OK(NodeP, skipNewlines())
+	/* Match token to match list */
+	bool Parser::matchTokenList(
+		const TokenMatchList& pairs,
+		const Token *token
+	) {
+		for (const std::tuple<TokenType, const char *>& pair: pairs) {
+			if (token->type == std::get<0>(pair) &&
+			    token->value == std::get<1>(pair))
+				return true;
+		}
+		return false;
+	}
+
+	/* Parse binary operation */
+	Parser::Result Parser::parseBinaryOperation(
+		std::function<Parser::Result(Parser& parser)> leftFunc,
+		std::function<Parser::Result(Parser& parser)> rightFunc,
+		const TokenMatchList& pairs,
+		std::size_t iterations
+	) {
+		NodeP left = BEA_OK(NodeP, leftFunc(*this));
+		for (; matchTokenList(pairs, m_token) && iterations != 0; iterations--) {
+
+			const std::string& operation = m_token->value;
+			advance();
+
+			NodeP right = BEA_OK(NodeP, rightFunc(*this));
+
+			left = std::make_unique<BinaryOperationNode>(
+				operation, std::move(left), std::move(right)
+			);
+		}
+		return Result(std::move(left));
+	}
 
 	/* Parse file */
 	Parser::Result Parser::parse() {
 
 		advance();
 		std::unique_ptr<BlockNode> node = std::make_unique<BlockNode>();
+		node->m_position = m_token->position;
 
 		/* Initial "module" statement */
 		if (!m_token->matchKeyword("module"))
@@ -71,7 +96,7 @@ namespace bea {
 			if (!m_token) break;
 
 			if (skipLevel == Skip::EndLine &&
-			    m_token->type == TokenType::EndLine)
+m_token->type == TokenType::EndLine)
 				continue;
 			if (skipLevel >= Skip::Comment &&
 			    m_token->type == TokenType::Comment)
@@ -95,7 +120,7 @@ namespace bea {
 		return Result(std::move(node));
 	}
 
-	/* Parse toplevel file statement */
+/* Parse toplevel file statement */
 	Parser::Result Parser::parseFileStatement() {
 
 		if (m_token->matchKeyword("use"))
@@ -143,14 +168,243 @@ namespace bea {
 	/* Parse "class" statement */
 	Parser::Result Parser::parseClassStatement() {
 
+		bool abstract = false;
+		if (m_token->matchKeyword("abstract")) {
+
+			advance();
+			abstract = true;
+
+			if (!m_token->matchKeyword("class") &&
+			    !m_token->matchKeyword("struct"))
+				return Result(
+					m_token->position,
+					std::format(
+						"Expected 'class' or 'struct' after 'abstract' but got '{}'",
+						m_token->value
+					)
+				);
+		}
+
 		Position position = m_token->position;
+		const std::string& kind = m_token->value;
+
 		advance();
 
 		Name name = BEA_OK(NodeP, parseName());
+
+		/* Parse generic parameters */
+		std::vector<NodeGenericParameter> genericParameters;
+		if (m_token->matchSymbol("<")) {
+
+			advance(Skip::EndLine);
+
+			genericParameters.emplace_back(
+				BEA_OK(NodeP, parseGenericParameter())
+			);
+			while (m_token->matchSymbol(",")) {
+
+				advance();
+
+				genericParameters.emplace_back(
+					BEA_OK(NodeP, parseGenericParameter())
+				);
+			}
+			if (!m_token->matchSymbol(">")) {
+
+				return Result(
+					m_token->position,
+					std::format(
+						"Expected '>' after generic parameters but got '{}'",
+						m_token->value
+					)
+				);
+			}
+			advance();
+		}
+
+		/* Body */
 		auto body = BEA_OK(NodeP, parseClassBlock());
 
 		auto node = std::make_unique<ClassStatementNode>(
 			std::move(name), std::move(body)
+		);
+		node->m_position = position;
+		node->m_abstract = abstract;
+		node->m_genericParameters = std::move(genericParameters);
+
+		if (kind == "struct")
+			node->m_copy = true;
+
+		return Result(std::move(node));
+	}
+
+	/* Parse "func" statement */
+	Parser::Result Parser::parseFuncStatement() {
+
+		Position position = m_token->position;
+		advance();
+
+		Name name = BEA_OK(NodeP, parseName());
+
+		/* Parse generic parameters */
+		std::vector<NodeGenericParameter> genericParameters;
+		if (m_token->matchSymbol("<")) {
+
+			advance(Skip::EndLine);
+
+			genericParameters.emplace_back(
+				BEA_OK(NodeP, parseGenericParameter())
+			);
+			while (m_token->matchSymbol(",")) {
+
+				advance();
+
+				genericParameters.emplace_back(
+					BEA_OK(NodeP, parseGenericParameter())
+				);
+			}
+			if (!m_token->matchSymbol(">")) {
+
+				return Result(
+					m_token->position,
+					std::format(
+						"Expected '>' after generic parameters but got '{}'",
+						m_token->value
+					)
+				);
+			}
+			advance();
+		}
+
+		/* Parse parameters */
+		std::vector<NodeFuncParameter> parameters;
+		if (!m_token->matchSymbol("(")) {
+
+			return Result(
+				m_token->position,
+				std::format(
+					"Expected '(' after function name but got '{}'",
+					m_token->value
+				)
+			);
+		}
+		advance(Skip::EndLine);
+
+		if (!m_token->matchSymbol(")")) {
+
+			parameters.emplace_back(
+				BEA_OK(NodeP, parseFuncParameter())
+			);
+			while (m_token->matchSymbol(",")) {
+
+				advance(Skip::EndLine);
+
+				parameters.emplace_back(
+					BEA_OK(NodeP, parseFuncParameter())
+				);
+			}
+		}
+		skipNewlines();
+
+		if (!m_token->matchSymbol(")")) {
+
+			return Result(
+				m_token->position,
+				std::format(
+					"Expected ')' after function parameters but got '{}'",
+					m_token->value
+				)
+			);
+		}
+		advance(Skip::EndLine);
+
+		/* Expression body */
+		if (m_token->matchSymbol("=>")) {
+
+			advance(Skip::EndLine);
+			NodeP bodyNode = BEA_OK(NodeP, parseExpr());
+
+			auto node = std::make_unique<FuncExprStatementNode>(
+				std::move(name), nullptr,
+				std::move(bodyNode)
+			);
+			node->m_position = position;
+			node->m_genericParameters = std::move(genericParameters);
+			node->m_parameters = std::move(parameters);
+
+			return Result(std::move(node));
+		}
+
+		/* Block body */
+		bool useDefault = false;
+		NodeP returnTypeNode = nullptr;
+
+		if (m_token->matchSymbol("!")) {
+
+			advance(Skip::EndLine);
+			useDefault = true;
+		}
+
+		/* Return value */
+		else if (m_token->matchSymbol("->")) {
+
+			advance(Skip::EndLine);
+			returnTypeNode = BEA_OK(NodeP, parseType());
+		}
+
+		auto bodyNode = std::make_unique<BlockNode>();
+		if (m_token->matchSymbol("{"))
+			BEA_OK(NodeP, parseBlock(*bodyNode));
+
+		auto node = std::make_unique<FuncBlockStatementNode>(
+			std::move(name),
+			std::move(returnTypeNode),
+			std::move(bodyNode)
+		);
+		node->m_position = position;
+		node->m_genericParameters = std::move(genericParameters);
+		node->m_parameters = std::move(parameters);
+		node->m_useDefault = useDefault;
+
+		return Result(std::move(node));
+	}
+
+	/* Parse "let" statement */
+	Parser::Result Parser::parseLetStatement() {
+
+		Position position = m_token->position;
+		advance();
+
+		std::vector<Name> names = {
+			BEA_OK(NodeP, parseName())
+		};
+		while (m_token->matchSymbol(",")) {
+
+			advance();
+
+			names.emplace_back(
+				BEA_OK(NodeP, parseName())
+			);
+		}
+
+		/* Variable type */
+		NodeP typeNode = nullptr;
+		if (m_token->matchSymbol(":")) {
+
+			advance();
+			typeNode = BEA_OK(NodeP, parseType());
+		}
+
+		/* Variable value */
+		NodeP valueNode = nullptr;
+		if (m_token->matchSymbol("=")) {
+
+			advance();
+			valueNode = BEA_OK(NodeP, parseExpr());
+		}
+
+		auto node = std::make_unique<LetStatementNode>(
+			names, std::move(typeNode), std::move(valueNode)
 		);
 		node->m_position = position;
 
@@ -174,6 +428,8 @@ namespace bea {
 	/* Parse block of in-class statements */
 	Parser::Result Parser::parseClassBlock() {
 
+		Position position = m_token->position;
+
 		if (!m_token->matchSymbol("{"))
 			return Result(
 				m_token->position,
@@ -186,6 +442,7 @@ namespace bea {
 		skipNewlines();
 
 		auto node = std::make_unique<BlockNode>();
+		node->m_position = position;
 
 		while (!m_token->matchSymbol("}")) {
 
@@ -211,9 +468,28 @@ namespace bea {
 	/* Parse in-class statement */
 	Parser::Result Parser::parseClassBlockStatement() {
 
-		if (m_token->matchKeyword("func") ||
-		    m_token->matchKeyword("abstract"))
+		if (m_token->matchKeyword("func"))
 			return parseFuncStatement();
+
+		else if (m_token->matchKeyword("abstract")) {
+
+			advance();
+
+			if (!m_token->matchKeyword("func"))
+				return Result(
+					m_token->position,
+					std::format(
+						"Expected 'func' after 'abstract' but got '{}'",
+						m_token->value
+					)
+				);
+			NodeP node = BEA_OK(NodeP, parseFuncStatement());
+
+			auto nodeP = static_cast<ExportableNode *>(node.get());
+			nodeP->m_abstract = true;
+
+			return Result(std::move(node));
+		}
 
 		else if (m_token->type == TokenType::Identifier)
 			return parseClassField();
@@ -225,7 +501,6 @@ namespace bea {
 	}
 
 	/* Parse in-class "pub" statement */
-	/* TODO: Add dynamic cast and m_public = true */
 	Parser::Result Parser::parseClassPubStatement() {
 
 		Position position = m_token->position;
@@ -235,6 +510,9 @@ namespace bea {
 
 		auto node = std::make_unique<PubStatementNode>(std::move(statement));
 		node->m_position = position;
+
+		auto nodeP = dynamic_cast<ExportableNode *>(node.get());
+		if (nodeP) nodeP->m_public = true;
 
 		return Result(std::move(node));
 	}
@@ -259,6 +537,8 @@ namespace bea {
 	/* Parse block of in-impl statements */
 	Parser::Result Parser::parseClassImplBlock() {
 
+		Position position = m_token->position;
+
 		if (!m_token->matchSymbol("{"))
 			return Result(
 				m_token->position,
@@ -271,11 +551,21 @@ namespace bea {
 		skipNewlines();
 
 		auto node = std::make_unique<BlockNode>();
+		node->m_position = position;
 
 		while (!m_token->matchSymbol("}")) {
 
+			if (!m_token->matchKeyword("func"))
+				return Result(
+					m_token->position,
+					std::format(
+						"Expected 'func' in impl block but got '{}'",
+						m_token->value
+					)
+				);
+
 			node->m_nodes.emplace_back(
-				BEA_OK(NodeP, parseClassBlockStatement())
+				BEA_OK(NodeP, parseFuncStatement())
 			);
 			skipNewlines();
 		}
@@ -316,6 +606,928 @@ namespace bea {
 		return Result(std::move(node));
 	}
 
+	/* Parse block */
+	Parser::NoneResult Parser::parseBlock(BlockNode& block) {
+
+		block.m_position = m_token->position;
+
+		if (!m_token->matchSymbol("{"))
+			return NoneResult(
+				m_token->position,
+				std::format(
+					"Expected '{{' but got '{}'",
+					m_token->value
+				)
+			);
+
+		advance();
+		skipNewlines();
+
+		while (!m_token->matchSymbol("}")) {
+
+			block.m_nodes.emplace_back(
+				BEA_OK(None, parseStatement())
+			);
+			skipNewlines();
+		}
+		advance();
+		return NoneResult();
+	}
+
+	/* Parse statement */
+	Parser::Result Parser::parseStatement() {
+
+		if (m_token->matchKeyword("let"))
+			return parseLetStatement();
+
+		else if (m_token->matchKeyword("if"))
+			return parseIfStatement();
+
+		else if (m_token->matchKeyword("which"))
+			return parseWhichStatement();
+
+		else if (m_token->matchKeyword("for"))
+			return parseForStatement();
+
+		else if (m_token->matchKeyword("while"))
+			return parseWhileStatement();
+
+		else if (m_token->matchKeyword("return"))
+			return parseReturnStatement();
+
+		else if (m_token->matchKeyword("continue"))
+			return parseContinueStatement();
+
+		else if (m_token->matchKeyword("break"))
+			return parseBreakStatement();
+
+		return parseExpr();
+	}
+
+	/* Parse "if" statement */
+	Parser::Result Parser::parseIfStatement() {
+
+		Position position = m_token->position;
+		advance();
+
+		NodeP condition = BEA_OK(NodeP, parseExpr());
+
+		auto block = std::make_unique<BlockNode>();
+		BEA_OK(NodeP, parseBlock(*block));
+
+		std::vector<Pair<NodeP>> conditionalClauseNodes;
+
+		conditionalClauseNodes.emplace_back(Pair<NodeP>{
+			std::move(condition), std::move(block),
+		});
+
+		/* Secondary clauses */
+		while (m_token->matchKeyword("elif")) {
+
+			advance();
+
+			condition = BEA_OK(NodeP, parseExpr());
+
+			block = std::make_unique<BlockNode>();
+			BEA_OK(NodeP, parseBlock(*block));
+
+			conditionalClauseNodes.emplace_back(Pair<NodeP>{
+				std::move(condition), std::move(block),
+			});
+		}
+
+		/* Else clause */
+		std::unique_ptr<BlockNode> elseClauseNode = nullptr;
+		if (m_token->matchKeyword("else")) {
+
+			advance();
+
+			elseClauseNode = std::make_unique<BlockNode>();
+			BEA_OK(NodeP, parseBlock(*elseClauseNode));
+		}
+
+		auto node = std::make_unique<IfStatementNode>(
+			std::move(elseClauseNode)
+		);
+		node->m_position = position;
+		node->m_conditionalClauseNodes = std::move(conditionalClauseNodes);
+
+		return Result(std::move(node));
+	}
+
+	/* Parse "which" statement */
+	Parser::Result Parser::parseWhichStatement() {
+
+		Position position = m_token->position;
+		advance();
+
+		NodeP valueNode = BEA_OK(NodeP, parseExpr());
+		NodeP bodyNode = BEA_OK(NodeP, parseWhichBlock());
+
+		auto node = std::make_unique<WhichStatementNode>(
+			std::move(valueNode), std::move(bodyNode)
+		);
+		node->m_position = position;
+
+		return Result(std::move(node));
+	}
+
+	/* Parse "which" block */
+	Parser::Result Parser::parseWhichBlock() {
+
+		Position position = m_token->position;
+
+		auto node = std::make_unique<BlockNode>();
+		node->m_position = position;
+
+		if (!m_token->matchSymbol("{"))
+			return Result(
+				m_token->position,
+				std::format(
+					"Expected '{{' after 'which' statement but got '{}'",
+					m_token->value
+				)
+			);
+
+		advance();
+		skipNewlines();
+
+		while (!m_token->matchSymbol("}")) {
+
+			node->m_nodes.emplace_back(
+				BEA_OK(NodeP, parseWhichBlockStatement())
+			);
+			skipNewlines();
+		}
+		advance();
+
+		return Result(std::move(node));
+	}
+
+	/* Parse "case" or "case let" statement */
+	Parser::Result Parser::parseWhichBlockStatement() {
+
+		Position position = m_token->position;
+
+		if (!m_token->matchKeyword("case"))
+			return Result(
+				m_token->position,
+				std::format(
+					"Expected 'case' in 'which' block but got '{}'",
+					m_token->value
+				)
+			);
+		advance();
+
+		/* "case let" statement */
+		if (m_token->matchKeyword("let")) {
+
+			advance();
+
+			Name name = BEA_OK(NodeP, parseName());
+
+			if (!m_token->matchSymbol("="))
+				return Result(
+					m_token->position,
+					std::format(
+						"Expected '=' after variable name but got '{}'",
+						m_token->value
+					)
+				);
+			advance();
+
+			NodeP valueNode = BEA_OK(NodeP, parseExpr());
+
+			/* Statement body */
+			NodeP bodyNode = nullptr;
+			if (m_token->matchSymbol("->")) {
+
+				advance();
+				bodyNode = BEA_OK(NodeP, parseStatement());
+			}
+			else {
+				auto bodyNodeP = std::make_unique<BlockNode>();
+				BEA_OK(NodeP, parseBlock(*bodyNodeP));
+
+				bodyNode = std::move(bodyNodeP);
+			}
+
+			auto node = std::make_unique<CaseLetStatementNode>(
+				std::move(name), std::move(valueNode), std::move(bodyNode)
+			);
+			node->m_position = position;
+
+			return Result(std::move(node));
+		}
+
+		/* Regular "case" statement */
+		NodeP valueNode = nullptr;
+		if (m_token->matchSymbol("_"))
+			advance();
+		else
+			valueNode = BEA_OK(NodeP, parseExpr());
+
+		NodeP bodyNode = nullptr;
+		if (m_token->matchSymbol("->")) {
+
+			advance();
+			bodyNode = BEA_OK(NodeP, parseStatement());
+		}
+		else {
+			auto bodyNodeP = std::make_unique<BlockNode>();
+			BEA_OK(NodeP, parseBlock(*bodyNodeP));
+
+			bodyNode = std::move(bodyNodeP);
+		}
+
+		auto node = std::make_unique<CaseStatementNode>(
+			std::move(valueNode), std::move(bodyNode)
+		);
+		node->m_position = position;
+
+		return Result(std::move(node));
+	}
+
+	/* Parse "for" statement */
+	Parser::Result Parser::parseForStatement() {
+
+		Position position = m_token->position;
+		advance();
+
+		Name name = BEA_OK(NodeP, parseName());
+
+		if (!m_token->matchKeyword("in"))
+			return Result(
+				m_token->position,
+				std::format(
+					"Expected 'in' after variable name but got '{}'",
+					m_token->value
+				)
+			);
+		advance();
+
+		NodeP iterableNode = BEA_OK(NodeP, parseExpr());
+
+		auto bodyNode = std::make_unique<BlockNode>();
+		BEA_OK(NodeP, parseBlock(*bodyNode));
+
+		auto node = std::make_unique<ForStatementNode>(
+			std::move(name), std::move(iterableNode), std::move(bodyNode)
+		);
+		node->m_position = position;
+
+		return Result(std::move(node));
+	}
+
+	/* Parse "while" statement */
+	Parser::Result Parser::parseWhileStatement() {
+
+		Position position = m_token->position;
+		advance();
+
+		NodeP conditionNode = BEA_OK(NodeP, parseExpr());
+
+		auto bodyNode = std::make_unique<BlockNode>();
+		BEA_OK(NodeP, parseBlock(*bodyNode));
+
+		auto node = std::make_unique<WhileStatementNode>(
+			std::move(conditionNode), std::move(bodyNode)
+		);
+		node->m_position = position;
+
+		return Result(std::move(node));
+	}
+
+	/* Parse "return" statement */
+	Parser::Result Parser::parseReturnStatement() {
+
+		Position position = m_token->position;
+		advance();
+
+		NodeP valueNode = nullptr;
+		if (m_token->type < TokenType::EndLine)
+			valueNode = BEA_OK(NodeP, parseExpr());
+
+		auto node = std::make_unique<ReturnStatementNode>(
+			std::move(valueNode)
+		);
+		node->m_position = position;
+
+		return Result(std::move(node));
+	}
+
+	/* Parse "continue" statement */
+	Parser::Result Parser::parseContinueStatement() {
+
+		Position position = m_token->position;
+		advance();
+
+		auto node = std::make_unique<ContinueStatementNode>();
+		node->m_position = position;
+
+		return Result(std::move(node));
+	}
+
+	/* Parse "break" statement */
+	Parser::Result Parser::parseBreakStatement() {
+
+		Position position = m_token->position;
+		advance();
+
+		auto node = std::make_unique<BreakStatementNode>();
+		node->m_position = position;
+
+		return Result(std::move(node));
+	}
+
+	/* Parse expression */
+	Parser::Result Parser::parseExpr() {
+
+		static const TokenMatchList s_exprTokens = {
+			{TokenType::Symbol, "="},
+			{TokenType::Symbol, "+="},
+			{TokenType::Symbol, "-="},
+			{TokenType::Symbol, "*="},
+			{TokenType::Symbol, "/="},
+			{TokenType::Symbol, "%="},
+			{TokenType::Symbol, "|="},
+			{TokenType::Symbol, "&="},
+			{TokenType::Symbol, "^="},
+			{TokenType::Symbol, "<<="},
+			{TokenType::Symbol, ">>="},
+		};
+		return parseBinaryOperation(
+			&Parser::parseAssignExpr,
+			&Parser::parseExpr,
+			s_exprTokens,
+			1
+		);
+	}
+
+	/* Parse assign expression */
+	Parser::Result Parser::parseAssignExpr() {
+
+		static const TokenMatchList s_assignExprTokens = {
+			{TokenType::Keyword, "and"},
+			{TokenType::Keyword, "or"},
+		};
+		return parseBinaryOperation(
+			&Parser::parseCompExpr,
+			&Parser::parseCompExpr,
+			s_assignExprTokens
+		);
+	}
+
+	/* Parse comparison expression */
+	Parser::Result Parser::parseCompExpr() {
+
+		if (m_token->matchKeyword("not")) {
+
+			Position position = m_token->position;
+			const std::string& operation = m_token->value;
+
+			advance();
+
+			NodeP compExpr = BEA_OK(NodeP, parseCompExpr());
+
+			auto node = std::make_unique<UnaryOperationNode>(
+				operation, std::move(compExpr)
+			);
+			node->m_position = position;
+
+			return Result(std::move(node));
+		}
+
+		static const TokenMatchList s_compExprTokens = {
+			{TokenType::Symbol, "=="},
+			{TokenType::Symbol, "!="},
+			{TokenType::Symbol, "<"},
+			{TokenType::Symbol, ">"},
+			{TokenType::Symbol, "<="},
+			{TokenType::Symbol, ">="},
+		};
+		return parseBinaryOperation(
+			&Parser::parseArithExpr,
+			&Parser::parseArithExpr,
+			s_compExprTokens
+		);
+	}
+
+	/* Parse arithmetic expression */
+	Parser::Result Parser::parseArithExpr() {
+
+		static const TokenMatchList s_arithExprTokens = {
+			{TokenType::Symbol, "+"},
+			{TokenType::Symbol, "-"},
+			{TokenType::Symbol, "|"},
+			{TokenType::Symbol, "&"},
+			{TokenType::Symbol, "^"},
+		};
+		return parseBinaryOperation(
+			&Parser::parseTerm,
+			&Parser::parseTerm,
+			s_arithExprTokens
+		);
+	}
+
+	/* Parse term */
+	Parser::Result Parser::parseTerm() {
+
+		if (m_token->matchSymbol("++") ||
+		    m_token->matchSymbol("--")) {
+
+			Position position = m_token->position;
+			const std::string& operation = m_token->value;
+
+			advance();
+
+			NodeP call = BEA_OK(NodeP, parseCall());
+
+			auto node = std::make_unique<UnaryOperationNode>(
+				operation, std::move(call)
+			);
+			node->m_position = position;
+
+			return Result(std::move(node));
+		}
+
+		/* Binary operation */
+		static const TokenMatchList s_termTokens = {
+			{TokenType::Symbol, "*"},
+			{TokenType::Symbol, "/"},
+			{TokenType::Symbol, "<<"},
+			{TokenType::Symbol, ">>"},
+		};
+		return parseBinaryOperation(
+			&Parser::parseCall,
+			&Parser::parseCall,
+			s_termTokens
+		);
+	}
+
+	/* Parse call */
+	Parser::Result Parser::parseCall() {
+
+		NodeP factor = BEA_OK(NodeP, parseFactor());
+		Node *factorP = factor.get();
+
+		factor = BEA_OK(NodeP, parseCallExtension(std::move(factor)));
+		while (factor.get() != factorP) {
+
+			factorP = factor.get();
+			factor = BEA_OK(NodeP, parseCallExtension(std::move(factor)));
+		}
+		return Result(std::move(factor));
+	}
+
+	/* Parse call extension */
+	Parser::Result Parser::parseCallExtension(NodeP factor) {
+
+		if (m_token->matchSymbol("("))
+			return parseFunctionCall(std::move(factor));
+
+		else if (m_token->matchSymbol("."))
+			return parseNamedAccess(std::move(factor));
+
+		else if (m_token->matchSymbol("["))
+			return parseIndexedAccess(std::move(factor));
+
+		else if (m_token->matchSymbol("?"))
+			return parseCarryResult(std::move(factor));
+
+		else if (m_token->matchSymbol("++") ||
+			 m_token->matchSymbol("--"))
+			return parseIncrementDecrement(std::move(factor));
+
+		else if (m_token->matchSymbol(".."))
+			return parseRange(std::move(factor));
+
+		return std::move(factor);
+	}
+
+	/* Parse function call */
+	Parser::Result Parser::parseFunctionCall(NodeP factor) {
+
+		Position position = m_token->position;
+		advance(Skip::EndLine);
+
+		auto node = std::make_unique<CallNode>(
+			std::move(factor)
+		);
+
+		if (!m_token->matchSymbol(")")) {
+
+			node->m_argumentNodes.emplace_back(
+				BEA_OK(NodeP, parseExpr())
+			);
+			while (m_token->matchSymbol(",")) {
+
+				advance(Skip::EndLine);
+
+				node->m_argumentNodes.emplace_back(
+					BEA_OK(NodeP, parseExpr())
+				);
+			}
+		}
+		skipNewlines();
+
+		if (!m_token->matchSymbol(")"))
+			return Result(
+				m_token->position,
+				std::format(
+					"Expected ')' at end of function call but got '{}'",
+					m_token->value
+				)
+			);
+		advance();
+
+		node->m_position = position;
+		return Result(std::move(node));
+	}
+
+	/* Parse named access */
+	Parser::Result Parser::parseNamedAccess(NodeP factor) {
+
+		Position position = m_token->position;
+		advance();
+
+		if (m_token->type != TokenType::Identifier)
+			return Result(
+				m_token->position,
+				std::format(
+					"Expected member name after '.' but got '{}'",
+					m_token->value
+				)
+			);
+		Name name{m_token->value};
+		advance();
+
+		auto node = std::make_unique<NamedAccessNode>(
+			std::move(factor), std::move(name)
+		);
+		node->m_position = position;
+
+		return Result(std::move(node));
+	}
+
+	/* Parse indexed access */
+	Parser::Result Parser::parseIndexedAccess(NodeP factor) {
+
+		Position position = m_token->position;
+		advance();
+
+		NodeP indexNode = BEA_OK(NodeP, parseExpr());
+
+		if (!m_token->matchSymbol("]"))
+			return Result(
+				m_token->position,
+				std::format(
+					"Expected ']' after index value but got '{}'",
+					m_token->value
+				)
+			);
+		advance();
+
+		auto node = std::make_unique<IndexedAccessNode>(
+			std::move(factor), std::move(indexNode)
+		);
+		node->m_position = position;
+
+		return Result(std::move(node));
+	}
+
+	/* Parse carry result */
+	Parser::Result Parser::parseCarryResult(NodeP factor) {
+
+		Position position = m_token->position;
+		advance();
+
+		auto node = std::make_unique<CarryResultNode>(
+			std::move(factor)
+		);
+		node->m_position = position;
+
+		return Result(std::move(node));
+	}
+
+	/* Parse postfix increment or decrement */
+	Parser::Result Parser::parseIncrementDecrement(NodeP factor) {
+
+		Position position = m_token->position;
+		const std::string& operation = m_token->value;
+
+		advance();
+
+		auto node = std::make_unique<UnaryOperationNode>(
+			operation, std::move(factor), true
+		);
+		node->m_position = position;
+
+		return Result(std::move(node));
+	}
+
+	/* Parse range */
+	Parser::Result Parser::parseRange(NodeP factor) {
+
+		Position position = m_token->position;
+		advance();
+
+		NodeP endNode = BEA_OK(NodeP, parseCall());
+
+		auto node = std::make_unique<RangeNode>(
+			std::move(factor), std::move(endNode)
+		);
+		node->m_position = position;
+
+		return Result(std::move(node));
+	}
+
+	/* Parse factor */
+	Parser::Result Parser::parseFactor() {
+
+		Position position = m_token->position;
+
+		/* Integer constant */
+		if (m_token->type == TokenType::Integer) {
+
+			const std::string& value = m_token->value;
+			advance();
+
+			std::intmax_t iValue = 0;
+			std::sscanf(value.c_str(), "%jd", &iValue);
+
+			auto node = std::make_unique<IntegerNode>(iValue);
+			node->m_position = position;
+
+			return Result(std::move(node));
+		}
+
+		/* Floating point constant */
+		else if (m_token->type == TokenType::Float) {
+
+			const std::string& value = m_token->value;
+			advance();
+
+			double fValue = 0;
+			std::sscanf(value.c_str(), "%lf", &fValue);
+
+			auto node = std::make_unique<FloatNode>(fValue);
+			node->m_position = position;
+
+			return Result(std::move(node));
+		}
+
+		/* String constant */
+		else if (m_token->type == TokenType::String) {
+
+			const std::string& value = m_token->value;
+			advance();
+
+			auto node = std::make_unique<StringNode>(value);
+			node->m_position = position;
+
+			return Result(std::move(node));
+		}
+
+		/* Character constant */
+		else if (m_token->type == TokenType::Character) {
+
+			char value = m_token->value[0];
+			advance();
+
+			auto node = std::make_unique<IntegerNode>((std::intmax_t)value);
+			node->m_position = position;
+
+			return Result(std::move(node));
+		}
+
+		/* Variable access */
+		else if (m_token->type == TokenType::Identifier) {
+
+			Name name = BEA_OK(NodeP, parseName());
+
+			auto node = std::make_unique<VariableAccessNode>(
+				std::move(name)
+			);
+			node->m_position = position;
+
+			return Result(std::move(node));
+		}
+
+		/* Unary operation */
+		else if (m_token->matchSymbol("+") ||
+			 m_token->matchSymbol("-")) {
+
+			const std::string& operation = m_token->value;
+			advance();
+
+			NodeP factor = BEA_OK(NodeP, parseFactor());
+
+			auto node = std::make_unique<UnaryOperationNode>(
+				operation, std::move(factor)
+			);
+			node->m_position = position;
+
+			return Result(std::move(node));
+		}
+
+		/* Others */
+		else if (m_token->matchKeyword("new"))
+			return parseNewExpression();
+
+		else if (m_token->matchKeyword("cast"))
+			return parseCastExpression();
+
+		else if (m_token->matchSymbol("["))
+			return parseListInitializer();
+
+		else if (m_token->matchSymbol("("))
+			return parseGrouping();
+
+		return Result(
+			position,
+			std::format(
+				"Unexpected token '{}'",
+				m_token->value
+			)
+		);
+	}
+
+	/* Parse "new" expression */
+	Parser::Result Parser::parseNewExpression() {
+
+		Position position = m_token->position;
+		advance();
+
+		NodeP typeNode = BEA_OK(NodeP, parseType());
+
+		if (!m_token->matchSymbol("("))
+			return Result(
+				m_token->position,
+				std::format(
+					"Expected '(' after type but got '{}'",
+					m_token->value
+				)
+			);
+		advance(Skip::EndLine);
+
+		/* constructor arguments */
+		std::vector<NodeP> argumentNodes;
+		if (!m_token->matchSymbol(")")) {
+
+			argumentNodes.emplace_back(
+				BEA_OK(NodeP, parseExpr())
+			);
+			while (m_token->matchSymbol(",")) {
+
+				advance(Skip::EndLine);
+
+				argumentNodes.emplace_back(
+					BEA_OK(NodeP, parseExpr())
+				);
+			}
+		}
+		skipNewlines();
+
+		if (!m_token->matchSymbol(")"))
+			return Result(
+				m_token->position,
+				std::format(
+					"Expected ')' after arguments but got '{}'",
+					m_token->value
+				)
+			);
+		advance();
+
+		auto node = std::make_unique<NewNode>(std::move(typeNode));
+		node->m_position = position;
+
+		node->m_argumentNodes = std::move(argumentNodes);
+
+		return Result(std::move(node));
+	}
+
+	/* Parse cast expression */
+	Parser::Result Parser::parseCastExpression() {
+
+		Position position = m_token->position;
+		advance();
+
+		if (!m_token->matchSymbol("<"))
+			return Result(
+				m_token->position,
+				std::format(
+					"Expected '<' after 'cast' but got '{}'",
+					m_token->value
+				)
+			);
+		advance(Skip::EndLine);
+
+		NodeP typeNode = BEA_OK(NodeP, parseType());
+
+		if (!m_token->matchSymbol(">"))
+			return Result(
+				m_token->position,
+				std::format(
+					"Expected '>' after cast type but got '{}'",
+					m_token->value
+				)
+			);
+		advance(Skip::EndLine);
+
+		if (!m_token->matchSymbol("("))
+			return Result(
+				m_token->position,
+				std::format(
+					"Expected '(' after '>' but got '{}'",
+					m_token->value
+				)
+			);
+		advance(Skip::EndLine);
+
+		NodeP valueNode = BEA_OK(NodeP, parseExpr());
+
+		if (!m_token->matchSymbol(")"))
+			return Result(
+				m_token->position,
+				std::format(
+					"Expected ')' after cast value but got '{}'",
+					m_token->value
+				)
+			);
+		advance();
+
+		auto node = std::make_unique<CastNode>(
+			std::move(typeNode), std::move(valueNode)
+		);
+		node->m_position = position;
+
+		return Result(std::move(node));
+	}
+
+	/* Parse list initializer */
+	Parser::Result Parser::parseListInitializer() {
+
+		Position position = m_token->position;
+		advance(Skip::EndLine);
+
+		std::vector<NodeP> itemNodes;
+		if (!m_token->matchSymbol("]")) {
+
+			itemNodes.emplace_back(
+				BEA_OK(NodeP, parseExpr())
+			);
+			while (m_token->matchSymbol(",")) {
+
+				advance(Skip::EndLine);
+
+				itemNodes.emplace_back(
+					BEA_OK(NodeP, parseExpr())
+				);
+			}
+		}
+		skipNewlines();
+
+		if (!m_token->matchSymbol("]"))
+			return Result(
+				m_token->position,
+				std::format(
+					"Expected ']' at end of list initializer but got '{}'",
+					m_token->value
+				)
+			);
+		advance();
+
+		auto node = std::make_unique<ListNode>();
+		node->m_position = position;
+
+		node->m_itemNodes = std::move(itemNodes);
+
+		return Result(std::move(node));
+	}
+
+	/* Parse grouping */
+	Parser::Result Parser::parseGrouping() {
+
+		Position position = m_token->position;
+		advance(Skip::EndLine);
+
+		NodeP node = BEA_OK(NodeP, parseExpr());
+		skipNewlines();
+
+		if (!m_token->matchSymbol(")"))
+			return Result(
+				m_token->position,
+				std::format(
+					"Expected ')' after expression but got '{}'",
+					m_token->value
+				)
+			);
+		advance();
+
+		return std::move(node);
+	}
+
 	/* Parse type */
 	Parser::Result Parser::parseType() {
 
@@ -344,7 +1556,7 @@ namespace bea {
 					m_sstream.str(m_token->value);
 					m_sstream >> value;
 
-					advance();
+					advance(Skip::EndLine);
 
 					node->m_genericArgumentNodes.emplace_back(
 						std::make_unique<IntegerNode>(value)
@@ -354,7 +1566,7 @@ namespace bea {
 						BEA_OK(NodeP, parseType())
 				);
 			}
-			skipNewlinesOpt();
+			skipNewlines();
 
 			if (!m_token->matchSymbol(">")) return Result(
 				m_token->position,
@@ -374,7 +1586,10 @@ namespace bea {
 		if (m_token->type != TokenType::Identifier)
 			return NameResult(
 				m_token->position,
-				std::format("Expected name but got '{}'", m_token->value)
+				std::format(
+					"Expected name but got '{}'",
+					m_token->value
+				)
 			);
 		std::array<const Token *, 32> tokens{m_token};
 		advance();
@@ -409,5 +1624,98 @@ namespace bea {
 			name.components[i] = tokens[i]->value;
 
 		return NameResult(name);
+	}
+
+	/* Parse function parameter */
+	Parser::FuncParameterResult Parser::parseFuncParameter() {
+
+		if (m_token->type != TokenType::Identifier)
+			return FuncParameterResult(
+				m_token->position,
+				std::format(
+					"Expected parameter name but got '{}'",
+					m_token->value
+				)
+			);
+		Name name{m_token->value};
+		advance();
+
+		if (!m_token->matchSymbol(":"))
+			return FuncParameterResult(
+				m_token->position,
+				std::format(
+					"Expected ':' after parameter name but got '{}'",
+					m_token->value
+				)
+			);
+		advance();
+
+		NodeP typeNode = BEA_OK(NodeFuncParameter, parseType());
+
+		return FuncParameterResult(NodeFuncParameter{
+			.name = std::move(name),
+			.typeNode = std::move(typeNode),
+			.valueNode = nullptr
+		});
+	}
+
+	/* Parse generic parameter */
+	Parser::GenericParameterResult Parser::parseGenericParameter() {
+
+		if (m_token->type != TokenType::Identifier)
+			return GenericParameterResult(
+				m_token->position,
+				std::format(
+					"Expected parameter name but got '{}'",
+					m_token->value
+				)
+			);
+		Name name{m_token->value};
+		advance();
+
+		/* Generic type */
+		GenericType type = GenericType::Type;
+		if (m_token->matchSymbol(":")) {
+
+			advance();
+
+			if (m_token->value == "Type")
+				type = GenericType::Type;
+			else if (m_token->value == "Int")
+				type = GenericType::Int;
+			else
+				return GenericParameterResult(
+					m_token->position,
+					std::format(
+						"Expected parameter type but got '{}'",
+						m_token->value
+					)
+				);
+			advance();
+		}
+
+		/* Generic value */
+		NodeP defaultNode = nullptr;
+		if (m_token->matchSymbol("=")) {
+
+			advance();
+			if (m_token->type == TokenType::Integer) {
+
+				std::intmax_t value = 0;
+				std::sscanf(m_token->value.c_str(), "%jd", &value);
+
+				defaultNode = std::make_unique<IntegerNode>(value);
+				defaultNode->m_position = m_token->position;
+
+				advance();
+			}
+			else defaultNode = BEA_OK(NodeGenericParameter, parseType());
+		}
+
+		return GenericParameterResult(NodeGenericParameter{
+			.name = std::move(name),
+			.type = type,
+			.defaultNode = std::move(defaultNode)
+		});
 	}
 }

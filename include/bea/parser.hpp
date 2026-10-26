@@ -1,6 +1,7 @@
 #pragma once
 
 #include <sstream>
+#include <functional>
 #include <bea/core.hpp>
 #include <bea/token.hpp>
 #include <bea/node.hpp>
@@ -17,6 +18,8 @@ namespace bea {
 		using NameResult = bea::Result<Name>;
 		using FuncParameterResult = bea::Result<NodeFuncParameter>;
 		using GenericParameterResult = bea::Result<NodeGenericParameter>;
+
+		using TokenMatchList = DynFixed<std::tuple<TokenType, const char *>>;
 
 		Parser(const std::vector<std::unique_ptr<Token>>& tokens)
 			: m_tokens(tokens) {}
@@ -49,8 +52,19 @@ namespace bea {
 		/*
 		 * Helpers
 		 */
-		NoneResult skipNewlines();
-		void skipNewlinesOpt();
+		void skipNewlines();
+
+		bool matchTokenList(
+			const TokenMatchList& pairs,
+			const Token *token
+		);
+
+		Result parseBinaryOperation(
+			std::function<Result(Parser& parser)> leftFunc,
+			std::function<Result(Parser& parser)> rightFunc,
+			const TokenMatchList& pairs,
+			std::size_t iterations = -1
+		);
 
 		/*
 		 * Grammar rules
@@ -71,7 +85,7 @@ namespace bea {
 		Result parseClassImplBlock();
 		Result parseClassField();
 
-		Result parseBlock(BlockNode& block);
+		NoneResult parseBlock(BlockNode& block);
 		Result parseStatement();
 		Result parseIfStatement();
 		Result parseWhichStatement();

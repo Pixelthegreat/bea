@@ -26,6 +26,16 @@ namespace bea {
 				m_items[index++] = item;
 		}
 
+		DynFixed(const std::vector<T>& vector)
+			: m_size(vector.size()) {
+
+			if (m_size) m_items = new T[m_size];
+
+			std::size_t index = 0;
+			for (const T& item: vector)
+				m_items[index++] = item;
+		}
+
 		DynFixed(const DynFixed<T>& other) {
 
 			if (m_items) delete[] m_items;

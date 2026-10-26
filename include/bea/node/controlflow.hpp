@@ -10,9 +10,13 @@ namespace bea {
 	 */
 	class IfStatementNode : public Node {
 	public:
-		IfStatementNode() {}
+		IfStatementNode(std::unique_ptr<Node>&& elseClauseNode)
+			: m_elseClauseNode(std::move(elseClauseNode)) {}
 
 		std::vector<Pair<std::unique_ptr<Node>>> m_conditionalClauseNodes;
+
+		Node& getElseClauseNode() const { return *m_elseClauseNode; }
+	private:
 		std::unique_ptr<Node> m_elseClauseNode;
 	protected:
 		virtual Result<None> visit(NodeVisitor& visitor) override;

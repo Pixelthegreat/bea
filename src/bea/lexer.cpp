@@ -8,7 +8,7 @@ namespace bea {
 	const char *Lexer::s_identifier = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_";
 
 	const char *Lexer::s_keywords[] = {
-		"pub", "module", "use",
+		"pub", "module", "use", "as",
 		"abstract", "class", "struct",
 		"impl", "func",
 		"let",
@@ -162,7 +162,7 @@ namespace bea {
 			}
 
 			/* Could be followed by "=" */
-			else if (std::strchr("*|&^", m_cc)) {
+			else if (std::strchr("*%|&^!", m_cc)) {
 
 				char ch[3] = {m_cc, 0, 0};
 
@@ -191,19 +191,6 @@ namespace bea {
 					advance();
 				}
 				addToken(start, TokenType::Symbol, ch);
-			}
-
-			/* "!=" */
-			else if (m_cc == '!') {
-
-				Position start = m_position;
-				advance();
-
-				if (m_cc != '=') return Result<None>(
-					m_position, "Expected '!='"
-				);
-				advance();
-				addToken(start, TokenType::Symbol, "!=");
 			}
 
 			/* Single characters */
@@ -352,34 +339,38 @@ namespace bea {
 		Position start = m_position;
 		advance();
 
-		if (std::strchr("'", m_cc))
-			return Result<None>(
-				m_position, "Expected character after `'`"
-			);
-		char cc = m_cc;
-		advance();
+		while (!std::strchr("'", m_cc)) {
 
-		if (cc == '\\') {
-
-			if (!m_cc) return Result<None>(
-				m_position, "Expected character after `'\\`"
-			);
-			cc = m_cc;
+			char cc = m_cc;
 			advance();
 
-			switch (cc) {
-				case 'n': cc = '\n'; break;
-				case 'r': cc = '\r'; break;
-				case 't': cc = '\t'; break;
-				case 'e': cc = '\x1b'; break;
-			}
-		}
-		m_sstream << cc;
+			if (cc == '\\') {
 
-		if (cc != '\'') return Result<None>(
-			m_position, "Expected `'` at end of character literal"
-		);
+				cc = m_cc;
+				advance();
+
+				if (!cc) break;
+				switch (cc) {
+					case 'n': cc = '\n'; break;
+					case 'r': cc = '\r'; break;
+					case 't': cc = '\t'; break;
+					case 'e': cc = '\x1b'; break;
+				}
+			}
+			m_sstream << cc;
+		}
+		if (m_cc != '\'')
+			return Result<None>(
+				m_position, "Expected '`' at end of character literal"
+			);
+		else if (m_sstream.str().length() != 1)
+			return Result<None>(
+				m_position, "More or less than one character in character literal"
+			);
+
+		advance();
 		commitToken(start, TokenType::Character);
+
 		return Result<None>();
 	}
 
