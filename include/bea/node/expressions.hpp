@@ -39,7 +39,7 @@ namespace bea {
 		bool m_postfix;
 
 		Node& getNode() const { return *m_node; }
-	private:
+
 		std::unique_ptr<Node> m_node;
 	protected:
 		virtual Result<None> visit(NodeVisitor& visitor) override;
@@ -63,7 +63,7 @@ namespace bea {
 
 		Node& getLeftNode() const { return *m_leftNode; }
 		Node& getRightNode() const { return *m_rightNode; }
-	private:
+
 		std::unique_ptr<Node> m_leftNode;
 		std::unique_ptr<Node> m_rightNode;
 	protected:
@@ -88,7 +88,7 @@ namespace bea {
 
 		Node& getLeftNode() const { return *m_leftNode; }
 		Node& getRightNode() const { return *m_rightNode; }
-	private:
+
 		std::unique_ptr<Node> m_leftNode;
 		std::unique_ptr<Node> m_rightNode;
 	protected:
@@ -104,7 +104,7 @@ namespace bea {
 			: m_node(std::move(node)) {}
 
 		Node& getNode() const { return *m_node; }
-	private:
+
 		std::unique_ptr<Node> m_node;
 	protected:
 		virtual Result<None> visit(NodeVisitor& visitor) override;
@@ -121,7 +121,7 @@ namespace bea {
 		std::vector<std::unique_ptr<Node>> m_argumentNodes;
 
 		Node& getTypeNode() const { return *m_typeNode; }
-	private:
+
 		std::unique_ptr<Node> m_typeNode;
 	protected:
 		virtual Result<None> visit(NodeVisitor& visitor) override;
@@ -141,7 +141,7 @@ namespace bea {
 
 		Node& getTypeNode() const { return *m_typeNode; }
 		Node& getValueNode() const { return *m_valueNode; }
-	private:
+
 		std::unique_ptr<Node> m_typeNode;
 		std::unique_ptr<Node> m_valueNode;
 	protected:
@@ -170,7 +170,7 @@ namespace bea {
 		std::vector<std::unique_ptr<Node>> m_argumentNodes;
 
 		Node& getNode() const { return *m_node; }
-	private:
+
 		std::unique_ptr<Node> m_node;
 	protected:
 		virtual Result<None> visit(NodeVisitor& visitor) override;
@@ -197,7 +197,7 @@ namespace bea {
 
 		Node& getNode() const { return *m_node; }
 		const Name& getName() const { return m_name; }
-	private:
+
 		std::unique_ptr<Node> m_node;
 		Name m_name;
 	protected:
@@ -218,7 +218,7 @@ namespace bea {
 
 		Node& getNode() const { return *m_node; }
 		Node& getIndexNode() const { return *m_indexNode; }
-	private:
+
 		std::unique_ptr<Node> m_node;
 		std::unique_ptr<Node> m_indexNode;
 	protected:
@@ -239,7 +239,7 @@ namespace bea {
 
 		Node& getStartNode() const { return *m_startNode; }
 		Node& getEndNode() const { return *m_endNode; }
-	private:
+
 		std::unique_ptr<Node> m_startNode;
 		std::unique_ptr<Node> m_endNode;
 	protected:

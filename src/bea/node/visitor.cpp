@@ -5,6 +5,8 @@ namespace bea {
 
 	Result<None> NodeVisitor::visit(Node& node) {
 
+		if (!&node) return Result<None>();
+
 		return node.visit(*this);
 	}
 

@@ -241,6 +241,26 @@ m_token->type == TokenType::EndLine)
 	/* Parse "func" statement */
 	Parser::Result Parser::parseFuncStatement() {
 
+		bool isStatic = false, isAbstract = false;
+
+		if (m_token->matchKeyword("abstract")) {
+
+			advance();
+			isAbstract = true;
+		}
+		if (m_token->matchKeyword("static")) {
+
+			advance();
+			isStatic = true;
+		}
+		if (!m_token->matchKeyword("func"))
+			return Result(
+				m_token->position,
+				std::format(
+					"Expected 'func' but got '{}'",
+					m_token->value
+				)
+			);
 		Position position = m_token->position;
 		advance();
 
@@ -362,9 +382,11 @@ m_token->type == TokenType::EndLine)
 			std::move(bodyNode)
 		);
 		node->m_position = position;
+		node->m_abstract = isAbstract;
+		node->m_static = isStatic;
+		node->m_useDefault = useDefault;
 		node->m_genericParameters = std::move(genericParameters);
 		node->m_parameters = std::move(parameters);
-		node->m_useDefault = useDefault;
 
 		return Result(std::move(node));
 	}
@@ -468,28 +490,10 @@ m_token->type == TokenType::EndLine)
 	/* Parse in-class statement */
 	Parser::Result Parser::parseClassBlockStatement() {
 
-		if (m_token->matchKeyword("func"))
+		if (m_token->matchKeyword("func") ||
+		    m_token->matchKeyword("abstract") ||
+		    m_token->matchKeyword("static"))
 			return parseFuncStatement();
-
-		else if (m_token->matchKeyword("abstract")) {
-
-			advance();
-
-			if (!m_token->matchKeyword("func"))
-				return Result(
-					m_token->position,
-					std::format(
-						"Expected 'func' after 'abstract' but got '{}'",
-						m_token->value
-					)
-				);
-			NodeP node = BEA_OK(NodeP, parseFuncStatement());
-
-			auto nodeP = static_cast<ExportableNode *>(node.get());
-			nodeP->m_abstract = true;
-
-			return Result(std::move(node));
-		}
 
 		else if (m_token->type == TokenType::Identifier)
 			return parseClassField();
@@ -555,7 +559,8 @@ m_token->type == TokenType::EndLine)
 
 		while (!m_token->matchSymbol("}")) {
 
-			if (!m_token->matchKeyword("func"))
+			if (!m_token->matchKeyword("func") &&
+			    !m_token->matchKeyword("static"))
 				return Result(
 					m_token->position,
 					std::format(

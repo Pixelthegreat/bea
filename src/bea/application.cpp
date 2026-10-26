@@ -5,6 +5,7 @@
 #include <bea/core.hpp>
 #include <bea/lexer.hpp>
 #include <bea/parser.hpp>
+#include <bea/optimizer/postparsesimplifier.hpp>
 #include <bea/application.hpp>
 
 namespace bea {
@@ -31,8 +32,19 @@ namespace bea {
 
 		Parser parser(lexer.getTokens());
 
+		std::cout << "==== BEFORE OPTIMIZATION ====" << std::endl;
+
 		std::unique_ptr<Node> node = BEA_OK(None, parser.parse());
-		if (node) std::cout << *node << std::endl;
+		if (!node) return Result<None>();
+
+		std::cout << *node << std::endl;
+
+		std::cout << "==== AFTER OPTIMIZATION ====" << std::endl;
+
+		PostParseSimplifier simplifier;
+		simplifier.visit(*node);
+
+		std::cout << *node << std::endl;
 
 		return Result<None>();
 	}

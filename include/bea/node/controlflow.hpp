@@ -16,7 +16,7 @@ namespace bea {
 		std::vector<Pair<std::unique_ptr<Node>>> m_conditionalClauseNodes;
 
 		Node& getElseClauseNode() const { return *m_elseClauseNode; }
-	private:
+
 		std::unique_ptr<Node> m_elseClauseNode;
 	protected:
 		virtual Result<None> visit(NodeVisitor& visitor) override;
@@ -36,7 +36,7 @@ namespace bea {
 
 		Node& getCaseNode() const { return *m_caseNode; }
 		Node& getBodyNode() const { return *m_bodyNode; }
-	private:
+
 		std::unique_ptr<Node> m_caseNode;
 		std::unique_ptr<Node> m_bodyNode;
 	protected:
@@ -69,7 +69,7 @@ namespace bea {
 		const Name& getName() const { return m_name; }
 		Node& getCaseNode() const { return *m_caseNode; }
 		Node& getBodyNode() const { return *m_bodyNode; }
-	private:
+
 		Name m_name;
 		std::unique_ptr<Node> m_caseNode;
 		std::unique_ptr<Node> m_bodyNode;
@@ -91,7 +91,7 @@ namespace bea {
 
 		Node& getValueNode() const { return *m_valueNode; }
 		Node& getBodyNode() const { return *m_bodyNode; }
-	private:
+
 		std::unique_ptr<Node> m_valueNode;
 		std::unique_ptr<Node> m_bodyNode;
 	protected:
@@ -124,7 +124,7 @@ namespace bea {
 		const Name& getName() const { return m_name; }
 		Node& getIterableNode() const { return *m_iterableNode; }
 		Node& getBodyNode() const { return *m_bodyNode; }
-	private:
+
 		Name m_name;
 		std::unique_ptr<Node> m_iterableNode;
 		std::unique_ptr<Node> m_bodyNode;
@@ -146,7 +146,7 @@ namespace bea {
 
 		Node& getConditionNode() const { return *m_conditionNode; }
 		Node& getBodyNode() const { return *m_bodyNode; }
-	private:
+
 		std::unique_ptr<Node> m_conditionNode;
 		std::unique_ptr<Node> m_bodyNode;
 	protected:
@@ -163,7 +163,7 @@ namespace bea {
 		ReturnStatementNode(std::unique_ptr<Node>&& node) : m_node(std::move(node)) {}
 
 		Node& getNode() const { return *m_node; }
-	private:
+
 		std::unique_ptr<Node> m_node;
 	protected:
 		virtual Result<None> visit(NodeVisitor& visitor) override;

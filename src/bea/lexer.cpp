@@ -9,7 +9,7 @@ namespace bea {
 
 	const char *Lexer::s_keywords[] = {
 		"pub", "module", "use", "as",
-		"abstract", "class", "struct",
+		"abstract", "static", "class", "struct",
 		"impl", "func",
 		"let",
 		"if", "elif", "else", "which", "case",

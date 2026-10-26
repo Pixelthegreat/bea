@@ -14,7 +14,7 @@ namespace bea {
 		ModuleStatementNode(Name&& name) : m_name(std::move(name)) {}
 
 		const Name& getName() const { return m_name; }
-	private:
+
 		Name m_name;
 	protected:
 		virtual Result<None> visit(NodeVisitor& visitor) override;
@@ -29,7 +29,7 @@ namespace bea {
 			: m_node(std::move(node)) {}
 
 		Node& getNode() const { return *m_node; }
-	private:
+
 		std::unique_ptr<Node> m_node;
 	protected:
 		virtual Result<None> visit(NodeVisitor& visitor) override;
@@ -59,7 +59,7 @@ namespace bea {
 
 		const Name& getName() const { return m_name; }
 		const Name& getAlias() const { return m_alias; }
-	private:
+
 		Name m_name, m_alias;
 	protected:
 		virtual Result<None> visit(NodeVisitor& visitor) override;
@@ -91,7 +91,7 @@ namespace bea {
 		const DynFixed<Name>& getNames() const { return m_names; }
 		Node& getTypeNode() const { return *m_typeNode; }
 		Node& getValueNode() const { return *m_valueNode; }
-	private:
+
 		DynFixed<Name> m_names;
 		std::unique_ptr<Node> m_typeNode;
 		std::unique_ptr<Node> m_valueNode;

@@ -4,5 +4,7 @@ use std::io
 
 pub func main() {
 
-	io::println("Hello, world!")
+	for i in 0..10 {
+		io::println(i)
+	}
 }

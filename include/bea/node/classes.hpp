@@ -32,7 +32,7 @@ namespace bea {
 		const Name& getName() const { return m_name; }
 		Node& getTypeNode() const { return *m_typeNode; }
 		Node& getValueNode() const { return *m_valueNode; }
-	private:
+
 		Name m_name;
 		std::unique_ptr<Node> m_typeNode;
 		std::unique_ptr<Node> m_valueNode;
@@ -54,7 +54,7 @@ namespace bea {
 
 		Node& getTypeNode() const { return *m_typeNode; }
 		Node& getBodyNode() const { return *m_bodyNode; }
-	private:
+
 		std::unique_ptr<Node> m_typeNode;
 		std::unique_ptr<Node> m_bodyNode;
 	protected:
@@ -89,7 +89,7 @@ namespace bea {
 
 		const Name& getName() const { return m_name; }
 		Node& getBodyNode() const { return *m_bodyNode; }
-	private:
+
 		Name m_name;
 		std::unique_ptr<Node> m_bodyNode;
 	protected:

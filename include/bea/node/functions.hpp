@@ -45,7 +45,7 @@ namespace bea {
 
 		const Name& getName() const { return m_name; }
 		Node& getReturnTypeNode() const { return *m_returnTypeNode; }
-	protected:
+
 		Name m_name;
 		std::unique_ptr<Node> m_returnTypeNode;
 	};
@@ -72,7 +72,7 @@ namespace bea {
 			  m_bodyNode(std::move(bodyNode)) {}
 
 		Node& getBodyNode() const { return *m_bodyNode; }
-	private:
+
 		std::unique_ptr<Node> m_bodyNode;
 	protected:
 		virtual Result<None> visit(NodeVisitor& visitor) override;
@@ -100,7 +100,7 @@ namespace bea {
 			  m_bodyNode(std::move(bodyNode)) {}
 
 		Node& getBodyNode() const { return *m_bodyNode; }
-	private:
+
 		std::unique_ptr<Node> m_bodyNode;
 	protected:
 		virtual Result<None> visit(NodeVisitor& visitor) override;
