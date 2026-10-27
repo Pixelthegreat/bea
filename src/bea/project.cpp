@@ -291,8 +291,6 @@ namespace bea {
 		PostParseSimplifier postParseSimplifier;
 		postParseSimplifier.visit(*node);
 
-		std::cout << *node << std::endl;
-
 		source.recompile = false;
 		return Result<None>();
 	}

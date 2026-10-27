@@ -31,6 +31,7 @@ namespace bea {
 
 		Int = I64,
 		Float = F64,
+		Boolean = U8,
 	};
 
 	std::ostream& operator<<(std::ostream& stream, BaseType base);
@@ -60,6 +61,11 @@ namespace bea {
 		const bool empty() const { return components.empty(); }
 		const std::string *begin() const { return components.begin(); }
 		const std::string *end() const { return components.end(); }
+
+		/*
+		 * Compare equality
+		 */
+		bool operator==(const Name& other);
 	};
 
 	std::ostream& operator<<(std::ostream& stream, const Name& name);
@@ -75,8 +81,7 @@ namespace bea {
 
 	struct VariableInfo {
 		VariableFlag flags;
-		std::unique_ptr<Type> type;
-		Name name;
+		const Type *type;
 	};
 
 	/*
@@ -96,7 +101,7 @@ namespace bea {
 	 */
 	struct GenericInfo {
 		GenericType type;
-		std::unique_ptr<Type> substitutedType;
+		const Type *substitutedType;
 		std::string name;
 
 		GenericInfo() {}
@@ -106,10 +111,8 @@ namespace bea {
 	 * Function type representation
 	 */
 	struct FunctionType {
-		std::unique_ptr<Type> returnType;
-		DynFixed<VariableInfo> parameters;
-
-		FunctionType() : parameters(0) {}
+		const Type *returnType;
+		OrderedMap<Name, VariableInfo> parameters;
 	};
 
 	/*
@@ -121,18 +124,17 @@ namespace bea {
 
 	struct ObjectType {
 		ObjectFlag flags;
-		DynFixed<VariableInfo> publicMembers;
-		DynFixed<VariableInfo> privateMembers;
-
-		ObjectType() : publicMembers(0), privateMembers(0) {}
+		OrderedMap<Name, VariableInfo> publicMembers;
+		OrderedMap<Name, VariableInfo> privateMembers;
 	};
 
 	/*
 	 * Type representation
 	 */
 	struct Type {
-		BaseType base;
-		bool distinct;
+		bool external = false;
+		BaseType base = BaseType::Object;
+		bool distinct = false;
 		Name name;
 		DynFixed<GenericInfo> generics;
 		FunctionType function;
@@ -142,7 +144,9 @@ namespace bea {
 
 		Type(BaseType base) : base(base), generics(0) {}
 
-		Type(std::string name) : base(BaseType::Object), name(name), generics(0) {}
+		Type(BaseType base, const char *name) : base(base), name(name), generics(0) {}
+
+		Type(const std::string& name) : base(BaseType::Object), name(name), generics(0) {}
 
 		Type(const char *name) : base(BaseType::Object), name(name), generics(0) {}
 

@@ -66,7 +66,7 @@ namespace bea {
 
 			stream << generic.name << ": " << generic.type;
 			if (generic.substitutedType)
-				stream << " = " << *generic.substitutedType.get();
+				stream << " = " << *generic.substitutedType;
 		}
 		if (count) stream << ">";
 		count = 0;
@@ -75,18 +75,19 @@ namespace bea {
 		if (type.base == BaseType::Function) {
 
 			stream << "(";
-			for (const VariableInfo& parameter: type.function.parameters) {
 
+			for (
+				const std::pair<Name, VariableInfo>& parameter:
+				type.function.parameters
+			) {
 				if (count++) stream << ", ";
-
-				if (!parameter.name.empty())
-					stream << parameter.name << ": ";
-				stream << *parameter.type.get();
+				stream << parameter.first << ": " << parameter.second.type;
 			}
+
 			stream << ")";
 
 			if (type.function.returnType)
-				stream << " -> " << *type.function.returnType.get();
+				stream << " -> " << *type.function.returnType;
 		}
 		return stream;
 	}
