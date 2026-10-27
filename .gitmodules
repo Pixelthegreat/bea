@@ -1,0 +1,6 @@
+[submodule "vendor/tomlc17"]
+	path = vendor/tomlc17
+	url = https://github.com/cktan/tomlc17
+[submodule "vendor/reproc"]
+	path = vendor/reproc
+	url = https://github.com/daandemeyer/reproc

@@ -2,15 +2,15 @@
 #include <iostream>
 #include <fstream>
 #include <format>
+#include <filesystem>
 #include <bea/core.hpp>
-#include <bea/lexer.hpp>
-#include <bea/parser.hpp>
-#include <bea/optimizer/postparsesimplifier.hpp>
+#include <bea/project.hpp>
 #include <bea/application.hpp>
 
 namespace bea {
 
 	const char *Application::s_command = nullptr;
+	const char *Application::s_projectPath = ".";
 
 	/* Run application */
 	Result<None> Application::run(int argc, const char **argv) {
@@ -22,31 +22,41 @@ namespace bea {
 			printHelp(argv[0]);
 			return Result<None>();
 		}
-		const char *path = "examples/hello/src/main.bea";
 
-		std::ifstream stream(path, std::ios::binary);
-		if (!stream.is_open()) return Result<None>("Can't open file");
+		/* Load project */
+		Project *project = BEA_OK(None, Project::loadProject(s_projectPath));
 
-		Lexer lexer(path, stream);
-		BEA_OK(None, lexer.makeTokens());
+		Result<None> result;
 
-		Parser parser(lexer.getTokens());
+		if (!strcmp(s_command, "build")) {
 
-		std::cout << "==== BEFORE OPTIMIZATION ====" << std::endl;
+			result = project->build();
 
-		std::unique_ptr<Node> node = BEA_OK(None, parser.parse());
-		if (!node) return Result<None>();
+			if (!result.okay) {
 
-		std::cout << *node << std::endl;
+				std::cerr << *result.error << std::endl;
+				std::cout << "\e[1;31mBuild unsuccessful\e[0m" << std::endl;
+				result.error = nullptr;
+			}
+			else
+				std::cout << "\e[1;32mBuild successful\e[0m" << std::endl;
+		}
+		else if (!strcmp(s_command, "run")) {
 
-		std::cout << "==== AFTER OPTIMIZATION ====" << std::endl;
+			result = project->build();
 
-		PostParseSimplifier simplifier;
-		simplifier.visit(*node);
+			if (!result.okay) {
 
-		std::cout << *node << std::endl;
-
-		return Result<None>();
+				std::cerr << *result.error << std::endl;
+				std::cout << "\e[1;31mBuild unsuccessful\e[0m" << std::endl;
+				result.error = nullptr;
+			}
+			else {
+				std::cout << "\e[1;32mBuild successful\e[0m" << std::endl;
+				result = project->run();
+			}
+		}
+		return result;
 	}
 
 	/* Destroy application */
@@ -70,17 +80,20 @@ namespace bea {
 			/* Command */
 			else if (!s_command) s_command = arg;
 
+			/* Project path */
+			else if (!strcmp(s_projectPath, ".")) s_projectPath = arg;
+
 			/* Otherwise */
 			else return Result<None>(std::format(
-					"{}: Unexpected argument '{}'",
-					progname, arg
+				"{}: Unexpected argument '{}'",
+				progname, arg
 			));
 		}
 
 		if (!s_command)
 			return Result<None>(std::format(
-					"{}: Expected command argument",
-					progname
+				"{}: Expected command argument",
+				progname
 			));
 		return Result<None>();
 	}
@@ -92,7 +105,7 @@ namespace bea {
 			"Usage: " << progname << " <command> ...\n"
 			"\nCommands:\n"
 			"    help               Show this help message\n"
-			"    build <directory>  Build project\n"
-			"    run <directory>    Run project\n";
+			"    build [directory]  Build project\n"
+			"    run [directory]    Run project\n";
 	}
 }

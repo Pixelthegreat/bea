@@ -4,7 +4,15 @@ workspace 'bea'
 -- Global configurations --
 language 'C++'
 cppdialect 'C++20'
-includedirs {'include'}
+includedirs {
+	'include',
+	'vendor/tomlc17/src',
+	'vendor/reproc/reproc/include'
+}
+libdirs {
+	'vendor/tomlc17/src',
+	'vendor/reproc/build/reproc/lib'
+}
 objdir 'obj'
 
 filter 'configurations:debug'
@@ -19,4 +27,5 @@ filter 'configurations:release'
 project 'bea'
 	kind 'ConsoleApp'
 	files {'src/bea/**.cpp', 'include/bea/**.hpp'}
+	links {'tomlc17:static', 'reproc:static'}
 	targetdir 'bin'

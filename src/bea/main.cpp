@@ -7,9 +7,9 @@ int main(int argc, const char **argv) {
 	auto result = bea::Application::run(argc, argv);
 	bea::Application::cleanUp();
 
-	if (!result.okay) {
+	if (!result.okay && result.error) {
 
-		std::cerr << *result.error.get() << std::endl;
+		std::cerr << *result.error << std::endl;
 		return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;

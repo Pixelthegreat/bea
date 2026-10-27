@@ -23,8 +23,6 @@ namespace bea {
 	using Boolean = uint8_t;
 	using None = uint8_t;
 
-	using Hash = uint32_t;
-
 	/*
 	 * Error position
 	 */
@@ -43,7 +41,7 @@ namespace bea {
 		Position position;
 		std::string message;
 
-		Error(std::string message) : message(message) {}
+		Error(std::string message) : message(message), position() {}
 
 		Error(Position position, std::string message)
 			: position(position), message(message) {}
@@ -66,6 +64,20 @@ namespace bea {
 
 		Result(T value) : value(std::move(value)), okay(true) {}
 
+		Result(Result<T>&& other) : okay(other.okay) {
+
+			if (okay) value = std::move(other.value);
+			else error = std::move(other.error);
+		}
+
+		void operator=(Result<T>&& other) {
+
+			okay = other.okay;
+
+			if (okay) value = std::move(other.value);
+			else error = std::move(other.error);
+		}
+
 		~Result() {}
 
 		Result(std::unique_ptr<Error> error)
@@ -78,6 +90,14 @@ namespace bea {
 		Result(Position position, std::string message)
 			: error(std::make_unique<Error>(position, message)),
 			  okay(false) {}
+
+		static Result<T> fail() {
+
+			Result<T> result;
+			result.okay = false;
+
+			return result;
+		}
 	};
 
 	/*
