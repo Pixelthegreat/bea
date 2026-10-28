@@ -137,4 +137,77 @@ namespace bea {
 
 		return std::move(name);
 	}
+
+	/*
+	 * Write GRCode::Use
+	 */
+	void GRCodeSerializer::writeUse(
+		const Name& name,
+		const Name& alias
+	) {
+		writeU8((std::uint8_t)GRCode::Use);
+		writeName(name);
+		writeName(alias);
+	}
+
+	/*
+	 * Write GRCode::Function
+	 */
+	void GRCodeSerializer::writeFunction(
+		const Name& name,
+		const VariableInfo& variable
+	) {
+		const Type& type = *variable.type->type;
+
+		writeU8((std::uint8_t)GRCode::Function);
+		writeU8(0); /* TODO: static */
+		writeName(name);
+
+		writeU16L((std::uint16_t)type.function.parameters.size());
+		writeU16L((std::uint16_t)type.function.genericParameters.size());
+
+		for (
+			const std::pair<Name, VariableInfo>& parameter:
+			type.function.parameters
+		) {
+			writeU8((std::uint8_t)GRCode::FunctionParameter);
+			writeName(parameter.first);
+			writeTypeID(*parameter.second.type);
+		}
+		writeTypeID(*type.function.returnType);
+	}
+
+	/*
+	 * Write GRCode::TypeID
+	 */
+	void GRCodeSerializer::writeTypeID(
+		const TypeID& typeID
+	) {
+		writeU8((std::uint8_t)GRCode::TypeID);
+		writeName(typeID.name);
+
+		writeU16L((std::uint16_t)typeID.generics.size());
+
+		for (const GenericInfo& generic: typeID.generics)
+			writeGenericArgument(generic);
+	}
+
+	/*
+	 * Write GRCode::GenericArgument
+	 */
+	void GRCodeSerializer::writeGenericArgument(
+		const GenericInfo& generic
+	) {
+		writeU8((std::uint8_t)GRCode::GenericArgument);
+		writeU8((std::uint8_t)generic.type);
+
+		switch (generic.type) {
+			case GenericType::Type:
+				writeTypeID(*generic.substitutedType);
+				break;
+			case GenericType::Int:
+				writeU64L((std::uint64_t)generic.substitutedValue);
+				break;
+		}
+	}
 }

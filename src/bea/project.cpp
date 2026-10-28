@@ -327,7 +327,7 @@ namespace bea {
 				"Can't open file '{}': {}",
 				grPath, std::strerror(errno)
 			));
-		Serializer serializer(grStream);
+		GRCodeSerializer serializer(grStream);
 
 		source.context = std::make_unique<Context>();
 		GlobalResolver globalResolver(

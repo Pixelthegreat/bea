@@ -5,11 +5,11 @@
 namespace bea {
 
 	/* Create type identifier for type node */
-	Result<std::unique_ptr<TypeID>> nodeToTypeID(Node& node) {
+	Result<std::unique_ptr<TypeID>> nodeToTypeID(Node *node) {
 
-		if (!&node) return Result<std::unique_ptr<TypeID>>();
+		if (!node) return Result<std::unique_ptr<TypeID>>();
 
-		TypeNode *typeNode = dynamic_cast<TypeNode *>(&node);
+		TypeNode *typeNode = dynamic_cast<TypeNode *>(node);
 		if (!typeNode)
 			return Result<std::unique_ptr<TypeID>>::fail();
 
@@ -29,7 +29,7 @@ namespace bea {
 
 				generic.type = GenericType::Type;
 				generic.substitutedType = BEA_OK(
-					std::unique_ptr<TypeID>, nodeToTypeID(argument)
+					std::unique_ptr<TypeID>, nodeToTypeID(&argument)
 				);
 			}
 
@@ -50,11 +50,18 @@ namespace bea {
 
 		BEA_OK(None, visit(node));
 
+		/* Serialize variable information */
 		const Frame& frame = *m_context.m_baseFrame;
-		for (const std::pair<std::string, VariableInfo>& pair: frame)
-			std::cout << pair.first << ": " << *pair.second.type << std::endl;
+		for (const std::pair<std::string, VariableInfo>& pair: frame) {
 
-		std::cin.get();
+			//std::cout << pair.first << ": " << *pair.second.type << std::endl;
+
+			/* NOTE: Update for function pointers */
+			if (pair.second.type->type &&
+			    pair.second.type->type->base == BaseType::Function)
+				m_serializer.writeFunction(pair.first, pair.second);
+		}
+		//std::cin.get();
 
 		return Result<None>();
 	}
@@ -82,10 +89,7 @@ namespace bea {
 					node.m_name.components.size()-1
 				]};
 
-		m_serializer.writeU8((std::uint8_t)GRCode::Use);
-		m_serializer.writeName(node.m_name);
-		m_serializer.writeName(alias);
-
+		m_serializer.writeUse(node.m_name, alias);
 		return Result<None>();
 	}
 
@@ -119,8 +123,14 @@ namespace bea {
 		info.type->type = type.get();
 
 		/* Add parameters and return value */
-		type->function.returnType =
-			BEA_OK(None, nodeToTypeID(*node.m_returnTypeNode));
+		if (node.m_returnTypeNode)
+			type->function.returnType =
+				BEA_OK(None, nodeToTypeID(
+					node.m_returnTypeNode.get()
+				));
+		else
+			type->function.returnType =
+				std::make_unique<TypeID>("None");
 
 		for (const NodeFuncParameter& parameter: node.m_parameters) {
 
@@ -128,7 +138,7 @@ namespace bea {
 				type->function.parameters.newEntry(
 					parameter.name.components[0]
 				);
-			parameterInfo.type = BEA_OK(None, nodeToTypeID(*parameter.typeNode));
+			parameterInfo.type = BEA_OK(None, nodeToTypeID(parameter.typeNode.get()));
 		}
 
 		/* Add generic parameters */
@@ -143,9 +153,14 @@ namespace bea {
 			generic.type = parameter.type;
 
 			/* Type parameter */
-			if (parameter.type == GenericType::Type)
-				generic.substitutedType =
-					BEA_OK(None, nodeToTypeID(*parameter.defaultNode));
+			if (parameter.type == GenericType::Type) {
+
+				if (parameter.defaultNode)
+					generic.substitutedType =
+						BEA_OK(None, nodeToTypeID(
+							parameter.defaultNode.get())
+						);
+			}
 
 			/* Integer parameter */
 			else if (parameter.type == GenericType::Int) {
@@ -154,7 +169,8 @@ namespace bea {
 					dynamic_cast<IntegerNode *>(
 						parameter.defaultNode.get()
 					);
-				generic.substitutedValue = intNode->m_value;
+				if (intNode)
+					generic.substitutedValue = intNode->m_value;
 			}
 		}
 

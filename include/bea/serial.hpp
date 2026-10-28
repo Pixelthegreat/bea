@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include <bea/type.hpp>
+#include <bea/bytecode.hpp>
 
 namespace bea {
 
@@ -30,7 +31,7 @@ namespace bea {
 		 * Write name
 		 */
 		void writeName(const Name& name);
-	private:
+	protected:
 		std::ostream& m_stream;
 	};
 
@@ -59,7 +60,34 @@ namespace bea {
 		 * Read name
 		 */
 		Name readName();
-	private:
+	protected:
 		std::istream& m_stream;
+	};
+
+	/*
+	 * GRCode serializer
+	 */
+	class GRCodeSerializer : public Serializer {
+	public:
+		GRCodeSerializer(std::ostream& stream)
+			: Serializer(stream) {}
+
+		/*
+		 * Write GRCode operations
+		 */
+		void writeUse(
+			const Name& name,
+			const Name& alias
+		);
+		void writeFunction(
+			const Name& name,
+			const VariableInfo& variable
+		);
+		void writeTypeID(
+			const TypeID& typeID
+		);
+		void writeGenericArgument(
+			const GenericInfo& generic
+		);
 	};
 };
