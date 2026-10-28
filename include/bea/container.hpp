@@ -8,107 +8,6 @@
 namespace bea {
 
 	/*
-	 * Fixed size dynamically allocated array
-	 */
-	template <typename T>
-	class DynFixed {
-	public:
-		DynFixed(std::size_t size)
-			: m_size(size) {
-
-			if (m_size) m_items = new T[m_size];
-		}
-
-		DynFixed(std::initializer_list<T> list)
-			: m_size(list.size()) {
-
-			if (m_size) m_items = new T[m_size];
-
-			std::size_t index = 0;
-			for (const T& item: list)
-				m_items[index++] = item;
-		}
-
-		DynFixed(const std::vector<T>& vector)
-			: m_size(vector.size()) {
-
-			if (m_size) m_items = new T[m_size];
-
-			std::size_t index = 0;
-			for (const T& item: vector)
-				m_items[index++] = item;
-		}
-
-		DynFixed(const DynFixed<T>& other) {
-
-			if (m_items) delete[] m_items;
-
-			m_size = other.m_size;
-			m_items = new T[m_size];
-
-			std::size_t index = 0;
-			for (const T& item: other)
-				m_items[index++] = item;
-		}
-
-		DynFixed(DynFixed<T>&& other) {
-
-			if (m_items) delete[] m_items;
-
-			m_items = other.m_items;
-			m_size = other.m_size;
-
-			other.m_items = nullptr;
-			other.m_size = 0;
-		}
-
-		DynFixed<T>& operator=(const DynFixed<T>& other) {
-
-			if (m_items) delete[] m_items;
-
-			m_size = other.m_size;
-			m_items = new T[m_size];
-
-			std::size_t index = 0;
-			for (const T& item: other)
-				m_items[index++] = item;
-
-			return *this;
-		}
-
-		DynFixed<T>& operator=(DynFixed<T>&& other) {
-
-			if (m_items) delete[] m_items;
-
-			m_items = other.m_items;
-			m_size = other.m_size;
-
-			other.m_items = nullptr;
-			other.m_size = 0;
-
-			return *this;
-		}
-
-		~DynFixed() {
-
-			if (m_items) delete[] m_items;
-			m_items = nullptr;
-		}
-
-		T operator[](std::size_t index) const { return m_items[index]; }
-		T& operator[](std::size_t index) { return m_items[index]; }
-
-		const T *data() const { return m_items; }
-		const std::size_t size() const { return m_size; }
-		const bool empty() const { return !m_size; }
-		const T *begin() const { return m_items; }
-		const T *end() const { return m_items+m_size; }
-	private:
-		T *m_items = nullptr;
-		std::size_t m_size = 0;
-	};
-
-	/*
 	 * Two items of the same type
 	 */
 	template <typename T>
@@ -132,25 +31,56 @@ namespace bea {
 		/*
 		 * Get entry in map
 		 */
+		Result<V *> get(const K& key) {
+
+			for (auto it = m_items.rbegin(); it != m_items.rend(); it++) {
+
+				std::pair<K, V>& pair = *it;
+				if (pair.first == key)
+					return Result<V *>(&pair.second);
+			}
+			return Result<V *>::fail();
+		}
+		Result<V *> get(K&& key) {
+
+			for (auto it = m_items.rbegin(); it != m_items.rend(); it++) {
+
+				std::pair<K, V>& pair = *it;
+				if (pair.first == key)
+					return Result<V *>(&pair.second);
+			}
+			return Result<V *>::fail();
+		}
+
 		V& operator[](const K& key) {
 
-			for (std::pair<K, V>& pair: m_items) {
-				if (pair.first == key)
-					return pair.second;
-			}
-			std::pair<K, V> pair{};
-			pair.first = key;
+			Result<V *> result = get(key);
+			if (result.okay) return *result.value;
 
-			m_items.push_back(pair);
-
-			return m_items[m_items.size()-1].second;
+			return newEntry(key);
 		}
 		V& operator[](K&& key) {
 
-			for (std::pair<K, V>& pair: m_items) {
-				if (pair.first == key)
-					return pair.second;
-			}
+			Result<V *> result = get(key);
+			if (result.okay) return *result.value;
+
+			return newEntry(std::move(key));
+		}
+
+		/*
+		 * Create new entry at end
+		 */
+		V& newEntry(const K& key) {
+
+			std::pair<K, V> pair{};
+			pair.first = key;
+
+			m_items.push_back(std::move(pair));
+
+			return m_items[m_items.size()-1].second;
+		}
+		V& newEntry(K&& key) {
+
 			std::pair<K, V> pair{};
 			pair.first = std::move(key);
 

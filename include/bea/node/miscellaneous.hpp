@@ -71,7 +71,7 @@ namespace bea {
 	class LetStatementNode : public Node {
 	public:
 		LetStatementNode(
-			const DynFixed<Name>& names,
+			const std::vector<Name>& names,
 			std::unique_ptr<Node>&& typeNode = nullptr,
 			std::unique_ptr<Node>&& valueNode = nullptr
 		)
@@ -80,7 +80,7 @@ namespace bea {
 			  m_valueNode(std::move(valueNode)) {}
 
 		LetStatementNode(
-			DynFixed<Name>&& names,
+			std::vector<Name>&& names,
 			std::unique_ptr<Node>&& typeNode = nullptr,
 			std::unique_ptr<Node>&& valueNode = nullptr
 		)
@@ -88,11 +88,11 @@ namespace bea {
 			  m_typeNode(std::move(typeNode)),
 			  m_valueNode(std::move(valueNode)) {}
 
-		const DynFixed<Name>& getNames() const { return m_names; }
+		const std::vector<Name>& getNames() const { return m_names; }
 		Node& getTypeNode() const { return *m_typeNode; }
 		Node& getValueNode() const { return *m_valueNode; }
 
-		DynFixed<Name> m_names;
+		std::vector<Name> m_names;
 		std::unique_ptr<Node> m_typeNode;
 		std::unique_ptr<Node> m_valueNode;
 	protected:

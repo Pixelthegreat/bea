@@ -1,17 +1,23 @@
 workspace 'bea'
 	configurations {'debug', 'release'}
 
+-- Options --
+newoption {
+	trigger = 'enable-asan',
+	description = 'Enable address sanitization (debug)',
+}
+
 -- Global configurations --
 language 'C++'
 cppdialect 'C++20'
 includedirs {
 	'include',
 	'vendor/tomlc17/src',
-	'vendor/reproc/reproc/include'
+	'vendor/reproc/reproc/include',
 }
 libdirs {
 	'vendor/tomlc17/src',
-	'vendor/reproc/build/reproc/lib'
+	'vendor/reproc/build/reproc/lib',
 }
 objdir 'obj'
 
@@ -22,6 +28,9 @@ filter 'configurations:debug'
 filter 'configurations:release'
 	defines {'NDEBUG'}
 	optimize 'on'
+
+filter 'options:enable-asan'
+	sanitize {'Address'}
 
 -- Bea compiler / frontend --
 project 'bea'

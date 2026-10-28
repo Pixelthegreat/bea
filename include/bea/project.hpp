@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bea/core.hpp>
+#include <bea/context.hpp>
 
 namespace bea {
 
@@ -40,6 +41,8 @@ namespace bea {
 			std::string outputPath;
 			std::string shortPath;
 			bool recompile;
+
+			std::unique_ptr<Context> context;
 		};
 
 		Project(const std::string& path) : m_path(path) {}
@@ -87,6 +90,16 @@ namespace bea {
 		std::string localPath(const std::string& path);
 
 		/*
+		 * Print progress bar
+		 */
+		void printProgressBar(
+			std::size_t index,
+			std::size_t count,
+			std::size_t width,
+			const std::string& text
+		);
+
+		/*
 		 * Load configuration
 		 */
 		Result<None> loadConfiguration();
@@ -104,6 +117,6 @@ namespace bea {
 		/*
 		 * Build source
 		 */
-		Result<None> buildSource(Source& source);
+		Result<None> buildSourceStage1(Source& source);
 	};
 }

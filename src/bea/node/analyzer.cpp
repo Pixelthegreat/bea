@@ -3,15 +3,24 @@
 
 namespace bea {
 
+	/* Analyze node */
+	Result<None> NodeAnalyzerVisitor::analyze(Node& node) {
+
+		return visit(node);
+	}
+
 	/* Visit block */
 	Result<None> NodeAnalyzerVisitor::visitBlock(BlockNode& node) {
 
 		m_blockLevel++;
+		m_context.pushFrame();
 
 		for (std::size_t i = 0; i < node.m_nodes.size(); i++)
 			BEA_OK(None, visit(*node.m_nodes[i]));
 
+		m_context.popFrame();
 		m_blockLevel--;
+
 		return Result<None>();
 	}
 

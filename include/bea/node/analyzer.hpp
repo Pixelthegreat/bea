@@ -12,6 +12,11 @@ namespace bea {
 	 */
 	class NodeAnalyzerVisitor : public NodeVisitor {
 	public:
+		NodeAnalyzerVisitor(Context& context)
+			: m_context(context) {}
+
+		virtual Result<None> analyze(Node& node);
+
 		virtual Result<None> visitBlock(BlockNode& node) override;
 		virtual Result<None> visitInteger(IntegerNode& node) override;
 		virtual Result<None> visitFloat(FloatNode& node) override;
@@ -50,6 +55,6 @@ namespace bea {
 	protected:
 		std::size_t m_blockLevel = 0;
 
-		Context *m_context;
+		Context& m_context;
 	};
 };

@@ -19,7 +19,7 @@ namespace bea {
 	Result<None> PostParseSimplifier::visitCarryResult(CarryResultNode& node) {
 
 		/* let result = expr */
-		DynFixed<Name> names = {"result"};
+		std::vector<Name> names = {"result"};
 
 		auto letNode = std::make_unique<LetStatementNode>(
 			std::move(names), nullptr, std::move(node.m_node)

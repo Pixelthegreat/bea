@@ -4,6 +4,42 @@
 namespace bea {
 
 	/*
+	 * Get item from frame
+	 */
+	Result<VariableInfo *> Frame::get(const std::string& key) {
+
+		return m_values.get(key);
+	}
+	Result<VariableInfo *> Frame::get(std::string&& key) {
+
+		return m_values.get(std::move(key));
+	}
+
+	/*
+	 * Get or create item in frame
+	 */
+	VariableInfo& Frame::operator[](const std::string& key) {
+
+		return m_values[key];
+	}
+	VariableInfo& Frame::operator[](std::string&& key) {
+
+		return m_values[std::move(key)];
+	}
+
+	/*
+	 * Create item in frame
+	 */
+	VariableInfo& Frame::newEntry(const std::string& key) {
+
+		return m_values.newEntry(key);
+	}
+	VariableInfo& Frame::newEntry(std::string&& key) {
+
+		return m_values.newEntry(std::move(key));
+	}
+
+	/*
 	 * Initialize base types
 	 */
 	void Context::initTypes() {
@@ -66,5 +102,28 @@ namespace bea {
 
 		slot = std::move(type);
 		return Result<None>();
+	}
+
+	/*
+	 * Push stack frame
+	 */
+	Frame *Context::pushFrame() {
+
+		m_frames.emplace_back(std::make_unique<Frame>());
+		m_currentFrame = m_frames[m_frames.size()-1].get();
+
+		return m_currentFrame;
+	}
+
+	/*
+	 * Pop stack frame
+	 */
+	void Context::popFrame() {
+
+		m_frames.pop_back();
+		if (!m_frames.empty())
+			m_currentFrame = m_frames[m_frames.size()-1].get();
+		else
+			m_currentFrame = nullptr;
 	}
 }

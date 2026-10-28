@@ -6,6 +6,7 @@
 namespace bea {
 
 	struct Type;
+	struct TypeID;
 
 	/*
 	 * Base types
@@ -40,7 +41,7 @@ namespace bea {
 	 * Name
 	 */
 	struct Name {
-		DynFixed<std::string> components;
+		std::vector<std::string> components;
 
 		Name() : components(0) {}
 
@@ -59,13 +60,13 @@ namespace bea {
 		const std::string *data() const { return components.data(); }
 		const std::size_t size() const { return components.size(); }
 		const bool empty() const { return components.empty(); }
-		const std::string *begin() const { return components.begin(); }
-		const std::string *end() const { return components.end(); }
+		const std::string *begin() const { return components.data(); }
+		const std::string *end() const { return components.data() + components.size(); }
 
 		/*
 		 * Compare equality
 		 */
-		bool operator==(const Name& other);
+		bool compare(const Name& other);
 	};
 
 	std::ostream& operator<<(std::ostream& stream, const Name& name);
@@ -73,15 +74,12 @@ namespace bea {
 	/*
 	 * Variable info
 	 */
-	enum class VariableFlag {
-		Constant = 0x1,
-		HasDefault = 0x2,
-		Abstract = 0x4,
-	};
-
 	struct VariableInfo {
-		VariableFlag flags;
-		const Type *type;
+		bool flagConstant;
+		bool flagUseDefault;
+		bool flagAbstract;
+		bool flagPublic;
+		std::unique_ptr<TypeID> type;
 	};
 
 	/*
@@ -101,7 +99,8 @@ namespace bea {
 	 */
 	struct GenericInfo {
 		GenericType type;
-		const Type *substitutedType;
+		std::unique_ptr<TypeID> substitutedType;
+		std::intmax_t substitutedValue;
 		std::string name;
 
 		GenericInfo() {}
@@ -111,8 +110,11 @@ namespace bea {
 	 * Function type representation
 	 */
 	struct FunctionType {
-		const Type *returnType;
+		std::unique_ptr<TypeID> returnType;
 		OrderedMap<Name, VariableInfo> parameters;
+		std::vector<GenericInfo> genericParameters;
+
+		FunctionType() : genericParameters(0) {}
 	};
 
 	/*
@@ -122,10 +124,19 @@ namespace bea {
 		Abstract = 0,
 	};
 
+	struct ObjectImplementation {
+		std::unique_ptr<TypeID> baseType;
+		OrderedMap<Name, VariableInfo> members;
+	};
+
 	struct ObjectType {
 		ObjectFlag flags;
+		std::vector<GenericInfo> genericParameters;
 		OrderedMap<Name, VariableInfo> publicMembers;
 		OrderedMap<Name, VariableInfo> privateMembers;
+		OrderedMap<Name, ObjectImplementation> implementations;
+
+		ObjectType() : genericParameters(0) {}
 	};
 
 	/*
@@ -136,22 +147,42 @@ namespace bea {
 		BaseType base = BaseType::Object;
 		bool distinct = false;
 		Name name;
-		DynFixed<GenericInfo> generics;
 		FunctionType function;
 		ObjectType object;
 
-		Type() : generics(0) {}
+		Type() {}
 
-		Type(BaseType base) : base(base), generics(0) {}
+		Type(BaseType base) : base(base) {}
 
-		Type(BaseType base, const char *name) : base(base), name(name), generics(0) {}
+		Type(BaseType base, const char *name) : base(base), name(name) {}
 
-		Type(const std::string& name) : base(BaseType::Object), name(name), generics(0) {}
+		Type(const std::string& name) : base(BaseType::Object), name(name) {}
 
-		Type(const char *name) : base(BaseType::Object), name(name), generics(0) {}
+		Type(const char *name) : base(BaseType::Object), name(name) {}
 
-		Type(const Name& name) : base(BaseType::Object), name(name), generics(0) {}
+		Type(const Name& name) : base(BaseType::Object), name(name) {}
 	};
 
 	std::ostream& operator<<(std::ostream& stream, const Type& type);
+
+	/*
+	 * Type identifier / variation
+	 */
+	struct TypeID {
+		Name name;
+		std::vector<GenericInfo> generics;
+		const Type *type;
+
+		TypeID() : generics(0) {}
+
+		TypeID(const std::string& name) : name(name), generics(0) {}
+
+		TypeID(const char *name) : name(name), generics(0) {}
+
+		TypeID(const Name& name) : name(name), generics(0) {}
+
+		TypeID(Name&& name) : name(std::move(name)), generics(0) {}
+	};
+
+	std::ostream& operator<<(std::ostream& stream, const TypeID& typeID);
 }

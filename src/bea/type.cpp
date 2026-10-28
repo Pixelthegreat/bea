@@ -50,25 +50,28 @@ namespace bea {
 	/* Print type */
 	std::ostream& operator<<(std::ostream& stream, const Type& type) {
 
-		if (type.base == BaseType::Function)
-			stream << "func ";
-		else if (type.name.empty())
-			stream << type.base;
-		else
-			stream << type.name;
+		const std::vector<GenericInfo> *genericParameters = nullptr;
 
 		/* generics */
 		std::size_t count = 0;
-		for (const GenericInfo& generic: type.generics) {
+		if (type.base == BaseType::Function)
+			genericParameters = &type.function.genericParameters;
+		else if (type.base == BaseType::Object)
+			genericParameters = &type.object.genericParameters;
 
-			if (!count++) stream << "<";
-			else stream << ", ";
+		if (genericParameters) {
 
-			stream << generic.name << ": " << generic.type;
-			if (generic.substitutedType)
-				stream << " = " << *generic.substitutedType;
+			for (const GenericInfo& parameter: type.object.genericParameters) {
+
+				if (!count++) stream << "<";
+				else stream << ", ";
+
+				stream << parameter.name << ": " << parameter.type;
+				if (parameter.substitutedType)
+					stream << " = " << *parameter.substitutedType;
+			}
+			if (count) stream << ">";
 		}
-		if (count) stream << ">";
 		count = 0;
 
 		/* function parameters */
@@ -81,7 +84,7 @@ namespace bea {
 				type.function.parameters
 			) {
 				if (count++) stream << ", ";
-				stream << parameter.first << ": " << parameter.second.type;
+				stream << parameter.first << ": " << *parameter.second.type;
 			}
 
 			stream << ")";
@@ -90,5 +93,44 @@ namespace bea {
 				stream << " -> " << *type.function.returnType;
 		}
 		return stream;
+	}
+
+	/* Print type identifier */
+	std::ostream& operator<<(std::ostream& stream, const TypeID& typeID) {
+
+		stream << typeID.name;
+
+		std::size_t count = 0;
+		for (const GenericInfo& generic: typeID.generics) {
+
+			if (!count++) stream << "<";
+
+			switch (generic.type) {
+				case GenericType::Type:
+					stream << *generic.substitutedType;
+					break;
+				case GenericType::Int:
+					stream << generic.substitutedValue;
+					break;
+			}
+		}
+		if (count) stream << ">";
+
+		if (typeID.type) stream << *typeID.type;
+
+		return stream;
+	}
+
+	/* Compare equality */
+	bool Name::compare(const Name& other) {
+
+		if (components.size() != other.components.size())
+			return false;
+
+		for (std::size_t i = 0; i < components.size(); i++) {
+			if (components[i] != other.components[i])
+				return false;
+		}
+		return true;
 	}
 }

@@ -19,7 +19,7 @@ namespace bea {
 		using FuncParameterResult = bea::Result<NodeFuncParameter>;
 		using GenericParameterResult = bea::Result<NodeGenericParameter>;
 
-		using TokenMatchList = DynFixed<std::tuple<TokenType, const char *>>;
+		using TokenMatchList = std::vector<std::tuple<TokenType, const char *>>;
 
 		Parser(const std::vector<std::unique_ptr<Token>>& tokens)
 			: m_tokens(tokens) {}

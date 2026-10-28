@@ -1,8 +1,6 @@
 module main
 
-use std::io
+func add<T>(x: T, y: T) -> Result<T> {
 
-pub func main() {
-
-	let value = expr?
+	return new Result<T>(x + y)
 }
