@@ -96,7 +96,7 @@ namespace bea {
 			if (!m_token) break;
 
 			if (skipLevel == Skip::EndLine &&
-m_token->type == TokenType::EndLine)
+			    m_token->type == TokenType::EndLine)
 				continue;
 			if (skipLevel >= Skip::Comment &&
 			    m_token->type == TokenType::Comment)
@@ -120,7 +120,7 @@ m_token->type == TokenType::EndLine)
 		return Result(std::move(node));
 	}
 
-/* Parse toplevel file statement */
+	/* Parse toplevel file statement */
 	Parser::Result Parser::parseFileStatement() {
 
 		if (m_token->matchKeyword("use"))
@@ -338,6 +338,14 @@ m_token->type == TokenType::EndLine)
 		}
 		advance(Skip::EndLine);
 
+		/* Return value */
+		NodeP returnTypeNode = nullptr;
+		if (m_token->matchSymbol("->")) {
+
+			advance(Skip::EndLine);
+			returnTypeNode = BEA_OK(NodeP, parseType());
+		}
+
 		/* Expression body */
 		if (m_token->matchSymbol("=>")) {
 
@@ -345,7 +353,7 @@ m_token->type == TokenType::EndLine)
 			NodeP bodyNode = BEA_OK(NodeP, parseExpr());
 
 			auto node = std::make_unique<FuncExprStatementNode>(
-				std::move(name), nullptr,
+				std::move(name), std::move(returnTypeNode),
 				std::move(bodyNode)
 			);
 			node->m_position = position;
@@ -357,19 +365,11 @@ m_token->type == TokenType::EndLine)
 
 		/* Block body */
 		bool useDefault = false;
-		NodeP returnTypeNode = nullptr;
 
 		if (m_token->matchSymbol("!")) {
 
 			advance(Skip::EndLine);
 			useDefault = true;
-		}
-
-		/* Return value */
-		else if (m_token->matchSymbol("->")) {
-
-			advance(Skip::EndLine);
-			returnTypeNode = BEA_OK(NodeP, parseType());
 		}
 
 		auto bodyNode = std::make_unique<BlockNode>();
@@ -440,6 +440,10 @@ m_token->type == TokenType::EndLine)
 		advance();
 
 		NodeP statement = BEA_OK(NodeP, parseFileStatement());
+
+		ExportableNode *statementP =
+			dynamic_cast<ExportableNode *>(statement.get());
+		if (statementP) statementP->m_public = true;
 
 		auto node = std::make_unique<PubStatementNode>(std::move(statement));
 		node->m_position = position;
@@ -512,11 +516,12 @@ m_token->type == TokenType::EndLine)
 
 		NodeP statement = BEA_OK(NodeP, parseClassBlockStatement());
 
+		ExportableNode *statementP =
+			dynamic_cast<ExportableNode *>(statement.get());
+		if (statementP) statementP->m_public = true;
+
 		auto node = std::make_unique<PubStatementNode>(std::move(statement));
 		node->m_position = position;
-
-		auto nodeP = dynamic_cast<ExportableNode *>(node.get());
-		if (nodeP) nodeP->m_public = true;
 
 		return Result(std::move(node));
 	}

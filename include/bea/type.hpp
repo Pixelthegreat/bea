@@ -69,7 +69,43 @@ namespace bea {
 		bool compare(const Name& other);
 	};
 
+	bool operator==(const Name& a, const Name& b);
+
 	std::ostream& operator<<(std::ostream& stream, const Name& name);
+
+/*
+ * Name hash
+ */
+}
+
+template<>
+struct std::hash<bea::Name> {
+
+	std::size_t operator()(const bea::Name& name) const noexcept {
+
+		if (name.components.empty())
+			return 0;
+
+		std::size_t hs = std::hash<const char *>{}("::");
+		std::size_t result = std::hash<std::string>{}(name.components[0]);
+
+		for (std::size_t i = 0; i < name.components.size()-1; i++) {
+
+			result ^=
+				hs + 0x9e3779b9 +
+				(result << 6) + (result >> 2);
+
+			std::size_t h = std::hash<std::string>{}(
+				name.components[i]
+			);
+			result ^=
+				h + 0x9e3779b9 +
+				(result << 6) + (result >> 2);
+		}
+		return result;
+	}
+};
+namespace bea {
 
 	/*
 	 * Variable info
@@ -79,6 +115,8 @@ namespace bea {
 		bool flagUseDefault;
 		bool flagAbstract;
 		bool flagPublic;
+		bool flagStatic;
+		std::size_t overloadID;
 		std::unique_ptr<TypeID> type;
 	};
 
@@ -120,23 +158,22 @@ namespace bea {
 	/*
 	 * Object type representation
 	 */
-	enum class ObjectFlag {
-		Abstract = 0,
-	};
-
 	struct ObjectImplementation {
-		std::unique_ptr<TypeID> baseType;
-		OrderedMap<Name, VariableInfo> members;
+		std::unique_ptr<TypeID> type;
+		OrderedMap<std::string, VariableInfo> members;
+		std::unordered_map<Name, std::unique_ptr<Type>> internalTypes;
 	};
 
 	struct ObjectType {
-		ObjectFlag flags;
+		bool flagAbstract;
+		bool flagPublic;
 		std::vector<GenericInfo> genericParameters;
-		OrderedMap<Name, VariableInfo> publicMembers;
-		OrderedMap<Name, VariableInfo> privateMembers;
-		OrderedMap<Name, ObjectImplementation> implementations;
+		OrderedMap<std::string, VariableInfo> publicMembers;
+		OrderedMap<std::string, VariableInfo> privateMembers;
+		std::vector<ObjectImplementation> implementations;
+		std::unordered_map<Name, std::unique_ptr<Type>> internalTypes;
 
-		ObjectType() : genericParameters(0) {}
+		ObjectType() : genericParameters(0), internalTypes(0) {}
 	};
 
 	/*
@@ -171,7 +208,7 @@ namespace bea {
 	struct TypeID {
 		Name name;
 		std::vector<GenericInfo> generics;
-		const Type *type;
+		Type *type;
 
 		TypeID() : generics(0) {}
 

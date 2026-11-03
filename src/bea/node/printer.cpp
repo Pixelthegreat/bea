@@ -389,6 +389,12 @@ namespace bea {
 
 		visitFuncStatementCommon(static_cast<FuncStatementNode&>(node));
 
+		Node& returnType = node.getReturnTypeNode();
+		if (&returnType) {
+
+			m_stream << " -> ";
+			visit(returnType);
+		}
 		m_stream << " => ";
 		visit(node.getBodyNode());
 

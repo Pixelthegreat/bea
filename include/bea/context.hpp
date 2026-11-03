@@ -14,9 +14,12 @@ namespace bea {
 		/*
 		 * Iterator
 		 */
+		std::pair<std::string, VariableInfo> *data() { return m_values.data(); }
+		std::size_t size() const { return m_values.size(); }
+		bool empty() const { return m_values.empty(); }
+		std::pair<std::string, VariableInfo> *begin() { return m_values.begin(); }
+		std::pair<std::string, VariableInfo> *end() { return m_values.end(); }
 		const std::pair<std::string, VariableInfo> *data() const { return m_values.data(); }
-		const std::size_t size() const { return m_values.size(); }
-		const bool empty() const { return m_values.empty(); }
 		const std::pair<std::string, VariableInfo> *begin() const { return m_values.begin(); }
 		const std::pair<std::string, VariableInfo> *end() const { return m_values.end(); }
 
@@ -31,8 +34,32 @@ namespace bea {
 
 		VariableInfo& newEntry(const std::string& key);
 		VariableInfo& newEntry(std::string&& key);
-	private:
+
+		/*
+		 * Get overload count for name
+		 */
+		std::size_t& getOverloadCount(
+			const Name& name
+		);
+
+		/*
+		 * Get type
+		 */
+		Result<Type *> getType(const Name& name);
+
+		/*
+		 * Register type
+		 *
+		 * Fails if it is already registered.
+		 */
+		Result<None> registerType(
+			const Name& name,
+			std::unique_ptr<Type> type
+		);
+
 		OrderedMap<std::string, VariableInfo> m_values;
+		std::unordered_map<std::size_t, std::size_t> m_overloads;
+		std::unordered_map<Name, std::unique_ptr<Type>> m_types;
 	};
 
 	/*
@@ -45,8 +72,6 @@ namespace bea {
 			m_currentFrame = m_baseFrame = pushFrame();
 			initTypes();
 		}
-
-		std::unordered_map<std::string, std::unique_ptr<Type>> m_types;
 		std::vector<std::unique_ptr<Frame>> m_frames;
 
 		const Type *m_intType;
@@ -58,25 +83,25 @@ namespace bea {
 		Frame *m_baseFrame;
 
 		/*
-		 * Get type
-		 */
-		Result<Type *> getType(const std::string& name);
-
-		/*
-		 * Register type
-		 *
-		 * Fails if it is already registered.
-		 */
-		Result<None> registerType(
-			const std::string& name,
-			std::unique_ptr<Type> type
-		);
-
-		/*
 		 * Push and pop stack frames
 		 */
 		Frame *pushFrame();
 		void popFrame();
+
+		/*
+		 * Get type from current frame
+		 */
+		Result<Type *> getType(const Name& name);
+
+		/*
+		 * Register type in current frame
+		 *
+		 * Fails if it is already registered.
+		 */
+		Result<None> registerType(
+			const Name& name,
+			std::unique_ptr<Type> type
+		);
 	private:
 		/*
 		 * Initialize types

@@ -22,9 +22,13 @@ namespace bea {
 		/*
 		 * Iterator
 		 */
+		std::pair<K, V> *data() { return m_items.data(); }
+		std::size_t size() const { return m_items.size(); }
+		bool empty() const { return m_items.empty(); }
+		std::pair<K, V> *begin() { return m_items.data(); }
+		std::pair<K, V> *end() { return m_items.data() + m_items.size(); }
+
 		const std::pair<K, V> *data() const { return m_items.data(); }
-		const std::size_t size() const { return m_items.size(); }
-		const bool empty() const { return m_items.empty(); }
 		const std::pair<K, V> *begin() const { return m_items.data(); }
 		const std::pair<K, V> *end() const { return m_items.data() + m_items.size(); }
 

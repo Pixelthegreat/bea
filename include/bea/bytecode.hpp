@@ -24,9 +24,11 @@ namespace bea {
 		 * uint8_t op = GRCode::Class;
 		 * uint8_t flags; 1 = abstract
 		 * Name name;
+		 * uint16_t genericParameterCount;
 		 * uint16_t publicMemberCount;
 		 * uint16_t privateMemberCount;
 		 * uint16_t implementationCount;
+		 * GenericParameter genericParameters[];
 		 * (ClassField | Function) publicMembers[];
 		 * (ClassField | Function) privateMembers[];
 		 * ClassImpl implementations[];
@@ -46,8 +48,9 @@ namespace bea {
 		 * Record of "impl" statement
 		 *
 		 * uint8_t op = GRCode::ClassImpl;
-		 * uint16_t functionCount;
-		 * Function functions[];
+		 * TypeID typeID;
+		 * uint16_t memberCount;
+		 * Function members[];
 		 */
 		ClassImpl = 13,
 
@@ -57,6 +60,7 @@ namespace bea {
 		 * uint8_t op = GRCode::Function;
 		 * uint8_t flags; 1 = static
 		 * Name name;
+		 * uint16_t overloadID;
 		 * uint16_t parameterCount;
 		 * uint16_t genericParameterCount;
 		 * FunctionParameter parameters[];
@@ -106,6 +110,7 @@ namespace bea {
 		 *
 		 * uint8_t op = GRCode::GenericParameter;
 		 * uint8_t type; GenericType
+		 * uint8_t flags; 1 = hasDefault
 		 * uint64_t defaultValue? type == GenericType::Int
 		 * TypeID defaultValue? type == GenericType::Type
 		 */
@@ -116,6 +121,7 @@ namespace bea {
 		 *
 		 * uint8_t op = GRCode::GenericArgument;
 		 * uint8_t type; GenericType
+		 * uint8_t flags; 1 = hasValue
 		 * uint64_t value? type == GenericType::Int
 		 * TypeID value? type == GenericType::Type
 		 */

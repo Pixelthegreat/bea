@@ -133,4 +133,9 @@ namespace bea {
 		}
 		return true;
 	}
+
+	bool operator==(const Name& a, const Name& b) {
+
+		return std::hash<Name>{}(a) == std::hash<Name>{}(b);
+	}
 }

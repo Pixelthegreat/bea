@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bea/core.hpp>
+#include <bea/project.hpp>
 
 namespace bea {
 
@@ -13,6 +14,7 @@ namespace bea {
 		static void cleanUp();
 	private:
 		static const char *s_command, *s_projectPath;
+		static Project::Target s_target;
 
 		static Result<None> parseArguments(int argc, const char **argv);
 		static void printHelp(const char *progname);

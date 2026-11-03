@@ -28,7 +28,18 @@ namespace bea {
 		Result<None> visitFuncStatement(FuncStatementNode& node);
 		virtual Result<None> visitFuncExprStatement(FuncExprStatementNode& node) override;
 		virtual Result<None> visitFuncBlockStatement(FuncBlockStatementNode& node) override;
+
+		virtual Result<None> visitClassFieldStatement(ClassFieldStatementNode& node) override;
+		virtual Result<None> visitImplStatement(ImplStatementNode& node) override;
+		virtual Result<None> visitClassStatement(ClassStatementNode& node) override;
 	private:
 		GRCodeSerializer& m_serializer;
+		OrderedMap<std::string, VariableInfo> m_implMembers;
+		std::unordered_map<Name, std::unique_ptr<Type>> m_implTypes;
+
+		/*
+		 * Create type identifier for type node
+		 */
+		Result<std::unique_ptr<TypeID>> nodeToTypeID(Node *node);
 	};
 }

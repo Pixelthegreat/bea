@@ -1,0 +1,6 @@
+[project]
+name = "stdlib"
+kind = "lib"
+
+[project.options]
+nostdlib = true

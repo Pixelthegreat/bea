@@ -1,0 +1,43 @@
+module result
+
+/*
+ * @name Error
+ * @brief Common error
+ *
+ * @field message The error message.
+ */
+pub class Error {
+	pub message: String
+
+	/*
+	 * @name init
+	 * @brief Initialize error
+	 */
+	pub func init(message: String)!
+}
+
+/*
+ * @name Result
+ * @brief Common result
+ *
+ * @gparam T The type of value carried by the result.
+ *
+ * @field value The value carried by the result.
+ * @field error The optional error carried by the result.
+ * @field okay `true` if the result is a success, `false` otherwise.
+ */
+pub struct Result<T> {
+	pub value: T
+	pub error: Error
+	pub okay: Boolean = true
+
+	/*
+	 * @name init
+	 * @brief Initialize result
+	 */
+	pub func init()!
+	pub func init(value: T)!
+	pub func init(error: Error) {
+		this.okay = false
+	}
+}

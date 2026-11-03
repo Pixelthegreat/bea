@@ -1,0 +1,47 @@
+module range
+
+use std::iterator::Iterable
+use std::iterator::Iterator
+
+/*
+ * @brief Range iterator
+ */
+class Range {
+	pub start: Int
+	pub end: Int
+	pub step: Int = 1
+	pub position: Int
+
+	/*
+	 * @brief Constructor
+	 *
+	 * @param start The start value of the range.
+	 * @param end The end value of the range.
+	 * @param step The step value of the range.
+	 */
+	pub func init(end: Int)!
+	pub func init(start: Int, end: Int)!
+	pub func init(start: Int, end: Int, step: Int)!
+
+	/*
+	 * @brief Iterable implementation
+	 */
+	impl Iterable<Int> {
+		func iterator() -> Iterator<Int> {
+			this.position = this.start
+			return this
+		}
+	}
+
+	/*
+	 * @brief Iterator implementation
+	 */
+	impl Iterator<Int> {
+		func isAtEnd() -> Boolean => this.position < this.end
+		func next() -> Int {
+			let value = this.position
+			this.position += this.step
+			return value
+		}
+	}
+}

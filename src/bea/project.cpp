@@ -50,9 +50,10 @@ namespace bea {
 	/* Load project */
 	Result<Project *> Project::loadProject(
 		const std::string& path,
-		const std::string& url
+		const std::string& url,
+		Target target
 	) {
-		s_projects.emplace_back(std::make_unique<Project>(path));
+		s_projects.emplace_back(std::make_unique<Project>(path, target));
 		Project& project = *s_projects[s_projects.size()-1];
 
 		if (!std::filesystem::exists(path)) {

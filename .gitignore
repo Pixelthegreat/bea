@@ -4,6 +4,7 @@
 /bin
 /*.make
 /Makefile
+build/
 
 # Miscellaneous #
 /notes

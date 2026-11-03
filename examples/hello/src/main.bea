@@ -4,3 +4,8 @@ func add<T>(x: T, y: T) -> Result<T> {
 
 	return new Result<T>(x + y)
 }
+
+func add(x: Int, y: Int) -> Int {
+
+	return x + y
+}

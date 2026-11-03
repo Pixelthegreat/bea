@@ -79,6 +79,17 @@ namespace bea {
 			const Name& name,
 			const Name& alias
 		);
+		void writeClass(
+			const Name& name,
+			const Type& type
+		);
+		void writeClassField(
+			const Name& name,
+			const VariableInfo& field
+		);
+		void writeClassImpl(
+			const ObjectImplementation& implementation
+		);
 		void writeFunction(
 			const Name& name,
 			const VariableInfo& variable
@@ -86,8 +97,13 @@ namespace bea {
 		void writeTypeID(
 			const TypeID& typeID
 		);
-		void writeGenericArgument(
-			const GenericInfo& generic
+		void writeGeneric(
+			const GenericInfo& generic,
+			GRCode type
+		);
+		void writeClassMember(
+			const Name& name,
+			const VariableInfo& member
 		);
 	};
 };

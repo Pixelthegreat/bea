@@ -1,0 +1,33 @@
+module iterator
+
+/*
+ * @brief Iterable object
+ * @gparam T The type of value returned by the iterator.
+ */
+pub abstract class Iterable<T> {
+
+	/*
+	 * @brief Retrieve an iterator for this object
+	 * @returns An iterator.
+	 */
+	pub func iterator() -> Iterator<T>
+}
+
+/*
+ * @brief Iterator
+ * @gparam T The type of value returned by the iterator.
+ */
+pub abstract class Iterator<T> {
+
+	/*
+	 * @brief Check if iterator has reached end
+	 * @returns End of iterator status.
+	 */
+	func isAtEnd() -> Boolean
+
+	/*
+	 * @brief Get next item from iterator
+	 * @returns The next item.
+	 */
+	func next() -> T
+}

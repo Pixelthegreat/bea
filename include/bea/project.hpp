@@ -45,7 +45,12 @@ namespace bea {
 			std::unique_ptr<Context> context;
 		};
 
-		Project(const std::string& path) : m_path(path) {}
+		Project(
+			const std::string& path,
+			Target target = Target::Debug
+		)
+			: m_path(path),
+			  m_target(target) {}
 
 		static std::string defaultURL;
 
@@ -60,7 +65,8 @@ namespace bea {
 
 		static Result<Project *> loadProject(
 			const std::string& path,
-			const std::string& url = defaultURL
+			const std::string& url = defaultURL,
+			Target target = Target::Debug
 		);
 
 		/*
@@ -79,7 +85,7 @@ namespace bea {
 
 		std::vector<std::unique_ptr<Source>> m_sources;
 
-		Target m_target = Target::Debug;
+		Target m_target;
 
 		static std::vector<std::unique_ptr<Project>> s_projects;
 

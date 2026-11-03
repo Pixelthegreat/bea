@@ -11,6 +11,7 @@ namespace bea {
 
 	const char *Application::s_command = nullptr;
 	const char *Application::s_projectPath = ".";
+	Project::Target Application::s_target = Project::Target::Debug;
 
 	/* Run application */
 	Result<None> Application::run(int argc, const char **argv) {
@@ -24,7 +25,13 @@ namespace bea {
 		}
 
 		/* Load project */
-		Project *project = BEA_OK(None, Project::loadProject(s_projectPath));
+		Project *project = BEA_OK(
+			None, Project::loadProject(
+				s_projectPath,
+				Project::defaultURL,
+				s_target
+			)
+		);
 
 		Result<None> result;
 
@@ -71,11 +78,31 @@ namespace bea {
 
 			/* Option */
 			const char *arg = argv[i];
-			if (arg[0] == '-')
-				return Result<None>(std::format(
-					"{}: Unrecognized option '{}'",
-					progname, arg
-				));
+			if (arg[0] == '-') {
+
+				if (!strcmp(arg, "-T") || !strcmp(arg, "--target")) {
+
+					const char *target = argv[++i];
+					if (!target) return Result<None>(std::format(
+						"{}: Expected argument after '{}'",
+						progname, arg
+					));
+					if (!strcmp(target, "debug"))
+						s_target = Project::Target::Debug;
+					else if (!strcmp(target, "release"))
+						s_target = Project::Target::Release;
+					else
+						return Result<None>(std::format(
+							"{}: Unrecognized target '{}'",
+							progname, target
+						));
+				}
+				else
+					return Result<None>(std::format(
+						"{}: Unrecognized option '{}'",
+						progname, arg
+					));
+			}
 
 			/* Command */
 			else if (!s_command) s_command = arg;
