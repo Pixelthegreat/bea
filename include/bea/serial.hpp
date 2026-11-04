@@ -94,6 +94,10 @@ namespace bea {
 			const Name& name,
 			const VariableInfo& variable
 		);
+		void writeExternal(
+			GRCode type,
+			const Name& name
+		);
 		void writeTypeID(
 			const TypeID& typeID
 		);

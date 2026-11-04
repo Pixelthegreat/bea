@@ -27,6 +27,7 @@ namespace bea {
 
 		Function,
 		Object,
+		Any,
 
 		Count,
 
@@ -70,6 +71,8 @@ namespace bea {
 	};
 
 	bool operator==(const Name& a, const Name& b);
+	bool operator==(const Name& a, const char *b);
+	bool operator==(const Name& a, const std::string& b);
 
 	std::ostream& operator<<(std::ostream& stream, const Name& name);
 
@@ -83,26 +86,32 @@ struct std::hash<bea::Name> {
 
 	std::size_t operator()(const bea::Name& name) const noexcept {
 
-		if (name.components.empty())
-			return 0;
+		char buffer[1024] = {0};
+		std::size_t count = 0;
 
-		std::size_t hs = std::hash<const char *>{}("::");
-		std::size_t result = std::hash<std::string>{}(name.components[0]);
+		for (std::size_t i = 0; i < name.components.size(); i++) {
 
-		for (std::size_t i = 0; i < name.components.size()-1; i++) {
+			if (i && count + 2 <= sizeof(buffer)-1) {
 
-			result ^=
-				hs + 0x9e3779b9 +
-				(result << 6) + (result >> 2);
+				buffer[count++] = ':';
+				buffer[count++] = ':';
+			}
 
-			std::size_t h = std::hash<std::string>{}(
-				name.components[i]
+			const std::string& string = name.components[i];
+			if (count + string.length() > sizeof(buffer)-1)
+				break;
+
+			std::memcpy(
+				buffer+count,
+				string.c_str(),
+				string.length()
 			);
-			result ^=
-				h + 0x9e3779b9 +
-				(result << 6) + (result >> 2);
+			count += string.length();
 		}
-		return result;
+		buffer[count] = 0;
+		std::string_view view(buffer);
+
+		return std::hash<std::string_view>{}(view);
 	}
 };
 namespace bea {
@@ -208,7 +217,7 @@ namespace bea {
 	struct TypeID {
 		Name name;
 		std::vector<GenericInfo> generics;
-		Type *type;
+		Type *type = nullptr;
 
 		TypeID() : generics(0) {}
 

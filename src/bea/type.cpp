@@ -20,6 +20,7 @@ namespace bea {
 			case F64: return stream << "F64";
 			case Function: return stream << "Function";
 			case Object: return stream << "Object";
+			case Any: return stream << "Any";
 		}
 		return stream << "None";
 	}
@@ -137,5 +138,17 @@ namespace bea {
 	bool operator==(const Name& a, const Name& b) {
 
 		return std::hash<Name>{}(a) == std::hash<Name>{}(b);
+	}
+
+	bool operator==(const Name& a, const char *b) {
+
+		std::string_view view(b);
+
+		return std::hash<Name>{}(a) == std::hash<std::string_view>{}(view);
+	}
+
+	bool operator==(const Name& a, const std::string& b) {
+
+		return std::hash<Name>{}(a) == std::hash<std::string>{}(b);
 	}
 }

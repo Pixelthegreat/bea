@@ -6,6 +6,14 @@
 namespace bea {
 
 	/*
+	 * Exportable node (Compatible with "pub" statement)
+	 */
+	class ExportableNode : public Node {
+	public:
+		bool m_public, m_abstract;
+	};
+
+	/*
 	 * "module" statement
 	 */
 	class ModuleStatementNode : public Node {
@@ -68,7 +76,7 @@ namespace bea {
 	/*
 	 * "let" statement
 	 */
-	class LetStatementNode : public Node {
+	class LetStatementNode : public ExportableNode {
 	public:
 		LetStatementNode(
 			const std::vector<Name>& names,
@@ -97,13 +105,5 @@ namespace bea {
 		std::unique_ptr<Node> m_valueNode;
 	protected:
 		virtual Result<None> visit(NodeVisitor& visitor) override;
-	};
-
-	/*
-	 * Exportable node (Compatible with "pub" statement)
-	 */
-	class ExportableNode : public Node {
-	public:
-		bool m_public, m_abstract;
 	};
 }

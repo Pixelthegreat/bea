@@ -219,6 +219,15 @@ namespace bea {
 		writeTypeID(*type.function.returnType);
 	}
 
+	/* Write GRCode::ExternalType */
+	void GRCodeSerializer::writeExternal(
+		GRCode type,
+		const Name& name
+	) {
+		writeU8((std::uint8_t)type);
+		writeName(name);
+	}
+
 	/* Write GRCode::TypeID */
 	void GRCodeSerializer::writeTypeID(
 		const TypeID& typeID

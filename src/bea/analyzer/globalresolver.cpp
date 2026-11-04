@@ -13,8 +13,6 @@ namespace bea {
 		Frame& frame = *m_context.m_baseFrame;
 		for (std::pair<std::string, VariableInfo>& pair: frame) {
 
-			//std::cout << pair.first << ": " << *pair.second.type << std::endl;
-
 			/* NOTE: Update for function pointers */
 			if (pair.second.type->type &&
 			    pair.second.type->type->base == BaseType::Function)
@@ -26,12 +24,22 @@ namespace bea {
 
 			if (!pair.second->external)
 				continue;
-			//std::cout << pair.first << *pair.second << std::endl;
 
 			if (pair.second->base == BaseType::Object)
 				m_serializer.writeClass(pair.first, *pair.second);
 		}
-		//std::cin.get();
+
+		/* Serialize external references */
+		for (const Reference& reference: m_externalReferences) {
+
+			std::cout << reference << std::endl;
+
+			GRCode type = GRCode::ExternalType;
+			if (reference.type == ReferenceType::Entity)
+				type = GRCode::ExternalEntity;
+			m_serializer.writeExternal(type, reference.name);
+		}
+		std::cout << std::endl;
 
 		return Result<None>();
 	}
@@ -48,22 +56,176 @@ namespace bea {
 		return Result<None>();
 	}
 
+	/* Visit type */
+	Result<None> GlobalResolver::visitType(TypeNode& node) {
+
+		const Name& name = node.getName();
+
+		Result<Type *> result =
+			m_context.getType(
+				name.components[0], true
+			);
+		if (!result.okay)
+			registerTypeReference(name, node);
+
+		return Result<None>();
+	}
+
+	/* Visit variable access */
+	Result<None> GlobalResolver::visitVariableAccess(VariableAccessNode& node) {
+
+		const Name& name = node.getName();
+
+		Result<VariableInfo *> result =
+			m_context.m_currentFrame->get(
+				name.components[0], true
+			);
+		if (!result.okay &&
+		    name != "true" &&
+		    name != "false" &&
+		    name != "null")
+			registerEntityReference(name, node);
+
+		return Result<None>();
+	}
+
+	/* Visit "if" statement */
+	Result<None> GlobalResolver::visitIfStatement(IfStatementNode& node) {
+
+		for (Pair<std::unique_ptr<Node>>& pair: node.m_conditionalClauseNodes) {
+
+			m_context.pushFrame();
+
+			BEA_OK(None, visit(*pair[0]));
+			BEA_OK(None, visit(*pair[1]));
+
+			m_context.popFrame();
+		}
+		if (node.m_elseClauseNode) {
+
+			m_context.pushFrame();
+			BEA_OK(None, visit(*node.m_elseClauseNode));
+			m_context.popFrame();
+		}
+		return Result<None>();
+	}
+
+	/* Visit "case" statement */
+	Result<None> GlobalResolver::visitCaseStatement(CaseStatementNode& node) {
+
+		m_context.pushFrame();
+
+		BEA_OK(None, visit(*node.m_caseNode));
+		BEA_OK(None, visit(*node.m_bodyNode));
+
+		m_context.popFrame();
+		return Result<None>();
+	}
+
+	/* Visit "case let" statement */
+	Result<None> GlobalResolver::visitCaseLetStatement(CaseLetStatementNode& node) {
+
+		Frame& frame = *m_context.pushFrame();
+		VariableInfo& variable = frame[node.m_name.components[0]];
+
+		BEA_OK(None, visit(*node.m_caseNode));
+		BEA_OK(None, visit(*node.m_bodyNode));
+
+		m_context.popFrame();
+		return Result<None>();
+	}
+
+	/* Visit "which" statement */
+	Result<None> GlobalResolver::visitWhichStatement(WhichStatementNode& node) {
+
+		m_context.pushFrame();
+
+		BEA_OK(None, visit(*node.m_valueNode));
+		BEA_OK(None, visit(*node.m_bodyNode));
+
+		m_context.popFrame();
+		return Result<None>();
+	}
+
+	/* Visit "for" statement */
+	Result<None> GlobalResolver::visitForStatement(ForStatementNode& node) {
+
+		Frame& frame = *m_context.pushFrame();
+		VariableInfo& variable = frame[node.m_name.components[0]];
+
+		BEA_OK(None, visit(*node.m_iterableNode));
+		BEA_OK(None, visit(*node.m_bodyNode));
+
+		m_context.popFrame();
+		return Result<None>();
+	}
+
+	/* Visit "while" statement */
+	Result<None> GlobalResolver::visitWhileStatement(WhileStatementNode& node) {
+
+		m_context.pushFrame();
+
+		BEA_OK(None, visit(*node.m_conditionNode));
+		BEA_OK(None, visit(*node.m_bodyNode));
+
+		m_context.popFrame();
+		return Result<None>();
+	}
+
 	/* Visit "use" statement */
 	Result<None> GlobalResolver::visitUseStatement(UseStatementNode& node) {
 
 		Name alias = node.m_alias;
 		if (alias.empty())
-			alias =
-				{node.m_name.components[
+			alias = {
+				node.m_name.components[
 					node.m_name.components.size()-1
-				]};
+				],
+			};
 
 		m_serializer.writeUse(node.m_name, alias);
 		return Result<None>();
 	}
 
+	/* Visit "let" statement */
+	Result<None> GlobalResolver::visitLetStatement(LetStatementNode& node) {
+
+		if (!node.m_typeNode && m_blockLevel == 1)
+			return Result<None>(
+				node.m_position,
+				"Global declaration can't have inferred type"
+			);
+
+		/* Declare variables */
+		for (const Name& name: node.m_names) {
+
+			Result<VariableInfo *> result =
+				m_context.m_currentFrame->get(name.components[0]);
+			if (result.okay)
+				return Result<None>(
+					node.m_position,
+					std::format(
+						"Can't redeclare '{}'",
+						name.components[0]
+					)
+				);
+			VariableInfo& info =
+				m_context.m_currentFrame->newEntry(name.components[0]);
+
+			info.flagPublic = node.m_public;
+			if (node.m_typeNode)
+				info.type = BEA_OK(
+					None, nodeToTypeID(node.m_typeNode.get())
+				);
+		}
+		return Result<None>();
+	}
+
 	/* Visit "func" statement (common) */
-	Result<None> GlobalResolver::visitFuncStatement(FuncStatementNode& node) {
+	Result<None> GlobalResolver::visitFuncStatement(
+		FuncStatementNode& node,
+		Node& bodyNode
+	) {
 
 		VariableInfo& info =
 			m_context.m_currentFrame->newEntry(node.m_name.components[0]);
@@ -146,6 +308,70 @@ namespace bea {
 			}
 		}
 
+		/* Create temporary constants for generic parameters */
+		Frame& frame = *m_context.pushFrame();
+		VariableInfo& thisVariable = frame["this"];
+
+		for (const NodeGenericParameter& parameter: node.m_genericParameters) {
+
+			if (parameter.type == GenericType::Type) {
+
+				std::unique_ptr<Type>& type =
+					frame.m_types[parameter.name.components[0]];
+				type = std::make_unique<Type>(
+						BaseType::Any,
+						parameter.name.components[0].c_str()
+				);
+				if (parameter.defaultNode) {
+
+					std::unique_ptr<TypeID> typeID =
+						BEA_OK(None, nodeToTypeID(
+							parameter.defaultNode.get()
+						));
+					TypeNode *typeNode =
+						dynamic_cast<TypeNode *>(
+							parameter.defaultNode.get()
+						);
+
+					if (!typeID->type && typeNode)
+						registerTypeReference(
+							typeNode->getName(),
+							*typeNode
+						);
+				}
+			}
+			else if (parameter.type == GenericType::Int) {
+
+				VariableInfo& variable =
+					frame[parameter.name.components[0]];
+
+				variable.type = std::make_unique<TypeID>("Int");
+				variable.type->type = m_context.m_intType;
+			}
+		}
+
+		/* Create temporary variables for parameters */
+		for (const NodeFuncParameter& parameter: node.m_parameters) {
+
+			VariableInfo& variable = frame[parameter.name.components[0]];
+			variable.type = BEA_OK(None, nodeToTypeID(parameter.typeNode.get()));
+
+			if (!variable.type->type) {
+
+				TypeNode *typeNode =
+					static_cast<TypeNode *>(
+						parameter.typeNode.get()
+					);
+				registerTypeReference(
+					typeNode->getName(), *typeNode
+				);
+			}
+		}
+
+		/* Visit body */
+		BEA_OK(None, visit(bodyNode));
+		m_context.popFrame();
+
 		type->external = true;
 		m_context.registerType(typeName.components[0], std::move(type));
 		return Result<None>();
@@ -154,13 +380,13 @@ namespace bea {
 	/* Visit "func" statement with expression body */
 	Result<None> GlobalResolver::visitFuncExprStatement(FuncExprStatementNode& node) {
 
-		return visitFuncStatement(node);
+		return visitFuncStatement(node, *node.m_bodyNode);
 	}
 
 	/* Visit "func" statement with block body */
 	Result<None> GlobalResolver::visitFuncBlockStatement(FuncBlockStatementNode& node) {
 
-		return visitFuncStatement(node);
+		return visitFuncStatement(node, *node.m_bodyNode);
 	}
 
 	/* Visit class field statement */
@@ -226,6 +452,49 @@ namespace bea {
 
 		Frame& frame = *m_context.pushFrame();
 
+		/* Create temporary constants for generic parameters */
+		for (const NodeGenericParameter& parameter: node.m_genericParameters) {
+
+			if (parameter.type == GenericType::Type) {
+
+				std::unique_ptr<Type>& type =
+					frame.m_types[parameter.name.components[0]];
+				type = std::make_unique<Type>(
+					BaseType::Any,
+					parameter.name.components[0].c_str()
+				);
+				if (parameter.defaultNode) {
+
+					std::unique_ptr<TypeID> typeID =
+						BEA_OK(None, nodeToTypeID(
+							parameter.defaultNode.get()
+						));
+					TypeNode *typeNode =
+						dynamic_cast<TypeNode *>(
+							parameter.defaultNode.get()
+						);
+
+					if (!typeID->type && typeNode)
+						registerTypeReference(
+							typeNode->getName(),
+							*typeNode
+						);
+				}
+				frame.registerType(
+					parameter.name, std::move(type)
+				);
+			}
+			else if (parameter.type == GenericType::Int) {
+
+				VariableInfo& variable =
+					frame[parameter.name.components[0]];
+
+				variable.type = std::make_unique<TypeID>("Int");
+				variable.type->type = m_context.m_intType;
+			}
+		}
+
+		/* Visit nodes */
 		BlockNode *block = static_cast<BlockNode *>(node.m_bodyNode.get());
 		m_blockLevel++;
 
@@ -243,6 +512,12 @@ namespace bea {
 				.members = std::move(m_implMembers),
 				.internalTypes = std::move(m_implTypes),
 			};
+			if (!implementation.type->type)
+				registerTypeReference(
+					implementation.type->name,
+					*implNode->m_typeNode
+				);
+
 			type->object.implementations.emplace_back(
 				std::move(implementation)
 			);
@@ -318,9 +593,11 @@ namespace bea {
 		std::unique_ptr<TypeID> typeID = std::make_unique<TypeID>(
 			typeNode->getName()
 		);
-		typeID->type = m_context.m_baseFrame->getType(
-			typeNode->getName()
-		).value;
+		Result<Type *> typeResult = m_context.getType(
+			typeNode->getName(), true
+		);
+		if (typeResult.okay)
+			typeID->type = typeResult.value;
 
 		typeID->generics.resize(typeNode->m_genericArgumentNodes.size());
 		for (std::size_t i = 0; i < typeNode->m_genericArgumentNodes.size(); i++) {
@@ -349,5 +626,47 @@ namespace bea {
 			}
 		}
 		return std::move(typeID);
+	}
+
+	/* Register type reference */
+	void GlobalResolver::registerTypeReference(
+		const Name& name, Node& node
+	) {
+		Reference reference = {
+			.type = ReferenceType::Type,
+			.name = name,
+			.node = node,
+		};
+		m_externalReferences.emplace_back(std::move(reference));
+	}
+
+	/* Register entity reference */
+	void GlobalResolver::registerEntityReference(
+		const Name& name, Node& node
+	) {
+		Reference reference = {
+			.type = ReferenceType::Entity,
+			.name = name,
+			.node = node,
+		};
+		m_externalReferences.emplace_back(std::move(reference));
+	}
+
+	/* Reference printer */
+	std::ostream& operator<<(
+		std::ostream& stream,
+		const GlobalResolver::Reference& reference
+	) {
+		stream << reference.node.m_position << ":" << reference.name << "(";
+		switch (reference.type) {
+			case GlobalResolver::ReferenceType::Type:
+				stream << "Type";
+				break;
+			case GlobalResolver::ReferenceType::Entity:
+				stream << "Entity";
+		}
+		stream << ")";
+
+		return stream;
 	}
 }

@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <string>
+#include <string_view>
 #include <memory>
 #include <array>
 #include <vector>
@@ -38,8 +39,8 @@ namespace bea {
 	 * Error type
 	 */
 	struct Error {
-		Position position;
-		std::string message;
+		Position position{};
+		std::string message{};
 
 		Error(std::string message) : message(message), position() {}
 
@@ -57,7 +58,7 @@ namespace bea {
 		bool okay;
 		union {
 			T value;
-			std::unique_ptr<Error> error;
+			std::unique_ptr<Error> error = nullptr;
 		};
 
 		Result() : okay(true) {}

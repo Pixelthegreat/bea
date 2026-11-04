@@ -5,7 +5,10 @@ namespace bea {
 	/* Print error position */
 	std::ostream& operator<<(std::ostream& stream, const Position& position) {
 
-		return stream << "File '" << position.path << "', Line " << position.line << ", Column " << position.column;
+		return stream <<
+			position.path << ":" <<
+			position.line << "," <<
+			position.column;
 	}
 
 	/* Print error */
@@ -14,7 +17,11 @@ namespace bea {
 		stream << "\x1b[31mError\x1b[39m";
 
 		if (error.position.path)
-			stream << " (" << error.position << "):\n  ";
+			stream <<
+				" (File '" << error.position.path <<
+				"', Line " << error.position.line <<
+				", Column " << error.position.column <<
+				"):\n  ";
 		else stream << ": ";
 
 		return stream << error.message;

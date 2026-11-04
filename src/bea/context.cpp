@@ -4,13 +4,19 @@
 namespace bea {
 
 	/* Get item from frame */
-	Result<VariableInfo *> Frame::get(const std::string& key) {
+	Result<VariableInfo *> Frame::get(const std::string& key, bool parent) {
 
-		return m_values.get(key);
+		Result<VariableInfo *> result = m_values.get(key);
+		if (!result.okay && parent && m_parent)
+			return m_parent->get(key, parent);
+		return result;
 	}
-	Result<VariableInfo *> Frame::get(std::string&& key) {
+	Result<VariableInfo *> Frame::get(std::string&& key, bool parent) {
 
-		return m_values.get(std::move(key));
+		Result<VariableInfo *> result = m_values.get((const std::string&)key);
+		if (!result.okay && parent && m_parent)
+			return m_parent->get(std::move(key), parent);
+		return result;
 	}
 
 	/* Get or create item in frame */
@@ -41,7 +47,7 @@ namespace bea {
 	}
 
 	/* Get type */
-	Result<Type *> Frame::getType(const Name& name) {
+	Result<Type *> Frame::getType(const Name& name, bool parent) {
 
 		Type *type = nullptr;
 
@@ -50,8 +56,13 @@ namespace bea {
 		}
 		catch (std::out_of_range) {}
 
-		if (!type) return Result<Type *>::fail();
-		return Result<Type *>();
+		if (!type) {
+
+			if (parent && m_parent)
+				return m_parent->getType(name, parent);
+			return Result<Type *>::fail();
+		}
+		return Result<Type *>(type);
 	}
 
 	/* Register type */
@@ -91,7 +102,6 @@ namespace bea {
 		);
 		m_booleanType = booleanType.get();
 
-		booleanType->distinct = true;
 		registerType("Boolean", std::move(booleanType));
 
 		/* String */
@@ -106,7 +116,7 @@ namespace bea {
 	/* Push stack frame */
 	Frame *Context::pushFrame() {
 
-		m_frames.emplace_back(std::make_unique<Frame>());
+		m_frames.emplace_back(std::make_unique<Frame>(m_currentFrame));
 		m_currentFrame = m_frames[m_frames.size()-1].get();
 
 		return m_currentFrame;
@@ -123,9 +133,9 @@ namespace bea {
 	}
 
 	/* Get type from current frame */
-	Result<Type *> Context::getType(const Name& name) {
+	Result<Type *> Context::getType(const Name& name, bool parent) {
 
-		return m_currentFrame->getType(name);
+		return m_currentFrame->getType(name, parent);
 	}
 
 	/* Register type in current frame */

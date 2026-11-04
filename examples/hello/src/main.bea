@@ -1,11 +1,8 @@
 module main
 
-func add<T>(x: T, y: T) -> Result<T> {
+use std::io
 
-	return new Result<T>(x + y)
-}
+pub func main() {
 
-func add(x: Int, y: Int) -> Int {
-
-	return x + y
+	io::println("Hello, world!")
 }

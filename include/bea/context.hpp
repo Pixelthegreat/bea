@@ -11,6 +11,9 @@ namespace bea {
 	 */
 	class Frame {
 	public:
+		Frame(Frame *parent = nullptr)
+			: m_parent(parent) {}
+
 		/*
 		 * Iterator
 		 */
@@ -26,8 +29,8 @@ namespace bea {
 		/*
 		 * Get items
 		 */
-		Result<VariableInfo *> get(const std::string& key);
-		Result<VariableInfo *> get(std::string&& key);
+		Result<VariableInfo *> get(const std::string& key, bool parent = false);
+		Result<VariableInfo *> get(std::string&& key, bool parent = false);
 
 		VariableInfo& operator[](const std::string& key);
 		VariableInfo& operator[](std::string&& key);
@@ -45,7 +48,7 @@ namespace bea {
 		/*
 		 * Get type
 		 */
-		Result<Type *> getType(const Name& name);
+		Result<Type *> getType(const Name& name, bool parent = false);
 
 		/*
 		 * Register type
@@ -60,6 +63,8 @@ namespace bea {
 		OrderedMap<std::string, VariableInfo> m_values;
 		std::unordered_map<std::size_t, std::size_t> m_overloads;
 		std::unordered_map<Name, std::unique_ptr<Type>> m_types;
+
+		Frame *m_parent = nullptr;
 	};
 
 	/*
@@ -74,13 +79,13 @@ namespace bea {
 		}
 		std::vector<std::unique_ptr<Frame>> m_frames;
 
-		const Type *m_intType;
-		const Type *m_floatType;
-		const Type *m_booleanType;
-		const Type *m_stringType;
+		Type *m_intType = nullptr;
+		Type *m_floatType = nullptr;
+		Type *m_booleanType = nullptr;
+		Type *m_stringType = nullptr;
 
-		Frame *m_currentFrame;
-		Frame *m_baseFrame;
+		Frame *m_currentFrame = nullptr;
+		Frame *m_baseFrame = nullptr;
 
 		/*
 		 * Push and pop stack frames
@@ -91,7 +96,7 @@ namespace bea {
 		/*
 		 * Get type from current frame
 		 */
-		Result<Type *> getType(const Name& name);
+		Result<Type *> getType(const Name& name, bool parent = false);
 
 		/*
 		 * Register type in current frame
