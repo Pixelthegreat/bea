@@ -9,11 +9,18 @@ namespace bea {
 
 		BEA_OK(None, visit(node));
 
+		BEA_OK(None, m_context.resolveAliases());
+		BEA_OK(None, m_context.resolveReferences());
+
+		/* Serialize aliases */
+		for (const std::pair<Name, Name>& pair: m_context.m_aliases)
+			m_serializer.writeUse(pair.second, pair.first);
+
 		/* Serialize variable information */
 		Frame& frame = *m_context.m_baseFrame;
-		for (std::pair<std::string, VariableInfo>& pair: frame) {
+		for (std::pair<Name, VariableInfo>& pair: frame) {
 
-			/* NOTE: Update for function pointers */
+			/* TODO: Update for function pointers */
 			if (pair.second.type->type &&
 			    pair.second.type->type->base == BaseType::Function)
 				m_serializer.writeFunction(pair.first, pair.second);
@@ -30,17 +37,13 @@ namespace bea {
 		}
 
 		/* Serialize external references */
-		for (const Reference& reference: m_externalReferences) {
-
-			std::cout << reference << std::endl;
+		for (const Context::Reference& reference: m_context.m_externalReferences) {
 
 			GRCode type = GRCode::ExternalType;
-			if (reference.type == ReferenceType::Entity)
+			if (reference.type == Context::ReferenceType::Entity)
 				type = GRCode::ExternalEntity;
 			m_serializer.writeExternal(type, reference.name);
 		}
-		std::cout << std::endl;
-
 		return Result<None>();
 	}
 
@@ -59,14 +62,12 @@ namespace bea {
 	/* Visit type */
 	Result<None> GlobalResolver::visitType(TypeNode& node) {
 
-		const Name& name = node.getName();
-
 		Result<Type *> result =
 			m_context.getType(
-				name.components[0], true
+				node.m_name, true
 			);
 		if (!result.okay)
-			registerTypeReference(name, node);
+			registerTypeReference(node.m_name, node, nullptr);
 
 		return Result<None>();
 	}
@@ -74,17 +75,61 @@ namespace bea {
 	/* Visit variable access */
 	Result<None> GlobalResolver::visitVariableAccess(VariableAccessNode& node) {
 
-		const Name& name = node.getName();
-
 		Result<VariableInfo *> result =
 			m_context.m_currentFrame->get(
-				name.components[0], true
+				node.m_name, true
 			);
 		if (!result.okay &&
-		    name != "true" &&
-		    name != "false" &&
-		    name != "null")
-			registerEntityReference(name, node);
+		    node.m_name != "true" &&
+		    node.m_name != "false" &&
+		    node.m_name != "null")
+			registerEntityReference(node.m_name, node);
+
+		return Result<None>();
+	}
+
+	/* Visit "new" expression */
+	Result<None> GlobalResolver::visitNew(NewNode& node) {
+
+		std::unique_ptr<TypeID> typeID =
+			BEA_OK(None, nodeToTypeID(node.m_typeNode.get()));
+		if (!typeID->type) {
+
+			TypeNode *typeNode =
+				static_cast<TypeNode *>(
+					node.m_typeNode.get()
+				);
+			registerTypeReference(
+				typeNode->m_name,
+				*typeNode,
+				nullptr
+			);
+		}
+
+		for (const std::unique_ptr<Node>& argument: node.m_argumentNodes)
+			BEA_OK(None, visit(*argument));
+
+		return Result<None>();
+	}
+
+	/* Visit "cast" expression */
+	Result<None> GlobalResolver::visitCast(CastNode& node) {
+
+		std::unique_ptr<TypeID> typeID =
+			BEA_OK(None, nodeToTypeID(node.m_typeNode.get()));
+		if (!typeID->type) {
+
+			TypeNode *typeNode =
+				static_cast<TypeNode *>(
+					node.m_typeNode.get()
+				);
+			registerTypeReference(
+				typeNode->m_name,
+				*typeNode,
+				nullptr
+			);
+		}
+		BEA_OK(None, visit(*node.m_valueNode));
 
 		return Result<None>();
 	}
@@ -126,7 +171,7 @@ namespace bea {
 	Result<None> GlobalResolver::visitCaseLetStatement(CaseLetStatementNode& node) {
 
 		Frame& frame = *m_context.pushFrame();
-		VariableInfo& variable = frame[node.m_name.components[0]];
+		VariableInfo& variable = frame[node.m_name];
 
 		BEA_OK(None, visit(*node.m_caseNode));
 		BEA_OK(None, visit(*node.m_bodyNode));
@@ -151,7 +196,7 @@ namespace bea {
 	Result<None> GlobalResolver::visitForStatement(ForStatementNode& node) {
 
 		Frame& frame = *m_context.pushFrame();
-		VariableInfo& variable = frame[node.m_name.components[0]];
+		VariableInfo& variable = frame[node.m_name];
 
 		BEA_OK(None, visit(*node.m_iterableNode));
 		BEA_OK(None, visit(*node.m_bodyNode));
@@ -182,8 +227,17 @@ namespace bea {
 					node.m_name.components.size()-1
 				],
 			};
+		Name& newName = m_context.m_aliases[alias];
+		if (!newName.empty())
+			return Result<None>(
+				node.m_position,
+				std::format(
+					"Can't redeclare alias '{}'",
+					alias
+				)
+			);
+		newName = node.m_name;
 
-		m_serializer.writeUse(node.m_name, alias);
 		return Result<None>();
 	}
 
@@ -196,21 +250,23 @@ namespace bea {
 				"Global declaration can't have inferred type"
 			);
 
+		BEA_OK(None, visit(*node.m_valueNode));
+
 		/* Declare variables */
 		for (const Name& name: node.m_names) {
 
 			Result<VariableInfo *> result =
-				m_context.m_currentFrame->get(name.components[0]);
+				m_context.m_currentFrame->get(name);
 			if (result.okay)
 				return Result<None>(
 					node.m_position,
 					std::format(
 						"Can't redeclare '{}'",
-						name.components[0]
+						name
 					)
 				);
 			VariableInfo& info =
-				m_context.m_currentFrame->newEntry(name.components[0]);
+				m_context.m_currentFrame->newEntry(name);
 
 			info.flagPublic = node.m_public;
 			if (node.m_typeNode)
@@ -228,11 +284,11 @@ namespace bea {
 	) {
 
 		VariableInfo& info =
-			m_context.m_currentFrame->newEntry(node.m_name.components[0]);
+			m_context.m_currentFrame->newEntry(node.m_name);
 
 		std::size_t& overloadCount =
 			m_context.m_currentFrame->getOverloadCount(
-				node.m_name.components[0]
+				node.m_name
 			);
 
 		info.flagUseDefault = node.m_useDefault;
@@ -245,34 +301,49 @@ namespace bea {
 		Name typeName = {
 			std::format(
 				"::{}::{}",
-				node.m_name.components[0],
+				node.m_name,
 				info.overloadID
 			)
 		};
 
 		std::unique_ptr<Type> type = std::make_unique<Type>(
-			BaseType::Function, typeName.components[0].c_str()
+			BaseType::Function, typeName
 		);
 		info.type = std::make_unique<TypeID>(typeName);
 		info.type->type = type.get();
 
 		/* Add parameters and return value */
-		if (node.m_returnTypeNode)
+		if (node.m_returnTypeNode) {
+
 			type->function.returnType =
 				BEA_OK(None, nodeToTypeID(
 					node.m_returnTypeNode.get()
 				));
-		else
-			type->function.returnType =
-				std::make_unique<TypeID>("None");
+			if (!type->function.returnType->type)
+				registerTypeReference(
+					type->function.returnType->name,
+					*node.m_returnTypeNode,
+					&type->function.returnType->type
+				);
+		}
+		else type->function.returnType =
+			std::make_unique<TypeID>("None");
 
 		for (const NodeFuncParameter& parameter: node.m_parameters) {
 
 			VariableInfo& parameterInfo =
 				type->function.parameters.newEntry(
-					parameter.name.components[0]
+					parameter.name
 				);
-			parameterInfo.type = BEA_OK(None, nodeToTypeID(parameter.typeNode.get()));
+			parameterInfo.type = BEA_OK(
+				None, nodeToTypeID(parameter.typeNode.get())
+			);
+			if (!parameterInfo.type->type)
+				registerTypeReference(
+					parameterInfo.type->name,
+					*parameter.typeNode,
+					&parameterInfo.type->type
+				);
 		}
 
 		/* Add generic parameters */
@@ -289,11 +360,19 @@ namespace bea {
 			/* Type parameter */
 			if (parameter.type == GenericType::Type) {
 
-				if (parameter.defaultNode)
+				if (parameter.defaultNode) {
+
 					generic.substitutedType =
 						BEA_OK(None, nodeToTypeID(
 							parameter.defaultNode.get())
 						);
+					if (!generic.substitutedType->type)
+						registerTypeReference(
+							generic.substitutedType->name,
+							*parameter.defaultNode,
+							&generic.substitutedType->type
+						);
+				}
 			}
 
 			/* Integer parameter */
@@ -317,63 +396,26 @@ namespace bea {
 			if (parameter.type == GenericType::Type) {
 
 				std::unique_ptr<Type>& type =
-					frame.m_types[parameter.name.components[0]];
+					frame.m_types[parameter.name];
 				type = std::make_unique<Type>(
-						BaseType::Any,
-						parameter.name.components[0].c_str()
+					BaseType::Any,
+					parameter.name
 				);
-				if (parameter.defaultNode) {
-
-					std::unique_ptr<TypeID> typeID =
-						BEA_OK(None, nodeToTypeID(
-							parameter.defaultNode.get()
-						));
-					TypeNode *typeNode =
-						dynamic_cast<TypeNode *>(
-							parameter.defaultNode.get()
-						);
-
-					if (!typeID->type && typeNode)
-						registerTypeReference(
-							typeNode->getName(),
-							*typeNode
-						);
-				}
 			}
-			else if (parameter.type == GenericType::Int) {
-
-				VariableInfo& variable =
-					frame[parameter.name.components[0]];
-
-				variable.type = std::make_unique<TypeID>("Int");
-				variable.type->type = m_context.m_intType;
-			}
+			else if (parameter.type == GenericType::Int)
+				frame.newEntry(parameter.name);
 		}
 
 		/* Create temporary variables for parameters */
-		for (const NodeFuncParameter& parameter: node.m_parameters) {
-
-			VariableInfo& variable = frame[parameter.name.components[0]];
-			variable.type = BEA_OK(None, nodeToTypeID(parameter.typeNode.get()));
-
-			if (!variable.type->type) {
-
-				TypeNode *typeNode =
-					static_cast<TypeNode *>(
-						parameter.typeNode.get()
-					);
-				registerTypeReference(
-					typeNode->getName(), *typeNode
-				);
-			}
-		}
+		for (const NodeFuncParameter& parameter: node.m_parameters)
+			frame.newEntry(parameter.name);
 
 		/* Visit body */
 		BEA_OK(None, visit(bodyNode));
 		m_context.popFrame();
 
 		type->external = true;
-		m_context.registerType(typeName.components[0], std::move(type));
+		m_context.registerType(typeName, std::move(type));
 		return Result<None>();
 	}
 
@@ -393,17 +435,17 @@ namespace bea {
 	Result<None> GlobalResolver::visitClassFieldStatement(ClassFieldStatementNode& node) {
 
 		Result<VariableInfo *> result =
-			m_context.m_currentFrame->get(node.m_name.components[0]);
+			m_context.m_currentFrame->get(node.m_name);
 		if (result.okay)
 			return Result<None>(
 				node.m_position,
 				std::format(
 					"Can't redeclare '{}'",
-					node.m_name.components[0]
+					node.m_name
 				)
 			);
 		VariableInfo& info =
-			m_context.m_currentFrame->newEntry(node.m_name.components[0]);
+			m_context.m_currentFrame->newEntry(node.m_name);
 
 		info.flagPublic = node.m_public;
 		//TODO:info.flagStatic = node.m_static;
@@ -420,7 +462,7 @@ namespace bea {
 		BEA_OK(None, visit(*node.m_bodyNode));
 
 		/* Move members */
-		for (std::pair<std::string, VariableInfo>& pair: frame) {
+		for (std::pair<Name, VariableInfo>& pair: frame) {
 
 			VariableInfo& info =
 				m_implMembers.newEntry(pair.first);
@@ -441,7 +483,7 @@ namespace bea {
 				node.m_position,
 				std::format(
 					"Can't redeclare type '{}'",
-					node.m_name.components[0]
+					node.m_name
 				)
 			);
 		std::unique_ptr<Type> type = std::make_unique<Type>(node.m_name);
@@ -458,40 +500,17 @@ namespace bea {
 			if (parameter.type == GenericType::Type) {
 
 				std::unique_ptr<Type>& type =
-					frame.m_types[parameter.name.components[0]];
+					frame.m_types[parameter.name];
 				type = std::make_unique<Type>(
 					BaseType::Any,
-					parameter.name.components[0].c_str()
+					parameter.name
 				);
-				if (parameter.defaultNode) {
-
-					std::unique_ptr<TypeID> typeID =
-						BEA_OK(None, nodeToTypeID(
-							parameter.defaultNode.get()
-						));
-					TypeNode *typeNode =
-						dynamic_cast<TypeNode *>(
-							parameter.defaultNode.get()
-						);
-
-					if (!typeID->type && typeNode)
-						registerTypeReference(
-							typeNode->getName(),
-							*typeNode
-						);
-				}
 				frame.registerType(
 					parameter.name, std::move(type)
 				);
 			}
-			else if (parameter.type == GenericType::Int) {
-
-				VariableInfo& variable =
-					frame[parameter.name.components[0]];
-
-				variable.type = std::make_unique<TypeID>("Int");
-				variable.type->type = m_context.m_intType;
-			}
+			else if (parameter.type == GenericType::Int)
+				frame.newEntry(parameter.name);
 		}
 
 		/* Visit nodes */
@@ -515,7 +534,8 @@ namespace bea {
 			if (!implementation.type->type)
 				registerTypeReference(
 					implementation.type->name,
-					*implNode->m_typeNode
+					*implNode->m_typeNode,
+					&implementation.type->type
 				);
 
 			type->object.implementations.emplace_back(
@@ -525,7 +545,7 @@ namespace bea {
 		m_blockLevel--;
 
 		/* Move members */
-		for (std::pair<std::string, VariableInfo>& pair: frame) {
+		for (std::pair<Name, VariableInfo>& pair: frame) {
 
 			if (pair.second.flagPublic) {
 
@@ -555,11 +575,19 @@ namespace bea {
 			/* Type parameter */
 			if (parameter.type == GenericType::Type) {
 
-				if (parameter.defaultNode)
+				if (parameter.defaultNode) {
+
 					generic.substitutedType =
 						BEA_OK(None, nodeToTypeID(
 							parameter.defaultNode.get())
 						);
+					if (!generic.substitutedType->type)
+						registerTypeReference(
+							generic.substitutedType->name,
+							*parameter.defaultNode,
+							&generic.substitutedType->type
+						);
+				}
 			}
 
 			/* Integer parameter */
@@ -630,43 +658,29 @@ namespace bea {
 
 	/* Register type reference */
 	void GlobalResolver::registerTypeReference(
-		const Name& name, Node& node
+		Name& name,
+		Node& node,
+		Type **pType
 	) {
-		Reference reference = {
-			.type = ReferenceType::Type,
+		Context::Reference reference = {
+			.type = Context::ReferenceType::Type,
 			.name = name,
 			.node = node,
+			.pType = pType,
 		};
-		m_externalReferences.emplace_back(std::move(reference));
+		m_context.m_externalReferences.emplace_back(std::move(reference));
 	}
 
 	/* Register entity reference */
 	void GlobalResolver::registerEntityReference(
-		const Name& name, Node& node
+		Name& name,
+		Node& node
 	) {
-		Reference reference = {
-			.type = ReferenceType::Entity,
+		Context::Reference reference = {
+			.type = Context::ReferenceType::Entity,
 			.name = name,
 			.node = node,
 		};
-		m_externalReferences.emplace_back(std::move(reference));
-	}
-
-	/* Reference printer */
-	std::ostream& operator<<(
-		std::ostream& stream,
-		const GlobalResolver::Reference& reference
-	) {
-		stream << reference.node.m_position << ":" << reference.name << "(";
-		switch (reference.type) {
-			case GlobalResolver::ReferenceType::Type:
-				stream << "Type";
-				break;
-			case GlobalResolver::ReferenceType::Entity:
-				stream << "Entity";
-		}
-		stream << ")";
-
-		return stream;
+		m_context.m_externalReferences.emplace_back(std::move(reference));
 	}
 }

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <format>
+#include <sstream>
 #include <bea/core.hpp>
 #include <bea/container.hpp>
 
@@ -70,11 +72,11 @@ namespace bea {
 		bool compare(const Name& other);
 	};
 
+	std::ostream& operator<<(std::ostream& stream, const Name& name);
+
 	bool operator==(const Name& a, const Name& b);
 	bool operator==(const Name& a, const char *b);
 	bool operator==(const Name& a, const std::string& b);
-
-	std::ostream& operator<<(std::ostream& stream, const Name& name);
 
 /*
  * Name hash
@@ -114,6 +116,43 @@ struct std::hash<bea::Name> {
 		return std::hash<std::string_view>{}(view);
 	}
 };
+
+/*
+ * Name format
+ */
+template<>
+struct std::formatter<bea::Name, char> {
+
+	template<class ParseContext>
+	constexpr ParseContext::iterator parse(ParseContext& context) {
+
+		auto it = context.begin();
+		for (; it != context.end() && *it != '}'; it++);
+
+		return it;
+	}
+
+	template<class FormatContext>
+	FormatContext::iterator format(
+		const bea::Name& name,
+		FormatContext& context
+	) const {
+		std::ostringstream stream;
+
+		std::size_t index = 0;
+		for (const std::string& component: name) {
+
+			if (index++) stream << "::";
+			stream << component;
+		}
+
+		return std::ranges::copy(
+			std::move(stream).str(),
+			context.out()
+		).out;
+	}
+};
+
 namespace bea {
 
 	/*
@@ -169,7 +208,7 @@ namespace bea {
 	 */
 	struct ObjectImplementation {
 		std::unique_ptr<TypeID> type;
-		OrderedMap<std::string, VariableInfo> members;
+		OrderedMap<Name, VariableInfo> members;
 		std::unordered_map<Name, std::unique_ptr<Type>> internalTypes;
 	};
 
@@ -177,8 +216,8 @@ namespace bea {
 		bool flagAbstract;
 		bool flagPublic;
 		std::vector<GenericInfo> genericParameters;
-		OrderedMap<std::string, VariableInfo> publicMembers;
-		OrderedMap<std::string, VariableInfo> privateMembers;
+		OrderedMap<Name, VariableInfo> publicMembers;
+		OrderedMap<Name, VariableInfo> privateMembers;
 		std::vector<ObjectImplementation> implementations;
 		std::unordered_map<Name, std::unique_ptr<Type>> internalTypes;
 
@@ -200,7 +239,11 @@ namespace bea {
 
 		Type(BaseType base) : base(base) {}
 
+		Type(BaseType base, const std::string& name) : base(base), name(name) {}
+
 		Type(BaseType base, const char *name) : base(base), name(name) {}
+
+		Type(BaseType base, const Name& name) : base(base), name(name) {}
 
 		Type(const std::string& name) : base(BaseType::Object), name(name) {}
 

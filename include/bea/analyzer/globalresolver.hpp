@@ -13,24 +13,6 @@ namespace bea {
 	 */
 	class GlobalResolver : public NodeAnalyzerVisitor {
 	public:
-		/*
-		 * Reference
-		 */
-		enum class ReferenceType {
-			Type = 0,
-			Entity,
-
-			Count,
-		};
-		struct Reference {
-			ReferenceType type;
-			const Name& name;
-			Node& node;
-		};
-
-		/*
-		 * Analyzer implementation
-		 */
 		GlobalResolver(
 			Context& context,
 			GRCodeSerializer& serializer
@@ -44,6 +26,8 @@ namespace bea {
 
 		virtual Result<None> visitType(TypeNode& node) override;
 		virtual Result<None> visitVariableAccess(VariableAccessNode& node) override;
+		virtual Result<None> visitNew(NewNode& node) override;
+		virtual Result<None> visitCast(CastNode& node) override;
 
 		virtual Result<None> visitIfStatement(IfStatementNode& node) override;
 		virtual Result<None> visitCaseStatement(CaseStatementNode& node) override;
@@ -67,9 +51,9 @@ namespace bea {
 		virtual Result<None> visitClassStatement(ClassStatementNode& node) override;
 	private:
 		GRCodeSerializer& m_serializer;
-		OrderedMap<std::string, VariableInfo> m_implMembers;
+
+		OrderedMap<Name, VariableInfo> m_implMembers;
 		std::unordered_map<Name, std::unique_ptr<Type>> m_implTypes;
-		std::vector<Reference> m_externalReferences;
 
 		/*
 		 * Create type identifier for type node
@@ -80,15 +64,13 @@ namespace bea {
 		 * Register external references
 		 */
 		void registerTypeReference(
-			const Name& name, Node& node
+			Name& name,
+			Node& node,
+			Type **pType = nullptr
 		);
 		void registerEntityReference(
-			const Name& name, Node& node
+			Name& name,
+			Node& node
 		);
 	};
-
-	std::ostream& operator<<(
-		std::ostream& stream,
-		const GlobalResolver::Reference& reference
-	);
 }

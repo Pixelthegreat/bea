@@ -14,6 +14,15 @@ namespace bea {
 			calculateValue(data, size);
 		}
 
+		Hash(
+			const std::string& string
+		) {
+			calculateValue(
+				(const std::uint8_t *)string.c_str(),
+				string.length()
+			);
+		}
+
 		std::uint32_t getValue() const { return m_value; }
 
 		/*

@@ -15,7 +15,7 @@ namespace bea {
 		VariableAccessNode(Name&& name) : m_name(name) {}
 
 		const Name& getName() const { return m_name; }
-	private:
+
 		Name m_name;
 	protected:
 		virtual Result<None> visit(NodeVisitor& visitor) override;

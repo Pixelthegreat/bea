@@ -33,18 +33,32 @@ namespace bea {
 		static const char *targetToString(Target target);
 
 		/*
+		 * Project source dependency
+		 */
+		struct SourceDependency {
+			std::string outputPath{};
+			std::string shortPath{};
+			bool read = false;
+		};
+
+		/*
 		 * Project source
 		 */
 		struct Source {
-			std::size_t index;
-			std::string path;
-			std::string outputPath;
-			std::string shortPath;
-			bool recompile;
+			std::size_t index = 0;
+			std::string path{};
+			std::string outputPath{};
+			std::string shortPath{};
+			bool recompile = false;
 
-			std::unique_ptr<Context> context;
+			std::unique_ptr<Context> context = nullptr;
+			std::unordered_map<Name, SourceDependency> dependencies;
+			std::size_t dependencyDelta = 0;
 		};
 
+		/*
+		 * Project
+		 */
 		Project(
 			const std::string& path,
 			Target target = Target::Debug
@@ -124,5 +138,19 @@ namespace bea {
 		 * Build source
 		 */
 		Result<None> buildSourceStage1(Source& source);
+		Result<None> buildSourceStage2(Source& source);
+
+		/*
+		 * Read source dependencies
+		 */
+		Result<None> readSourceDependencies(Source& source);
+
+		/*
+		 * Get source dependency for name
+		 */
+		Result<SourceDependency *> getSourceDependency(
+			Source& source,
+			const Name& name
+		);
 	};
 }

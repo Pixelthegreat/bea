@@ -1,8 +1,5 @@
 module range
 
-use std::iterator::Iterable
-use std::iterator::Iterator
-
 /*
  * @brief Range iterator
  */

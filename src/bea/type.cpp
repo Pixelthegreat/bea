@@ -25,6 +25,17 @@ namespace bea {
 		return stream << "None";
 	}
 
+	/* Print generic type */
+	std::ostream& operator<<(std::ostream& stream, GenericType type) {
+
+		switch (type) {
+			using enum GenericType;
+			case Type: return stream << "Type";
+			case Int: return stream << "Int";
+		}
+		return stream;
+	}
+
 	/* Print name */
 	std::ostream& operator<<(std::ostream& stream, const Name& name) {
 
@@ -33,17 +44,6 @@ namespace bea {
 
 			if (index++) stream << "::";
 			stream << component;
-		}
-		return stream;
-	}
-
-	/* Print generic type */
-	std::ostream& operator<<(std::ostream& stream, GenericType type) {
-
-		switch (type) {
-			using enum GenericType;
-			case Type: return stream << "Type";
-			case Int: return stream << "Int";
 		}
 		return stream;
 	}

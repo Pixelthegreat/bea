@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <bea/core.hpp>
 #include <bea/type.hpp>
+#include <bea/node.hpp>
 
 namespace bea {
 
@@ -14,29 +15,35 @@ namespace bea {
 		Frame(Frame *parent = nullptr)
 			: m_parent(parent) {}
 
+		OrderedMap<Name, VariableInfo> m_values;
+		std::unordered_map<std::size_t, std::size_t> m_overloads;
+		std::unordered_map<Name, std::unique_ptr<Type>> m_types;
+
+		Frame *m_parent = nullptr;
+
 		/*
 		 * Iterator
 		 */
-		std::pair<std::string, VariableInfo> *data() { return m_values.data(); }
+		std::pair<Name, VariableInfo> *data() { return m_values.data(); }
 		std::size_t size() const { return m_values.size(); }
 		bool empty() const { return m_values.empty(); }
-		std::pair<std::string, VariableInfo> *begin() { return m_values.begin(); }
-		std::pair<std::string, VariableInfo> *end() { return m_values.end(); }
-		const std::pair<std::string, VariableInfo> *data() const { return m_values.data(); }
-		const std::pair<std::string, VariableInfo> *begin() const { return m_values.begin(); }
-		const std::pair<std::string, VariableInfo> *end() const { return m_values.end(); }
+		std::pair<Name, VariableInfo> *begin() { return m_values.begin(); }
+		std::pair<Name, VariableInfo> *end() { return m_values.end(); }
+		const std::pair<Name, VariableInfo> *data() const { return m_values.data(); }
+		const std::pair<Name, VariableInfo> *begin() const { return m_values.begin(); }
+		const std::pair<Name, VariableInfo> *end() const { return m_values.end(); }
 
 		/*
 		 * Get items
 		 */
-		Result<VariableInfo *> get(const std::string& key, bool parent = false);
-		Result<VariableInfo *> get(std::string&& key, bool parent = false);
+		Result<VariableInfo *> get(const Name& key, bool parent = false);
+		Result<VariableInfo *> get(Name&& key, bool parent = false);
 
-		VariableInfo& operator[](const std::string& key);
-		VariableInfo& operator[](std::string&& key);
+		VariableInfo& operator[](const Name& key);
+		VariableInfo& operator[](Name&& key);
 
-		VariableInfo& newEntry(const std::string& key);
-		VariableInfo& newEntry(std::string&& key);
+		VariableInfo& newEntry(const Name& key);
+		VariableInfo& newEntry(Name&& key);
 
 		/*
 		 * Get overload count for name
@@ -59,12 +66,6 @@ namespace bea {
 			const Name& name,
 			std::unique_ptr<Type> type
 		);
-
-		OrderedMap<std::string, VariableInfo> m_values;
-		std::unordered_map<std::size_t, std::size_t> m_overloads;
-		std::unordered_map<Name, std::unique_ptr<Type>> m_types;
-
-		Frame *m_parent = nullptr;
 	};
 
 	/*
@@ -72,11 +73,36 @@ namespace bea {
 	 */
 	class Context {
 	public:
-		Context() {
+		/*
+		 * External reference record
+		 */
+		enum class ReferenceType {
+			Type = 0,
+			Entity,
+
+			Count,
+		};
+		struct Reference {
+			ReferenceType type;
+			Name& name;
+			Node& node;
+			Type **pType = nullptr;
+			bool dealiased = false;
+			bool resolved = false;
+		};
+
+		/*
+		 * Context
+		 */
+		Context(const std::string& sourcePath)
+			: m_sourcePath(sourcePath) {
 
 			m_currentFrame = m_baseFrame = pushFrame();
 			initTypes();
+			initAliases();
 		}
+		const std::string& m_sourcePath;
+
 		std::vector<std::unique_ptr<Frame>> m_frames;
 
 		Type *m_intType = nullptr;
@@ -86,6 +112,9 @@ namespace bea {
 
 		Frame *m_currentFrame = nullptr;
 		Frame *m_baseFrame = nullptr;
+
+		std::vector<Reference> m_externalReferences;
+		std::unordered_map<Name, Name> m_aliases;
 
 		/*
 		 * Push and pop stack frames
@@ -107,10 +136,30 @@ namespace bea {
 			const Name& name,
 			std::unique_ptr<Type> type
 		);
+
+		/*
+		 * Resolve aliases
+		 */
+		Result<None> resolveAliases();
+
+		/*
+		 * Resolve references
+		 */
+		Result<None> resolveReferences();
 	private:
 		/*
 		 * Initialize types
 		 */
 		void initTypes();
+
+		/*
+		 * Initialize aliases
+		 */
+		void initAliases();
 	};
+
+	std::ostream& operator<<(
+		std::ostream& stream,
+		const Context::Reference& reference
+	);
 }

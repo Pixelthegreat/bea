@@ -4,37 +4,37 @@
 namespace bea {
 
 	/* Get item from frame */
-	Result<VariableInfo *> Frame::get(const std::string& key, bool parent) {
+	Result<VariableInfo *> Frame::get(const Name& key, bool parent) {
 
 		Result<VariableInfo *> result = m_values.get(key);
 		if (!result.okay && parent && m_parent)
 			return m_parent->get(key, parent);
 		return result;
 	}
-	Result<VariableInfo *> Frame::get(std::string&& key, bool parent) {
+	Result<VariableInfo *> Frame::get(Name&& key, bool parent) {
 
-		Result<VariableInfo *> result = m_values.get((const std::string&)key);
+		Result<VariableInfo *> result = m_values.get((const Name&)key);
 		if (!result.okay && parent && m_parent)
 			return m_parent->get(std::move(key), parent);
 		return result;
 	}
 
 	/* Get or create item in frame */
-	VariableInfo& Frame::operator[](const std::string& key) {
+	VariableInfo& Frame::operator[](const Name& key) {
 
 		return m_values[key];
 	}
-	VariableInfo& Frame::operator[](std::string&& key) {
+	VariableInfo& Frame::operator[](Name&& key) {
 
 		return m_values[std::move(key)];
 	}
 
 	/* Create item in frame */
-	VariableInfo& Frame::newEntry(const std::string& key) {
+	VariableInfo& Frame::newEntry(const Name& key) {
 
 		return m_values.newEntry(key);
 	}
-	VariableInfo& Frame::newEntry(std::string&& key) {
+	VariableInfo& Frame::newEntry(Name&& key) {
 
 		return m_values.newEntry(std::move(key));
 	}
@@ -78,6 +78,110 @@ namespace bea {
 		return Result<None>();
 	}
 
+	/* Push stack frame */
+	Frame *Context::pushFrame() {
+
+		m_frames.emplace_back(std::make_unique<Frame>(m_currentFrame));
+		m_currentFrame = m_frames[m_frames.size()-1].get();
+
+		return m_currentFrame;
+	}
+
+	/* Pop stack frame */
+	void Context::popFrame() {
+
+		m_frames.pop_back();
+		if (!m_frames.empty())
+			m_currentFrame = m_frames[m_frames.size()-1].get();
+		else
+			m_currentFrame = nullptr;
+	}
+
+	/* Get type from current frame */
+	Result<Type *> Context::getType(const Name& name, bool parent) {
+
+		return m_currentFrame->getType(name, parent);
+	}
+
+	/* Register type in current frame */
+	Result<None> Context::registerType(
+		const Name& name,
+		std::unique_ptr<Type> type
+	) {
+		return m_currentFrame->registerType(name, std::move(type));
+	}
+
+	/* Resolve aliases */
+	Result<None> Context::resolveAliases() {
+
+		for (Reference& reference: m_externalReferences) {
+
+			if (reference.dealiased)
+				continue;
+
+			Name name = reference.name;
+
+			auto it = m_aliases.end();
+			do {
+				it = m_aliases.find(name);
+				name.components.pop_back();
+
+			} while (name.components.size() && it == m_aliases.end());
+
+			if (it == m_aliases.end())
+				continue;
+			const Name& realName = (*it).second;
+
+			std::cout << reference.name << " -> ";
+
+			reference.name.components.erase(
+				reference.name.components.begin(),
+				reference.name.components.begin() +
+				name.components.size() + 1
+			);
+			for (std::size_t i = 0; i < realName.components.size(); i++)
+				reference.name.components.insert(
+					reference.name.components.begin()+i,
+					realName.components[i]
+				);
+			std::cout << reference.name << std::endl;
+
+			reference.dealiased = true;
+		}
+		return Result<None>();
+	}
+
+	/* Resolve references */
+	Result<None> Context::resolveReferences() {
+
+		for (Reference& reference: m_externalReferences) {
+
+			if (reference.resolved)
+				continue;
+
+			/* Type reference */
+			if (reference.type == ReferenceType::Type) {
+
+				Result<Type *> result =
+					m_baseFrame->getType(reference.name);
+				if (!result.okay) continue;
+
+				if (reference.pType)
+					*reference.pType = result.value;
+			}
+
+			/* Entity reference */
+			else if (reference.type == ReferenceType::Entity) {
+
+				Result<VariableInfo *> result =
+					m_baseFrame->get(reference.name);
+				if (!result.okay) continue;
+			}
+			reference.resolved = true;
+		}
+		return Result<None>();
+	}
+
 	/* Initialize base types */
 	void Context::initTypes() {
 
@@ -113,36 +217,36 @@ namespace bea {
 		registerType("String", std::move(stringType));
 	}
 
-	/* Push stack frame */
-	Frame *Context::pushFrame() {
+	/* Initialize aliases */
+	void Context::initAliases() {
 
-		m_frames.emplace_back(std::make_unique<Frame>(m_currentFrame));
-		m_currentFrame = m_frames[m_frames.size()-1].get();
+		if (m_sourcePath != "stdlib/src/iterator.bea") {
 
-		return m_currentFrame;
+			m_aliases["Iterable"] = {"std", "iterator", "Iterable"};
+			m_aliases["Iterator"] = {"std", "iterator", "Iterator"};
+		}
+		if (m_sourcePath != "stdlib/src/range.bea")
+			m_aliases["Range"] = {"std", "range", "Range"};
+
+		if (m_sourcePath != "stdlib/src/result.bea")
+			m_aliases["Result"] = {"std", "result", "Result"};
 	}
 
-	/* Pop stack frame */
-	void Context::popFrame() {
-
-		m_frames.pop_back();
-		if (!m_frames.empty())
-			m_currentFrame = m_frames[m_frames.size()-1].get();
-		else
-			m_currentFrame = nullptr;
-	}
-
-	/* Get type from current frame */
-	Result<Type *> Context::getType(const Name& name, bool parent) {
-
-		return m_currentFrame->getType(name, parent);
-	}
-
-	/* Register type in current frame */
-	Result<None> Context::registerType(
-		const Name& name,
-		std::unique_ptr<Type> type
+	/* Reference printer */
+	std::ostream& operator<<(
+		std::ostream& stream,
+		const Context::Reference& reference
 	) {
-		return m_currentFrame->registerType(name, std::move(type));
+		stream << reference.node.m_position << ":" << reference.name << "(";
+		switch (reference.type) {
+			case Context::ReferenceType::Type:
+				stream << "Type";
+				break;
+			case Context::ReferenceType::Entity:
+				stream << "Entity";
+		}
+		stream << ")";
+
+		return stream;
 	}
 }

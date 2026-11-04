@@ -87,7 +87,7 @@ namespace bea {
 			" (" << targetToString(m_target) <<
 			")...\n" << std::endl;
 
-		std::size_t stages = 1;
+		std::size_t stages = 2;
 
 		/* First stage: Parsing and declaring globals */
 		for (std::unique_ptr<Source>& source: m_sources) {
@@ -97,6 +97,17 @@ namespace bea {
 				source->shortPath
 			);
 			BEA_OK(None, buildSourceStage1(*source));
+		}
+
+		/* Second stage: Analysis and compilation */
+		for (std::unique_ptr<Source>& source: m_sources) {
+
+			printProgressBar(
+				source->index + m_sources.size(),
+				stages * m_sources.size(), 40,
+				source->shortPath
+			);
+			BEA_OK(None, buildSourceStage2(*source));
 		}
 
 		/* Link project */
@@ -292,7 +303,7 @@ namespace bea {
 		return Result<None>();
 	}
 
-	/* Build source */
+	/* Build source stage 1 */
 	Result<None> Project::buildSourceStage1(Source& source) {
 
 		if (!source.recompile)
@@ -330,7 +341,7 @@ namespace bea {
 			));
 		GRCodeSerializer serializer(grStream);
 
-		source.context = std::make_unique<Context>();
+		source.context = std::make_unique<Context>(source.path);
 		GlobalResolver globalResolver(
 			*source.context, serializer
 		);
@@ -338,6 +349,100 @@ namespace bea {
 		BEA_OK(None, globalResolver.analyze(*node));
 		grStream.close();
 
+		std::cout << std::endl;
 		return Result<None>();
+	}
+
+	/* Build source stage 2 */
+	Result<None> Project::buildSourceStage2(Source& source) {
+
+		if (!source.recompile)
+			return Result<None>();
+
+		source.dependencyDelta = 1;
+		while (source.dependencyDelta)
+			BEA_OK(None, readSourceDependencies(source));
+
+		std::cout << std::endl;
+		return Result<None>();
+	}
+
+	/* Read source dependencies */
+	Result<None> Project::readSourceDependencies(Source& source) {
+
+		source.dependencyDelta = 0;
+
+		for (
+			Context::Reference& reference:
+			source.context->m_externalReferences
+		) {
+			if (reference.resolved)
+				continue;
+			if (reference.name.components.size() <= 1)
+				return Result<None>(
+					reference.node.m_position,
+					std::format(
+						"Unresolved reference '{}'",
+						reference.name
+					)
+				);
+
+			SourceDependency *dependency =
+				BEA_OK(None, getSourceDependency(
+					source, reference.name
+				));
+			dependency->read = true;
+		}
+		return Result<None>();
+	}
+
+	/* Get source dependency for name */
+	Result<Project::SourceDependency *> Project::getSourceDependency(
+		Source& source,
+		const Name& name
+	) {
+		Project::SourceDependency *dependency =
+			&source.dependencies[name];
+
+		if (!dependency->outputPath.length()) {
+
+			std::size_t start = 0;
+
+			/* Determine dependency paths */
+			Result<Project *> result = getProject(name.components[0]);
+			Project *project = this;
+
+			if (result.okay) {
+
+				start++;
+				project = result.value;
+			}
+			std::ostringstream shortPathStream;
+			shortPathStream << "src/";
+
+			for (std::size_t i = start; i < name.components.size()-1; i++) {
+
+				if (i > start) shortPathStream << "/";
+				shortPathStream << name.components[i];
+			}
+			shortPathStream << ".bea";
+			dependency->shortPath = shortPathStream.str();
+
+			dependency->outputPath = std::format(
+				"{}/build/{}/cache/{}",
+				project->m_path,
+				targetToString(project->m_target),
+				Hash(dependency->shortPath).toString()
+			);
+			std::cout <<
+				name << ", " <<
+				dependency->shortPath << ", " <<
+				dependency->outputPath << std::endl;
+		}
+
+		if (!dependency->read)
+			source.dependencyDelta++;
+
+		return Result<Project::SourceDependency *>(dependency);
 	}
 }

@@ -147,13 +147,13 @@ namespace bea {
 			writeGeneric(generic, GRCode::GenericParameter);
 
 		for (
-			const std::pair<std::string, VariableInfo>& member:
+			const std::pair<Name, VariableInfo>& member:
 			type.object.publicMembers
 		)
 			writeClassMember(member.first, member.second);
 
 		for (
-			const std::pair<std::string, VariableInfo>& member:
+			const std::pair<Name, VariableInfo>& member:
 			type.object.privateMembers
 		)
 			writeClassMember(member.first, member.second);
@@ -184,7 +184,7 @@ namespace bea {
 		writeU16L((std::uint16_t)implementation.members.size());
 
 		for (
-			const std::pair<std::string, VariableInfo>& member:
+			const std::pair<Name, VariableInfo>& member:
 			implementation.members
 		)
 			writeClassMember(member.first, member.second);
