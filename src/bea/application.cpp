@@ -28,7 +28,7 @@ namespace bea {
 		Project *project = BEA_OK(
 			None, Project::loadProject(
 				s_projectPath,
-				Project::defaultURL,
+				Project::s_defaultURL,
 				s_target
 			)
 		);

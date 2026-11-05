@@ -1,7 +1,11 @@
+#include <fstream>
 #include <bea/core.hpp>
+#include <bea/serial.hpp>
 #include <bea/context.hpp>
 
 namespace bea {
+
+	static IntegerNode dummyNode(0);
 
 	/* Get item from frame */
 	Result<VariableInfo *> Frame::get(const Name& key, bool parent) {
@@ -132,8 +136,6 @@ namespace bea {
 				continue;
 			const Name& realName = (*it).second;
 
-			std::cout << reference.name << " -> ";
-
 			reference.name.components.erase(
 				reference.name.components.begin(),
 				reference.name.components.begin() +
@@ -144,8 +146,6 @@ namespace bea {
 					reference.name.components.begin()+i,
 					realName.components[i]
 				);
-			std::cout << reference.name << std::endl;
-
 			reference.dealiased = true;
 		}
 		return Result<None>();
@@ -179,6 +179,75 @@ namespace bea {
 			}
 			reference.resolved = true;
 		}
+		return Result<None>();
+	}
+
+	/* Resolve module */
+	Result<None> Context::resolveModule(
+		const std::string& path,
+		const Name& name
+	) {
+		m_aliases.clear();
+
+		std::ifstream stream(path, std::ios::binary);
+		if (!stream.is_open())
+			return Result<None>(
+				std::format(
+					"Can't open file '{}': {}",
+					path, std::strerror(errno),
+					name
+				)
+			);
+
+		/* Deserialize file */
+		GRCodeDeserializer deserializer(stream, name);
+		BEA_OK(None, deserializer.readAll());
+
+		stream.close();
+
+		/* Move aliases */
+		for (Pair<Name> pair: deserializer.m_aliases)
+			m_aliases[std::move(pair[1])] =
+				std::move(pair[0]);
+
+		/* Move types */
+		for (std::pair<Name, std::unique_ptr<Type>>& pair: deserializer.m_types)
+			m_baseFrame->m_types[std::move(pair.first)] =
+				std::move(pair.second);
+
+		for (
+			const std::pair<GRCode, Name>& pair:
+			deserializer.m_externalReferences
+		) {
+			ReferenceType type = ReferenceType::Type;
+			if (pair.first == GRCode::ExternalEntity)
+				type = ReferenceType::Entity;
+
+			m_strayNames.emplace_back(std::move(pair.second));
+
+			Reference reference = {
+				.type = type,
+				.name = m_strayNames[m_strayNames.size()-1],
+				.node = dummyNode,
+			};
+			m_externalReferences.emplace_back(
+				std::move(reference)
+			);
+		}
+
+		/* Move variables */
+		for (std::pair<Name, VariableInfo>& pair: deserializer.m_values)
+			m_currentFrame->newEntry(std::move(pair.first)) =
+				std::move(pair.second);
+
+		/* Record stray type IDs */
+		for (TypeID *typeID: deserializer.m_typeIDs)
+			m_strayTypeIDs.push_back(typeID);
+
+		/* Resolve aliases and references */
+		BEA_OK(None, resolveAliases());
+		BEA_OK(None, resolveReferences());
+
 		return Result<None>();
 	}
 
@@ -220,15 +289,15 @@ namespace bea {
 	/* Initialize aliases */
 	void Context::initAliases() {
 
-		if (m_sourcePath != "stdlib/src/iterator.bea") {
+		if (!m_sourcePath.ends_with("stdlib/src/iterator.bea")) {
 
 			m_aliases["Iterable"] = {"std", "iterator", "Iterable"};
 			m_aliases["Iterator"] = {"std", "iterator", "Iterator"};
 		}
-		if (m_sourcePath != "stdlib/src/range.bea")
+		if (!m_sourcePath.ends_with("stdlib/src/range.bea"))
 			m_aliases["Range"] = {"std", "range", "Range"};
 
-		if (m_sourcePath != "stdlib/src/result.bea")
+		if (!m_sourcePath.ends_with("stdlib/src/result.bea"))
 			m_aliases["Result"] = {"std", "result", "Result"};
 	}
 

@@ -110,4 +110,43 @@ namespace bea {
 			const VariableInfo& member
 		);
 	};
+
+	/*
+	 * GRCode deserializer
+	 */
+	class GRCodeDeserializer : public Deserializer {
+	public:
+		GRCodeDeserializer(
+			std::istream& stream,
+			const Name& moduleName
+		)
+			: Deserializer(stream),
+			  m_moduleName(moduleName) {}
+
+		std::vector<Pair<Name>> m_aliases;
+		std::vector<std::pair<Name, std::unique_ptr<Type>>> m_types;
+		std::vector<std::pair<Name, VariableInfo>> m_values;
+		std::vector<TypeID *> m_typeIDs;
+		std::vector<std::pair<GRCode, Name>> m_externalReferences;
+
+		/*
+		 * Read GRCode operations
+		 */
+		Result<None> readAll();
+	private:
+		const Name& m_moduleName;
+		std::size_t m_inClass = 0;
+
+		Name readDeclarationName();
+
+		Pair<Name> readUse();
+		std::pair<Name, std::unique_ptr<Type>> readClass();
+		std::pair<Name, VariableInfo> readClassField();
+		ObjectImplementation readClassImpl();
+		std::pair<Name, VariableInfo> readFunction();
+		std::pair<GRCode, Name> readExternal();
+		std::unique_ptr<TypeID> readTypeID();
+		std::pair<GRCode, GenericInfo> readGeneric();
+		std::pair<Name, VariableInfo> readClassMember();
+	};
 };

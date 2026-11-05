@@ -14,7 +14,9 @@
 
 namespace bea {
 
-	std::string Project::defaultURL = "";
+	std::string Project::s_defaultURL = "";
+	std::string Project::s_globalPath;
+
 	std::vector<std::unique_ptr<Project>> Project::s_projects;
 
 	/* Get strings for enums */
@@ -53,6 +55,9 @@ namespace bea {
 		const std::string& url,
 		Target target
 	) {
+		if (s_projects.empty())
+			s_globalPath = path;
+
 		s_projects.emplace_back(std::make_unique<Project>(path, target));
 		Project& project = *s_projects[s_projects.size()-1];
 
@@ -81,6 +86,13 @@ namespace bea {
 
 	/* Build project */
 	Result<None> Project::build() {
+
+		if (!m_rebuild) return Result<None>();
+		m_rebuild = false;
+
+		/* Build dependencies */
+		for (Project *project: m_dependencies)
+			BEA_OK(None, project->build());
 
 		std::cout <<
 			"Building " << m_name <<
@@ -223,6 +235,8 @@ namespace bea {
 		/* Get elements */
 		toml_datum_t name = toml_seek(result.toptab, "project.name");
 		toml_datum_t type = toml_seek(result.toptab, "project.type");
+		toml_datum_t noStdlib = toml_seek(result.toptab, "project.options.noStdlib");
+		toml_datum_t dependencies = toml_seek(result.toptab, "project.dependencies");
 
 		if (name.type != TOML_STRING) {
 
@@ -232,6 +246,9 @@ namespace bea {
 			);
 		}
 		m_name = name.u.str.ptr;
+
+		if (noStdlib.type == TOML_BOOLEAN)
+			m_options.noStdlib = noStdlib.u.boolean;
 
 		/* Parse type */
 		if (type.type == TOML_STRING) {
@@ -245,6 +262,93 @@ namespace bea {
 					type.u.str.ptr
 				));
 		}
+
+		/* Standard library dependency */
+		const char *beaPath = getenv("BEA_PATH");
+		if (!beaPath || !*beaPath)
+			return Result<None>(
+				"No 'BEA_PATH' environment variable set"
+			);
+		if (!m_options.noStdlib) {
+
+			std::string path = std::format(
+				"{}/stdlib", beaPath
+			);
+			Project *stdlibProject = nullptr;
+			Result<Project *> result = getProject("std");
+
+			if (!stdlibProject)
+				stdlibProject = BEA_OK(None, loadProject(path));
+			else
+				stdlibProject = result.value;
+
+			m_dependencies.push_back(stdlibProject);
+		}
+
+		/* Search dependencies */
+		if (dependencies.type == TOML_TABLE) {
+
+			for (std::size_t i = 0; i < dependencies.u.tab.size; i++) {
+
+				const char *csName = nullptr;
+				const char *csUrl = nullptr;
+				const char *csPath = nullptr;
+
+				csName = dependencies.u.tab.key[i];
+				toml_datum_t *datum = dependencies.u.tab.value+i;
+
+				/* Determine path and URL */
+				if (datum->type == TOML_STRING) {
+
+					if (std::strstr(datum->u.str.ptr, "://"))
+						csUrl = datum->u.str.ptr;
+					else
+						csPath = datum->u.str.ptr;
+				}
+				else if (datum->type == TOML_TABLE) {
+
+					toml_datum_t url = toml_get(*datum, "url");
+					toml_datum_t path = toml_get(*datum, "path");
+
+					if (url.type != TOML_STRING &&
+					    path.type != TOML_STRING)
+						return Result<None>(
+							std::format(
+								"Dependency '{}' must have "
+								"url or local path",
+								csName
+							)
+						);
+				}
+
+				/* Get or create project */
+				std::string name = csName;
+				Result<Project *> result = getProject(name);
+				Project *project = nullptr;
+
+				if (!result.okay) {
+
+					std::string path;
+					if (csPath) path = std::format(
+						"{}/{}", m_path, csPath
+					);
+					else path = std::format(
+						"{}/build/vendor/{}",
+						s_globalPath, name
+					);
+
+					std::string url;
+					if (csUrl) url = csUrl;
+
+					project = BEA_OK(None, loadProject(
+						path, url, m_target
+					));
+				}
+				else project = result.value;
+				m_dependencies.push_back(project);
+			}
+		}
+
 		toml_free(result);
 		return Result<None>();
 	}
@@ -298,6 +402,9 @@ namespace bea {
 					.recompile = true,
 				}));
 				Source& source = *m_sources[m_sources.size()-1];
+
+				if (source.recompile)
+					m_rebuild = true;
 			}
 		}
 		return Result<None>();
@@ -349,7 +456,6 @@ namespace bea {
 		BEA_OK(None, globalResolver.analyze(*node));
 		grStream.close();
 
-		std::cout << std::endl;
 		return Result<None>();
 	}
 
@@ -363,7 +469,19 @@ namespace bea {
 		while (source.dependencyDelta)
 			BEA_OK(None, readSourceDependencies(source));
 
-		std::cout << std::endl;
+		for (
+			const Context::Reference& reference:
+			source.context->m_externalReferences
+		) {
+			if (reference.resolved)
+				continue;
+			return Result<None>(
+				std::format(
+					"Unresolved reference '{}'",
+					reference.name
+				)
+			);
+		}
 		return Result<None>();
 	}
 
@@ -386,13 +504,27 @@ namespace bea {
 						reference.name
 					)
 				);
-
-			SourceDependency *dependency =
-				BEA_OK(None, getSourceDependency(
-					source, reference.name
-				));
-			dependency->read = true;
+			BEA_OK(None, getSourceDependency(
+				source, reference.name
+			));
 		}
+
+		/* Resolve dependencies */
+		for (
+			std::pair<Name, SourceDependency>& pair:
+			source.dependencies
+		) {
+			if (!pair.second.read) {
+
+				BEA_OK(None, source.context->resolveModule(
+					pair.second.outputPath + "/grdata.bin",
+					pair.first
+				));
+				source.dependencyDelta++;
+			}
+			pair.second.read = true;
+		}
+
 		return Result<None>();
 	}
 
@@ -401,48 +533,87 @@ namespace bea {
 		Source& source,
 		const Name& name
 	) {
-		Project::SourceDependency *dependency =
-			&source.dependencies[name];
+		Result<Project *> result = getProject(name.components[0]);
+		Project *project = this;
 
-		if (!dependency->outputPath.length()) {
+		std::size_t start = 0;
+		if (result.okay) {
 
-			std::size_t start = 0;
-
-			/* Determine dependency paths */
-			Result<Project *> result = getProject(name.components[0]);
-			Project *project = this;
-
-			if (result.okay) {
-
-				start++;
-				project = result.value;
-			}
-			std::ostringstream shortPathStream;
-			shortPathStream << "src/";
-
-			for (std::size_t i = start; i < name.components.size()-1; i++) {
-
-				if (i > start) shortPathStream << "/";
-				shortPathStream << name.components[i];
-			}
-			shortPathStream << ".bea";
-			dependency->shortPath = shortPathStream.str();
-
-			dependency->outputPath = std::format(
-				"{}/build/{}/cache/{}",
-				project->m_path,
-				targetToString(project->m_target),
-				Hash(dependency->shortPath).toString()
-			);
-			std::cout <<
-				name << ", " <<
-				dependency->shortPath << ", " <<
-				dependency->outputPath << std::endl;
+			start++;
+			project = result.value;
 		}
 
-		if (!dependency->read)
-			source.dependencyDelta++;
+		/* Determine module if already loaded */
+		Name moduleName{};
+		std::ostringstream shortPathStream{};
+		std::string outputPath{};
 
-		return Result<Project::SourceDependency *>(dependency);
+		SourceDependency *dependency = nullptr;
+
+		for (std::size_t i = 0; i < name.components.size(); i++) {
+
+			const std::string& component =
+				name.components[i];
+
+			moduleName.components.push_back(component);
+
+			Result<SourceDependency *> result =
+				source.dependencies.get(moduleName);
+			if (result.okay) {
+				
+				dependency = result.value;
+				break;
+			}
+		}
+
+		/* Determine module if not loaded */
+		if (!dependency) {
+
+			shortPathStream << "src";
+
+			moduleName.components.clear();
+			if (start) moduleName.components.push_back(
+				name.components[0]
+			);
+
+			for (std::size_t i = start; i < name.components.size(); i++) {
+
+				const std::string& component =
+					name.components[i];
+
+				moduleName.components.push_back(component);
+
+				shortPathStream << "/" << component;
+
+				outputPath = std::format(
+					"{}/build/{}/cache/{}",
+					project->m_path,
+					targetToString(project->m_target),
+					Hash(shortPathStream.str() + ".bea").toString()
+				);
+				if (std::filesystem::exists(outputPath)) {
+
+					dependency = &source.dependencies[moduleName];
+					break;
+				}
+			}
+		}
+
+		/* No dependency */
+		if (!dependency)
+			return Result<SourceDependency *>(
+				std::format(
+					"Unresolved reference '{}'",
+					name
+				)
+			);
+
+		/* Fill out dependency info */
+		if (!dependency->outputPath.length()) {
+
+			dependency->shortPath = std::move(shortPathStream.str());
+			dependency->outputPath = std::move(outputPath);
+		}
+		return Result<SourceDependency *>(dependency);
 	}
 }

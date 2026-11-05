@@ -116,6 +116,9 @@ namespace bea {
 		std::vector<Reference> m_externalReferences;
 		std::unordered_map<Name, Name> m_aliases;
 
+		std::vector<Name> m_strayNames;
+		std::vector<TypeID *> m_strayTypeIDs;
+
 		/*
 		 * Push and pop stack frames
 		 */
@@ -146,6 +149,14 @@ namespace bea {
 		 * Resolve references
 		 */
 		Result<None> resolveReferences();
+
+		/*
+		 * Resolve module
+		 */
+		Result<None> resolveModule(
+			const std::string& path,
+			const Name& name
+		);
 	private:
 		/*
 		 * Initialize types

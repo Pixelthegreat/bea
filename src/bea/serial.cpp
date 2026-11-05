@@ -6,7 +6,7 @@ namespace bea {
 	/* Write uint8 */
 	void Serializer::writeU8(std::uint8_t value) {
 
-		m_stream.put((char)value);
+		m_stream.write((const char *)&value, 1);
 	}
 
 	/* Write little endian uint16 */
@@ -59,7 +59,10 @@ namespace bea {
 	/* Read uint8 */
 	std::uint8_t Deserializer::readU8() {
 
-		return (std::uint8_t)m_stream.get();
+		std::uint8_t value = 0;
+		m_stream.read((char *)&value, 1);
+
+		return value;
 	}
 
 	/* Read little endian uint16 */
@@ -94,9 +97,9 @@ namespace bea {
 	/* Read string */
 	std::string Deserializer::readString() {
 
-		std::string string(
-			' ', (std::size_t)readU32L()
-		);
+		std::string string;
+		string.resize((std::size_t)readU32L());
+
 		for (std::size_t i = 0; i < string.length(); i++)
 			string[i] = (char)readU8();
 
@@ -276,5 +279,288 @@ namespace bea {
 			writeFunction(name, member);
 		else
 			writeClassField(name, member);
+	}
+
+	/* Read all GRCode operations in stream */
+	Result<None> GRCodeDeserializer::readAll() {
+
+		std::uint8_t byteOp = 1;
+		do {
+			byteOp = readU8();
+			if (!byteOp) continue;
+
+			GRCode op = (GRCode)byteOp;
+			switch (op) {
+				case GRCode::Use:
+					m_aliases.emplace_back(readUse());
+					break;
+				case GRCode::Class:
+					m_types.emplace_back(readClass());
+					break;
+				case GRCode::Function:
+					m_values.emplace_back(readFunction());
+					break;
+				case GRCode::ExternalType:
+				case GRCode::ExternalEntity:
+					{
+						auto pair = readExternal();
+						pair.first = op;
+
+						m_externalReferences.emplace_back(
+							std::move(pair)
+						);
+					}
+					break;
+				default:
+					return Result<None>(
+						std::format(
+							"Unrecognized operation "
+							"{:02x} ({}:{:08x})",
+							byteOp, m_moduleName,
+							(std::size_t)m_stream.tellg()
+						)
+					);
+			}
+
+		} while (byteOp);
+
+		return Result<None>();
+	}
+
+	/* Read name and add module */
+	Name GRCodeDeserializer::readDeclarationName() {
+
+		Name name = readName();
+
+		for (std::size_t i = 0; i < m_moduleName.size(); i++)
+			name.components.insert(
+				name.components.begin()+i,
+				m_moduleName.components[i]
+			);
+
+		return std::move(name);
+	}
+
+	/* Read GRCode::Use */
+	Pair<Name> GRCodeDeserializer::readUse() {
+
+		return {
+			readName(),
+			readName()
+		};
+	}
+
+	/* Read GRCode::Class */
+#define SYNC_TYPES while (m_types.size() > typeStackEnd) ({\
+			auto& pair = m_types[m_types.size()-1];\
+			type->object.internalTypes[std::move(pair.first)] =\
+				std::move(pair.second);\
+			m_types.pop_back();\
+		})
+
+	std::pair<Name, std::unique_ptr<Type>> GRCodeDeserializer::readClass() {
+
+		m_inClass++;
+
+		std::uint8_t flags = readU8();
+
+		std::pair<Name, std::unique_ptr<Type>> pair = {
+			readDeclarationName(), std::make_unique<Type>()
+		};
+		Type *type = pair.second.get();
+		type->name = pair.first;
+
+		if (flags & 1) type->object.flagAbstract = true;
+
+		/* Read generic parameters */
+		std::size_t genericParameterCount = (std::size_t)readU16L();
+		std::size_t publicMemberCount = (std::size_t)readU16L();
+		std::size_t privateMemberCount = (std::size_t)readU16L();
+		std::size_t implementationCount = (std::size_t)readU16L();
+
+		std::size_t typeStackEnd = m_types.size();
+
+		for (std::size_t i = 0; i < genericParameterCount; i++)
+			type->object.genericParameters.emplace_back(
+				readGeneric().second
+			);
+		SYNC_TYPES;
+
+		/* Read members */
+		for (std::size_t i = 0; i < publicMemberCount; i++) {
+
+			auto member = readClassMember();
+			type->object.publicMembers[std::move(member.first)] =
+				std::move(member.second);
+		}
+		SYNC_TYPES;
+
+		for (std::size_t i = 0; i < privateMemberCount; i++) {
+
+			auto member = readClassMember();
+			type->object.privateMembers[std::move(member.first)] =
+				std::move(member.second);
+		}
+		SYNC_TYPES;
+
+		/* Read implementations */
+		for (std::size_t i = 0; i < implementationCount; i++)
+			type->object.implementations.emplace_back(readClassImpl());
+		SYNC_TYPES;
+
+		m_inClass--;
+		return std::move(pair);
+	}
+
+	/* Read GRCode::ClassField */
+	std::pair<Name, VariableInfo> GRCodeDeserializer::readClassField() {
+
+		Name name = readName();
+
+		VariableInfo variable = {
+			.type = readTypeID(),
+		};
+		return {std::move(name), std::move(variable)};
+	}
+
+	/* Read GRCode::ClassImpl */
+	ObjectImplementation GRCodeDeserializer::readClassImpl() {
+
+		std::unique_ptr<TypeID> typeID = readTypeID();
+
+		ObjectImplementation impl = {
+			.type = std::move(typeID),
+		};
+
+		std::size_t memberCount = (std::size_t)readU16L();
+		for (std::size_t i = 0; i < memberCount; i++) {
+
+			readU8(); /* GRCode::Function */
+			auto pair = readFunction();
+
+			impl.members[std::move(pair.first)] =
+				std::move(pair.second);
+		}
+		return std::move(impl);
+	}
+
+	/* Read GRCode::Function */
+	std::pair<Name, VariableInfo> GRCodeDeserializer::readFunction() {
+
+		std::uint8_t flags = readU8();
+
+		std::pair<Name, VariableInfo> pair;
+
+		Name& name = pair.first;
+		VariableInfo& variable = pair.second;
+
+		variable = {};
+
+		if (m_inClass) name = readName();
+		else name = readDeclarationName();
+
+		variable.overloadID = (std::size_t)readU16L();
+
+		/* Create type */
+		Name typeName = name;
+
+		typeName.components[typeName.components.size()-1] = std::format(
+			"::{}::{}",
+			name.components[name.components.size()-1],
+			variable.overloadID
+		);
+		std::unique_ptr<Type> uType = std::make_unique<Type>(
+			BaseType::Function, std::move(typeName)
+		);
+		Type *type = uType.get();
+		m_types.emplace_back(type->name, std::move(uType));
+
+		variable.type = std::make_unique<TypeID>(type->name);
+		variable.type->type = type;
+
+		/* Read parameters */
+		std::size_t parameterCount = (std::size_t)readU16L();
+		std::size_t genericParameterCount = (std::size_t)readU16L();
+
+		for (std::size_t i = 0; i < parameterCount; i++) {
+
+			readU8(); /* GRCode::FunctionParameter */
+
+			Name name = readName();
+			std::unique_ptr<TypeID> typeID = readTypeID();
+
+			VariableInfo& parameter =
+				type->function.parameters.newEntry(std::move(name));
+			parameter.type = std::move(typeID);
+		}
+
+		/* Read generic parameters */
+		for (std::size_t i = 0; i < genericParameterCount; i++)
+			type->function.genericParameters.emplace_back(
+				readGeneric().second
+			);
+
+		/* Read return type */
+		type->function.returnType = readTypeID();
+
+		return std::move(pair);
+	}
+
+	/* Read GRCode::ExternalType or GRCode::ExternalEntity */
+	std::pair<GRCode, Name> GRCodeDeserializer::readExternal() {
+
+		return {
+			GRCode::ExternalType,
+			readName()
+		};
+	}
+
+	/* Read GRCode::TypeID */
+	std::unique_ptr<TypeID> GRCodeDeserializer::readTypeID() {
+
+		readU8(); /* GRCode::TypeID */
+
+		std::unique_ptr<TypeID> typeID =
+			std::make_unique<TypeID>(readName());
+
+		std::size_t genericArgumentCount = (std::size_t)readU16L();
+		for (std::size_t i = 0; i < genericArgumentCount; i++)
+			typeID->generics.emplace_back(
+				readGeneric().second
+			);
+
+		m_typeIDs.push_back(typeID.get());
+		return std::move(typeID);
+	}
+
+	/* Read GRCode::GenericParameter or GRCode::GenericArgument */
+	std::pair<GRCode, GenericInfo> GRCodeDeserializer::readGeneric() {
+
+		GRCode op = (GRCode)readU8();
+
+		GenericInfo info{};
+		info.type = (GenericType)readU8();
+
+		std::uint8_t flags = readU8();
+		if (flags & 1) { /* hasDefault */
+
+			if (info.type == GenericType::Type)
+				info.substitutedType = readTypeID();
+			else
+				info.substitutedValue = (std::intmax_t)readU64L();
+		}
+		return {op, std::move(info)};
+	}
+
+	/* Read GRCode::ClassField or GRCode::Function */
+	std::pair<Name, VariableInfo> GRCodeDeserializer::readClassMember() {
+
+		GRCode op = (GRCode)readU8();
+
+		if (op == GRCode::ClassField)
+			return readClassField();
+		else if (op == GRCode::Function)
+			return readFunction();
+		return {};
 	}
 }

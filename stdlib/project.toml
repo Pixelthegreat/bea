@@ -3,4 +3,4 @@ name = "std"
 kind = "lib"
 
 [project.options]
-nostdlib = true
+noStdlib = true

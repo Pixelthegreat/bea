@@ -159,13 +159,13 @@ namespace bea {
 	 * Variable info
 	 */
 	struct VariableInfo {
-		bool flagConstant;
-		bool flagUseDefault;
-		bool flagAbstract;
-		bool flagPublic;
-		bool flagStatic;
-		std::size_t overloadID;
-		std::unique_ptr<TypeID> type;
+		bool flagConstant = false;
+		bool flagUseDefault = false;
+		bool flagAbstract = false;
+		bool flagPublic = false;
+		bool flagStatic = false;
+		std::size_t overloadID = 0;
+		std::unique_ptr<TypeID> type = nullptr;
 	};
 
 	/*

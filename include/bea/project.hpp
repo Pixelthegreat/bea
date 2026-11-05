@@ -52,7 +52,7 @@ namespace bea {
 			bool recompile = false;
 
 			std::unique_ptr<Context> context = nullptr;
-			std::unordered_map<Name, SourceDependency> dependencies;
+			OrderedMap<Name, SourceDependency> dependencies;
 			std::size_t dependencyDelta = 0;
 		};
 
@@ -66,7 +66,8 @@ namespace bea {
 			: m_path(path),
 			  m_target(target) {}
 
-		static std::string defaultURL;
+		static std::string s_defaultURL;
+		static std::string s_globalPath;
 
 		const std::string& getPath() const { return m_path; }
 		const std::string& getName() const { return m_name; }
@@ -79,7 +80,7 @@ namespace bea {
 
 		static Result<Project *> loadProject(
 			const std::string& path,
-			const std::string& url = defaultURL,
+			const std::string& url = s_defaultURL,
 			Target target = Target::Debug
 		);
 
@@ -100,6 +101,13 @@ namespace bea {
 		std::vector<std::unique_ptr<Source>> m_sources;
 
 		Target m_target;
+
+		struct {
+			bool noStdlib = false;
+		} m_options;
+
+		bool m_rebuild = false;
+		std::vector<Project *> m_dependencies;
 
 		static std::vector<std::unique_ptr<Project>> s_projects;
 

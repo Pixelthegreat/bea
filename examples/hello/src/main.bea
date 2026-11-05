@@ -1,8 +1,7 @@
 module main
 
-use std::io
+pub func main() {
 
-pub func main() -> Result {
-
-	io::println("Hello, world!")
+	for i in 0..10 {
+	}
 }

@@ -39,6 +39,9 @@ namespace bea {
 		/* Serialize external references */
 		for (const Context::Reference& reference: m_context.m_externalReferences) {
 
+			if (reference.resolved)
+				continue;
+
 			GRCode type = GRCode::ExternalType;
 			if (reference.type == Context::ReferenceType::Entity)
 				type = GRCode::ExternalEntity;
