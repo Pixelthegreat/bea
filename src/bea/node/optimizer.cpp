@@ -394,13 +394,14 @@ namespace bea {
 	/* Visit "func" statement with expression body */
 	Result<None> NodeOptimizerVisitor::visitFuncExprStatement(FuncExprStatementNode& node) {
 
-		Node& returnTypeNode = *node.m_returnTypeNode;
+		Node *returnTypeNode = node.m_returnTypeNode.get();
 		Node& bodyNode = *node.m_bodyNode;
 
-		node.m_returnTypeNode = getReplacement(
-			std::move(node.m_returnTypeNode),
-			BEA_OK(None, visit(returnTypeNode))
-		);
+		if (node.m_returnTypeNode)
+			node.m_returnTypeNode = getReplacement(
+				std::move(node.m_returnTypeNode),
+				BEA_OK(None, visit(*returnTypeNode))
+			);
 		node.m_bodyNode = getReplacement(
 			std::move(node.m_bodyNode),
 			BEA_OK(None, visit(bodyNode))
@@ -411,13 +412,14 @@ namespace bea {
 	/* Visit "func" statement with block body */
 	Result<None> NodeOptimizerVisitor::visitFuncBlockStatement(FuncBlockStatementNode& node) {
 
-		Node& returnTypeNode = *node.m_returnTypeNode;
+		Node *returnTypeNode = node.m_returnTypeNode.get();
 		Node& bodyNode = *node.m_bodyNode;
 
-		node.m_returnTypeNode = getReplacement(
-			std::move(node.m_returnTypeNode),
-			BEA_OK(None, visit(returnTypeNode))
-		);
+		if (node.m_returnTypeNode)
+			node.m_returnTypeNode = getReplacement(
+				std::move(node.m_returnTypeNode),
+				BEA_OK(None, visit(*returnTypeNode))
+			);
 		node.m_bodyNode = getReplacement(
 			std::move(node.m_bodyNode),
 			BEA_OK(None, visit(bodyNode))

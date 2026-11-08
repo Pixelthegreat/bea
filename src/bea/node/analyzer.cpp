@@ -260,7 +260,8 @@ namespace bea {
 	/* Visit "func" statement with expression body */
 	Result<None> NodeAnalyzerVisitor::visitFuncExprStatement(FuncExprStatementNode& node) {
 
-		BEA_OK(None, visit(*node.m_returnTypeNode));
+		if (node.m_returnTypeNode)
+			BEA_OK(None, visit(*node.m_returnTypeNode));
 		BEA_OK(None, visit(*node.m_bodyNode));
 
 		return Result<None>();
@@ -269,7 +270,8 @@ namespace bea {
 	/* Visit "func" statement with block body */
 	Result<None> NodeAnalyzerVisitor::visitFuncBlockStatement(FuncBlockStatementNode& node) {
 
-		BEA_OK(None, visit(*node.m_returnTypeNode));
+		if (node.m_returnTypeNode)
+			BEA_OK(None, visit(*node.m_returnTypeNode));
 		BEA_OK(None, visit(*node.m_bodyNode));
 
 		return Result<None>();
