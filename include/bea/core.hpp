@@ -28,9 +28,9 @@ namespace bea {
 	 * Error position
 	 */
 	struct Position {
-		const char *path;
-		long line;
-		long column;
+		const char *path = nullptr;
+		long line = 0;
+		long column = 0;
 	};
 
 	std::ostream& operator<<(std::ostream& stream, const Position& position);

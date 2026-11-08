@@ -289,10 +289,30 @@ namespace bea {
 	/* Initialize aliases */
 	void Context::initAliases() {
 
+		if (!m_sourcePath.ends_with("stdlib/src/coerce.bea"))
+			m_aliases["Coerce"] = {"std", "coerce", "Coerce"};
+
 		if (!m_sourcePath.ends_with("stdlib/src/iterator.bea")) {
 
 			m_aliases["Iterable"] = {"std", "iterator", "Iterable"};
 			m_aliases["Iterator"] = {"std", "iterator", "Iterator"};
+		}
+		if (!m_sourcePath.ends_with("stdlib/src/operator.bea")) {
+
+			m_aliases["Add"] = {"std", "operator", "Add"};
+			m_aliases["Subtract"] = {"std", "operator", "Subtract"};
+			m_aliases["Multiply"] = {"std", "operator", "Multiply"};
+			m_aliases["Divide"] = {"std", "operator", "Divide"};
+			m_aliases["Modulo"] = {"std", "operator", "Modulo"};
+			m_aliases["BitwiseOr"] = {"std", "operator", "BitwiseOr"};
+			m_aliases["BitwiseAnd"] = {"std", "operator", "BitwiseAnd"};
+			m_aliases["BitwiseXor"] = {"std", "operator", "BitwiseXor"};
+			m_aliases["BitwiseLeftShift"] = {"std", "operator", "BitwiseLeftShift"};
+			m_aliases["BitwiseRightShift"] = {"std", "operator", "BitwiseRightShift"};
+			m_aliases["Equals"] = {"std", "operator", "Equals"};
+			m_aliases["LessThan"] = {"std", "operator", "LessThan"};
+			m_aliases["GreaterThan"] = {"std", "operator", "GreaterThan"};
+			m_aliases["True"] = {"std", "operator", "True"};
 		}
 		if (!m_sourcePath.ends_with("stdlib/src/range.bea"))
 			m_aliases["Range"] = {"std", "range", "Range"};

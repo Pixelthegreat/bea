@@ -18,7 +18,7 @@ namespace bea {
 
 		BEA_OK(None, parseArguments(argc, argv));
 
-		if (!strcmp(s_command, "help")) {
+		if (!std::strcmp(s_command, "help")) {
 
 			printHelp(argv[0]);
 			return Result<None>();
@@ -35,7 +35,7 @@ namespace bea {
 
 		Result<None> result;
 
-		if (!strcmp(s_command, "build")) {
+		if (!std::strcmp(s_command, "build")) {
 
 			result = project->build();
 
@@ -48,7 +48,7 @@ namespace bea {
 			else
 				std::cout << "\e[1;32mBuild successful\e[0m" << std::endl;
 		}
-		else if (!strcmp(s_command, "run")) {
+		else if (!std::strcmp(s_command, "run")) {
 
 			result = project->build();
 
@@ -80,16 +80,16 @@ namespace bea {
 			const char *arg = argv[i];
 			if (arg[0] == '-') {
 
-				if (!strcmp(arg, "-T") || !strcmp(arg, "--target")) {
+				if (!std::strcmp(arg, "-T") || !std::strcmp(arg, "--target")) {
 
 					const char *target = argv[++i];
 					if (!target) return Result<None>(std::format(
 						"{}: Expected argument after '{}'",
 						progname, arg
 					));
-					if (!strcmp(target, "debug"))
+					if (!std::strcmp(target, "debug"))
 						s_target = Project::Target::Debug;
-					else if (!strcmp(target, "release"))
+					else if (!std::strcmp(target, "release"))
 						s_target = Project::Target::Release;
 					else
 						return Result<None>(std::format(
@@ -108,7 +108,7 @@ namespace bea {
 			else if (!s_command) s_command = arg;
 
 			/* Project path */
-			else if (!strcmp(s_projectPath, ".")) s_projectPath = arg;
+			else if (!std::strcmp(s_projectPath, ".")) s_projectPath = arg;
 
 			/* Otherwise */
 			else return Result<None>(std::format(

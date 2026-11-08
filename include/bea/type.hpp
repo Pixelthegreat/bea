@@ -227,6 +227,15 @@ namespace bea {
 	/*
 	 * Type representation
 	 */
+	enum class TypeEquality {
+		None = 0,
+		Coercible,
+		Equivalent,
+
+		Count,
+	};
+	bool operator!(TypeEquality equality);
+
 	struct Type {
 		bool external = false;
 		BaseType base = BaseType::Object;
@@ -250,6 +259,11 @@ namespace bea {
 		Type(const char *name) : base(BaseType::Object), name(name) {}
 
 		Type(const Name& name) : base(BaseType::Object), name(name) {}
+
+		/*
+		 * Compare types
+		 */
+		TypeEquality equalTo(const Type& other) const;
 	};
 
 	std::ostream& operator<<(std::ostream& stream, const Type& type);
@@ -271,7 +285,65 @@ namespace bea {
 		TypeID(const Name& name) : name(name), generics(0) {}
 
 		TypeID(Name&& name) : name(std::move(name)), generics(0) {}
+
+		TypeID(Type *type) : name(type->name), type(type), generics(0) {}
+
+		TypeID(const TypeID& other) {
+
+			name = other.name;
+			type = other.type;
+
+			for (const GenericInfo& generic: other.generics) {
+
+				GenericInfo newGeneric{};
+
+				newGeneric.type = generic.type;
+				newGeneric.substitutedValue = generic.substitutedValue;
+
+				if (generic.substitutedType)
+					newGeneric.substitutedType =
+						std::make_unique<TypeID>(
+							*generic.substitutedType
+						);
+				generics.emplace_back(std::move(newGeneric));
+			}
+		}
+
+		/*
+		 * Compare type identifiers
+		 */
+		TypeEquality equalTo(const TypeID& other) const;
 	};
 
 	std::ostream& operator<<(std::ostream& stream, const TypeID& typeID);
 }
+
+/*
+ * Type identifier format
+ */
+template<>
+struct std::formatter<bea::TypeID, char> {
+
+	template<class ParseContext>
+	constexpr ParseContext::iterator parse(ParseContext& context) {
+
+		auto it = context.begin();
+		for (; it != context.end() && *it != '}'; it++);
+
+		return it;
+	}
+
+	template<class FormatContext>
+	FormatContext::iterator format(
+		const bea::TypeID& typeID,
+		FormatContext& context
+	) const {
+		std::ostringstream stream;
+		stream << typeID;
+
+		return std::ranges::copy(
+			std::move(stream).str(),
+			context.out()
+		).out;
+	}
+};

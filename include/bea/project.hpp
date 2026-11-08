@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bea/core.hpp>
+#include <bea/token.hpp>
 #include <bea/context.hpp>
 
 namespace bea {
@@ -50,6 +51,9 @@ namespace bea {
 			std::string outputPath{};
 			std::string shortPath{};
 			bool recompile = false;
+
+			std::vector<std::unique_ptr<Token>> tokens;
+			std::unique_ptr<Node> node = nullptr;
 
 			std::unique_ptr<Context> context = nullptr;
 			OrderedMap<Name, SourceDependency> dependencies;

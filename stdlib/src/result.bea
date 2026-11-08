@@ -1,7 +1,6 @@
 module result
 
 /*
- * @name Error
  * @brief Common error
  *
  * @field message The error message.
@@ -10,14 +9,12 @@ pub class Error {
 	pub message: String
 
 	/*
-	 * @name init
 	 * @brief Initialize error
 	 */
 	pub func init(message: String)!
 }
 
 /*
- * @name Result
  * @brief Common result
  *
  * @gparam T The type of value carried by the result.
@@ -41,3 +38,25 @@ pub struct Result<T> {
 		this.okay = false
 	}
 }
+
+/*
+ * @brief Create a success result
+ *
+ * @gparam T The type of result.
+ *
+ * @param value The value of the result.
+ *
+ * @returns The result.
+ */
+pub func Okay<T>(value: T) -> Result<T> => new Result<T>(value)
+
+/*
+ * @brief Create a failure result
+ *
+ * @gparam T The type of result.
+ *
+ * @param error The error of the result.
+ *
+ * @returns The result.
+ */
+pub func Fail<T>(error: Error) -> Result<T> => new Result<T>(error)

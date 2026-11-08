@@ -22,8 +22,6 @@ namespace bea {
 
 		virtual Result<None> analyze(Node& node) override;
 
-		virtual Result<None> visitBlock(BlockNode& node) override;
-
 		virtual Result<None> visitType(TypeNode& node) override;
 		virtual Result<None> visitVariableAccess(VariableAccessNode& node) override;
 		virtual Result<None> visitNew(NewNode& node) override;

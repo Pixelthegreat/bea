@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <bea/core.hpp>
+#include <bea/type.hpp>
 
 namespace bea {
 
@@ -11,11 +12,19 @@ namespace bea {
 	class NodeVisitor;
 
 	/*
+	 * Atom
+	 */
+	struct Atom {
+		std::unique_ptr<TypeID> type = nullptr;
+	};
+
+	/*
 	 * Node
 	 */
 	class Node {
 	public:
 		Position m_position;
+		Atom m_atom;
 
 		virtual Result<None> visit(NodeVisitor& visitor) = 0;
 	};

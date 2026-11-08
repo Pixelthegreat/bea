@@ -36,6 +36,7 @@ namespace bea {
 		NodeP left = BEA_OK(NodeP, leftFunc(*this));
 		for (; matchTokenList(pairs, m_token) && iterations != 0; iterations--) {
 
+			Position position = m_token->position;
 			const std::string& operation = m_token->value;
 			advance();
 
@@ -44,6 +45,7 @@ namespace bea {
 			left = std::make_unique<BinaryOperationNode>(
 				operation, std::move(left), std::move(right)
 			);
+			left->m_position = position;
 		}
 		return Result(std::move(left));
 	}
@@ -1566,10 +1568,14 @@ namespace bea {
 					m_sstream.str(m_token->value);
 					m_sstream >> value;
 
+					Position valuePosition = m_token->position;
 					advance(Skip::EndLine);
 
+					auto valueNode = std::make_unique<IntegerNode>(value);
+					valueNode->m_position = valuePosition;
+
 					node->m_genericArgumentNodes.emplace_back(
-						std::make_unique<IntegerNode>(value)
+						std::move(valueNode)
 					);
 				}
 				else node->m_genericArgumentNodes.emplace_back(

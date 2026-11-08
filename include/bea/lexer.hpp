@@ -19,9 +19,12 @@ namespace bea {
 			  m_cc(1),
 			  m_position{m_path, 1, 0} {}
 
-		Result<None> makeTokens();
+		std::vector<std::unique_ptr<Token>> m_tokens;
 
-		const std::vector<std::unique_ptr<Token>>& getTokens() const { return m_tokens; }
+		/*
+		 * Create tokens
+		 */
+		Result<None> makeTokens();
 	private:
 		const char *m_path;
 		std::ifstream& m_fstream;
@@ -29,15 +32,39 @@ namespace bea {
 		std::stringstream m_sstream;
 		char m_cc;
 
-		std::vector<std::unique_ptr<Token>> m_tokens;
-
+		/*
+		 * Advance position
+		 */
 		void advance();
+
+		/*
+		 * Add token from string stream
+		 */
 		void commitToken(Position& position, TokenType type);
+
+		/*
+		 * Add token
+		 */
 		void addToken(Position& position, TokenType type, const char *value);
 
+		/*
+		 * Create number token
+		 */
 		Result<None> makeNumber();
+
+		/*
+		 * Create string token
+		 */
 		Result<None> makeString();
+
+		/*
+		 * Create character token
+		 */
 		Result<None> makeCharacter();
+
+		/*
+		 * Create identifier or keyword token
+		 */
 		Result<None> makeIdentifier();
 
 		static const char *s_digit, *s_identifier;

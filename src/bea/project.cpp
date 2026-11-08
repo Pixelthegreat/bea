@@ -10,6 +10,7 @@
 #include <bea/parser.hpp>
 #include <bea/optimizer/postparsesimplifier.hpp>
 #include <bea/analyzer/globalresolver.hpp>
+#include <bea/analyzer/localresolver.hpp>
 #include <bea/project.hpp>
 
 namespace bea {
@@ -395,16 +396,18 @@ namespace bea {
 				std::filesystem::create_directories(outputPath);
 
 				/* Add source */
-				m_sources.emplace_back(std::make_unique<Source>(Source{
-					.path = std::move(entryPathString),
-					.outputPath = std::move(outputPath),
-					.shortPath = std::move(shortPath),
-					.recompile = true,
-				}));
-				Source& source = *m_sources[m_sources.size()-1];
+				std::unique_ptr<Source> source =
+					std::make_unique<Source>();
 
-				if (source.recompile)
+				source->path = std::move(entryPathString);
+				source->outputPath = std::move(outputPath);
+				source->shortPath = std::move(shortPath);
+				source->recompile = true;
+
+				if (source->recompile && m_name != "std") // TODO: remove second check
 					m_rebuild = true;
+
+				m_sources.emplace_back(std::move(source));
 			}
 		}
 		return Result<None>();
@@ -429,12 +432,14 @@ namespace bea {
 
 		stream.close();
 
-		Parser parser(lexer.getTokens());
-		std::unique_ptr<Node> node = BEA_OK(None, parser.parse());
+		Parser parser(lexer.m_tokens);
+
+		source.node = BEA_OK(None, parser.parse());
+		source.tokens = std::move(lexer.m_tokens);
 
 		/* Minor optimizations */
 		PostParseSimplifier postParseSimplifier;
-		BEA_OK(None, postParseSimplifier.visit(*node));
+		BEA_OK(None, postParseSimplifier.visit(*source.node));
 
 		/* Global resolver analysis */
 		std::string grPath = std::format(
@@ -453,7 +458,7 @@ namespace bea {
 			*source.context, serializer
 		);
 
-		BEA_OK(None, globalResolver.analyze(*node));
+		BEA_OK(None, globalResolver.analyze(*source.node));
 		grStream.close();
 
 		return Result<None>();
@@ -482,6 +487,11 @@ namespace bea {
 				)
 			);
 		}
+
+		/* Local resolver analysis */
+		LocalResolver localResolver(*source.context);
+		BEA_OK(None, localResolver.analyze(*source.node));
+
 		return Result<None>();
 	}
 

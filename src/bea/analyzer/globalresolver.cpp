@@ -50,18 +50,6 @@ namespace bea {
 		return Result<None>();
 	}
 
-	/* Visit block */
-	Result<None> GlobalResolver::visitBlock(BlockNode& node) {
-
-		m_blockLevel++;
-
-		for (std::size_t i = 0; i < node.m_nodes.size(); i++)
-			BEA_OK(None, visit(*node.m_nodes[i]));
-
-		m_blockLevel--;
-		return Result<None>();
-	}
-
 	/* Visit type */
 	Result<None> GlobalResolver::visitType(TypeNode& node) {
 
@@ -315,39 +303,28 @@ namespace bea {
 		info.type = std::make_unique<TypeID>(typeName);
 		info.type->type = type.get();
 
-		/* Add parameters and return value */
-		if (node.m_returnTypeNode) {
+		/* Create temporary constants for generic parameters */
+		Frame& frame = *m_context.pushFrame();
+		VariableInfo& thisVariable = frame["this"];
 
-			type->function.returnType =
-				BEA_OK(None, nodeToTypeID(
-					node.m_returnTypeNode.get()
-				));
-			if (!type->function.returnType->type)
-				registerTypeReference(
-					type->function.returnType->name,
-					*node.m_returnTypeNode,
-					&type->function.returnType->type
-				);
-		}
-		else type->function.returnType =
-			std::make_unique<TypeID>("None");
+		for (const NodeGenericParameter& parameter: node.m_genericParameters) {
 
-		for (const NodeFuncParameter& parameter: node.m_parameters) {
+			if (parameter.type == GenericType::Type) {
 
-			VariableInfo& parameterInfo =
-				type->function.parameters.newEntry(
+				std::unique_ptr<Type>& type =
+					frame.m_types[parameter.name];
+				type = std::make_unique<Type>(
+					BaseType::Any,
 					parameter.name
 				);
-			parameterInfo.type = BEA_OK(
-				None, nodeToTypeID(parameter.typeNode.get())
-			);
-			if (!parameterInfo.type->type)
-				registerTypeReference(
-					parameterInfo.type->name,
-					*parameter.typeNode,
-					&parameterInfo.type->type
-				);
+			}
+			else if (parameter.type == GenericType::Int)
+				frame.newEntry(parameter.name);
 		}
+
+		/* Create temporary variables for parameters */
+		for (const NodeFuncParameter& parameter: node.m_parameters)
+			frame.newEntry(parameter.name);
 
 		/* Add generic parameters */
 		std::size_t i = 0;
@@ -390,28 +367,39 @@ namespace bea {
 			}
 		}
 
-		/* Create temporary constants for generic parameters */
-		Frame& frame = *m_context.pushFrame();
-		VariableInfo& thisVariable = frame["this"];
+		/* Add parameters and return value */
+		if (node.m_returnTypeNode) {
 
-		for (const NodeGenericParameter& parameter: node.m_genericParameters) {
+			type->function.returnType =
+				BEA_OK(None, nodeToTypeID(
+					node.m_returnTypeNode.get()
+				));
+			if (!type->function.returnType->type)
+				registerTypeReference(
+					type->function.returnType->name,
+					*node.m_returnTypeNode,
+					&type->function.returnType->type
+				);
+		}
+		else type->function.returnType =
+			std::make_unique<TypeID>("None");
 
-			if (parameter.type == GenericType::Type) {
+		for (const NodeFuncParameter& parameter: node.m_parameters) {
 
-				std::unique_ptr<Type>& type =
-					frame.m_types[parameter.name];
-				type = std::make_unique<Type>(
-					BaseType::Any,
+			VariableInfo& parameterInfo =
+				type->function.parameters.newEntry(
 					parameter.name
 				);
-			}
-			else if (parameter.type == GenericType::Int)
-				frame.newEntry(parameter.name);
+			parameterInfo.type = BEA_OK(
+				None, nodeToTypeID(parameter.typeNode.get())
+			);
+			if (!parameterInfo.type->type)
+				registerTypeReference(
+					parameterInfo.type->name,
+					*parameter.typeNode,
+					&parameterInfo.type->type
+				);
 		}
-
-		/* Create temporary variables for parameters */
-		for (const NodeFuncParameter& parameter: node.m_parameters)
-			frame.newEntry(parameter.name);
 
 		/* Visit body */
 		BEA_OK(None, visit(bodyNode));
