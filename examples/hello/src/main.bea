@@ -1,6 +1,4 @@
 module main
 
-pub func main() {
-
-	"A" + "B"
+pub func main() -> String {
 }

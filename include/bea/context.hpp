@@ -38,6 +38,7 @@ namespace bea {
 		 */
 		Result<VariableInfo *> get(const Name& key, bool parent = false);
 		Result<VariableInfo *> get(Name&& key, bool parent = false);
+		Result<VariableInfo *> get(const Name& key, std::size_t overloadID);
 
 		VariableInfo& operator[](const Name& key);
 		VariableInfo& operator[](Name&& key);

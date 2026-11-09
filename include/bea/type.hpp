@@ -166,6 +166,7 @@ namespace bea {
 		bool flagStatic = false;
 		std::size_t overloadID = 0;
 		std::unique_ptr<TypeID> type = nullptr;
+		std::size_t scopeID = 0;
 	};
 
 	/*

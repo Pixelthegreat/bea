@@ -37,9 +37,9 @@ namespace bea {
 		 */
 		Result<V *> get(const K& key) {
 
-			for (auto it = m_items.rbegin(); it != m_items.rend(); it++) {
+			std::size_t hash = std::hash<K>{}(key);
 
-				std::size_t hash = std::hash<K>{}(key);
+			for (auto it = m_items.rbegin(); it != m_items.rend(); it++) {
 
 				std::pair<K, V>& pair = *it;
 				if (std::hash<K>{}(pair.first) == hash)
@@ -49,12 +49,12 @@ namespace bea {
 		}
 		Result<V *> get(K&& key) {
 
+			std::size_t hash = std::hash<K>{}(key);
+
 			for (auto it = m_items.rbegin(); it != m_items.rend(); it++) {
 
-				std::size_t hash = std::hash<K>{}(key);
-
 				std::pair<K, V>& pair = *it;
-				if (std::hash<K>{}(pair.first) == key)
+				if (std::hash<K>{}(pair.first) == hash)
 					return Result<V *>(&pair.second);
 			}
 			return Result<V *>::fail();

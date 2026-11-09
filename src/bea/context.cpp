@@ -23,6 +23,22 @@ namespace bea {
 		return result;
 	}
 
+	/* Get item from frame with overload id */
+	Result<VariableInfo *> Frame::get(const Name& key, std::size_t overloadID) {
+
+		std::size_t hash = std::hash<Name>{}(key);
+
+		for (auto *it = m_values.end(); it != m_values.begin(); it--) {
+
+			auto *pair = it-1;
+
+			if (std::hash<Name>{}(pair->first) == hash &&
+			    pair->second.overloadID == overloadID)
+				return Result<VariableInfo *>(&pair->second);
+		}
+		return Result<VariableInfo *>::fail();
+	}
+
 	/* Get or create item in frame */
 	VariableInfo& Frame::operator[](const Name& key) {
 
@@ -136,6 +152,7 @@ namespace bea {
 				continue;
 			const Name& realName = (*it).second;
 
+			/* replace names */
 			reference.name.components.erase(
 				reference.name.components.begin(),
 				reference.name.components.begin() +
@@ -146,6 +163,18 @@ namespace bea {
 					reference.name.components.begin()+i,
 					realName.components[i]
 				);
+			TypeNode *typeNode =
+				dynamic_cast<TypeNode *>(
+					&reference.node
+				);
+			if (typeNode) typeNode->m_name = reference.name;
+
+			VariableAccessNode *varNode =
+				dynamic_cast<VariableAccessNode *>(
+					&reference.node
+				);
+			if (varNode) varNode->m_name = reference.name;
+
 			reference.dealiased = true;
 		}
 		return Result<None>();
@@ -297,6 +326,12 @@ namespace bea {
 			m_aliases["Iterable"] = {"std", "iterator", "Iterable"};
 			m_aliases["Iterator"] = {"std", "iterator", "Iterator"};
 		}
+		if (!m_sourcePath.ends_with("stdlib/src/list.bea"))
+			m_aliases["List"] = {"std", "list", "List"};
+
+		if (!m_sourcePath.ends_with("stdlib/src/map.bea"))
+			m_aliases["Map"] = {"std", "map", "Map"};
+
 		if (!m_sourcePath.ends_with("stdlib/src/operator.bea")) {
 
 			m_aliases["Add"] = {"std", "operator", "Add"};
@@ -319,6 +354,9 @@ namespace bea {
 
 		if (!m_sourcePath.ends_with("stdlib/src/result.bea"))
 			m_aliases["Result"] = {"std", "result", "Result"};
+
+		if (!m_sourcePath.ends_with("stdlib/src/set.bea"))
+			m_aliases["Set"] = {"std", "set", "Set"};
 	}
 
 	/* Reference printer */

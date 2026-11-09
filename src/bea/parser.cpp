@@ -347,6 +347,10 @@ namespace bea {
 			advance(Skip::EndLine);
 			returnTypeNode = BEA_OK(NodeP, parseType());
 		}
+		else {
+			returnTypeNode = std::make_unique<TypeNode>("None");
+			returnTypeNode->m_position = m_token->position;
+		}
 
 		/* Expression body */
 		if (m_token->matchSymbol("=>")) {
@@ -968,12 +972,21 @@ namespace bea {
 			{TokenType::Symbol, "<<="},
 			{TokenType::Symbol, ">>="},
 		};
-		return parseBinaryOperation(
-			&Parser::parseAssignExpr,
-			&Parser::parseExpr,
-			s_exprTokens,
-			1
-		);
+		NodeP left = BEA_OK(NodeP, parseAssignExpr());
+		if (matchTokenList(s_exprTokens, m_token)) {
+
+			Position position = m_token->position;
+			const std::string& operation = m_token->value;
+			advance();
+
+			NodeP right = BEA_OK(NodeP, parseExpr());
+
+			left = std::make_unique<AssignmentNode>(
+				operation, std::move(left), std::move(right)
+			);
+			left->m_position = position;
+		}
+		return Result(std::move(left));
 	}
 
 	/* Parse assign expression */

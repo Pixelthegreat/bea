@@ -53,13 +53,7 @@ namespace bea {
 	/* Visit type */
 	Result<None> GlobalResolver::visitType(TypeNode& node) {
 
-		Result<Type *> result =
-			m_context.getType(
-				node.m_name, true
-			);
-		if (!result.okay)
-			registerTypeReference(node.m_name, node, nullptr);
-
+		node.m_atom.type = BEA_OK(None, nodeToTypeID(&node));
 		return Result<None>();
 	}
 
@@ -84,18 +78,6 @@ namespace bea {
 
 		std::unique_ptr<TypeID> typeID =
 			BEA_OK(None, nodeToTypeID(node.m_typeNode.get()));
-		if (!typeID->type) {
-
-			TypeNode *typeNode =
-				static_cast<TypeNode *>(
-					node.m_typeNode.get()
-				);
-			registerTypeReference(
-				typeNode->m_name,
-				*typeNode,
-				nullptr
-			);
-		}
 
 		for (const std::unique_ptr<Node>& argument: node.m_argumentNodes)
 			BEA_OK(None, visit(*argument));
@@ -108,18 +90,7 @@ namespace bea {
 
 		std::unique_ptr<TypeID> typeID =
 			BEA_OK(None, nodeToTypeID(node.m_typeNode.get()));
-		if (!typeID->type) {
 
-			TypeNode *typeNode =
-				static_cast<TypeNode *>(
-					node.m_typeNode.get()
-				);
-			registerTypeReference(
-				typeNode->m_name,
-				*typeNode,
-				nullptr
-			);
-		}
 		BEA_OK(None, visit(*node.m_valueNode));
 
 		return Result<None>();
@@ -287,6 +258,7 @@ namespace bea {
 		info.flagPublic = node.m_public;
 		info.flagStatic = node.m_static;
 		info.overloadID = overloadCount++;
+		node.m_atom.overloadID = info.overloadID;
 
 		/* Create type */
 		Name typeName = {
@@ -305,7 +277,8 @@ namespace bea {
 
 		/* Create temporary constants for generic parameters */
 		Frame& frame = *m_context.pushFrame();
-		VariableInfo& thisVariable = frame["this"];
+		//if (!node.m_static) TODO
+		//	VariableInfo& thisVariable = frame["this"];
 
 		for (const NodeGenericParameter& parameter: node.m_genericParameters) {
 
@@ -340,19 +313,11 @@ namespace bea {
 			/* Type parameter */
 			if (parameter.type == GenericType::Type) {
 
-				if (parameter.defaultNode) {
-
+				if (parameter.defaultNode)
 					generic.substitutedType =
 						BEA_OK(None, nodeToTypeID(
 							parameter.defaultNode.get())
 						);
-					if (!generic.substitutedType->type)
-						registerTypeReference(
-							generic.substitutedType->name,
-							*parameter.defaultNode,
-							&generic.substitutedType->type
-						);
-				}
 			}
 
 			/* Integer parameter */
@@ -368,19 +333,11 @@ namespace bea {
 		}
 
 		/* Add parameters and return value */
-		if (node.m_returnTypeNode) {
-
+		if (node.m_returnTypeNode)
 			type->function.returnType =
 				BEA_OK(None, nodeToTypeID(
 					node.m_returnTypeNode.get()
 				));
-			if (!type->function.returnType->type)
-				registerTypeReference(
-					type->function.returnType->name,
-					*node.m_returnTypeNode,
-					&type->function.returnType->type
-				);
-		}
 		else type->function.returnType =
 			std::make_unique<TypeID>("None");
 
@@ -393,12 +350,6 @@ namespace bea {
 			parameterInfo.type = BEA_OK(
 				None, nodeToTypeID(parameter.typeNode.get())
 			);
-			if (!parameterInfo.type->type)
-				registerTypeReference(
-					parameterInfo.type->name,
-					*parameter.typeNode,
-					&parameterInfo.type->type
-				);
 		}
 
 		/* Visit body */
@@ -522,13 +473,6 @@ namespace bea {
 				.members = std::move(m_implMembers),
 				.internalTypes = std::move(m_implTypes),
 			};
-			if (!implementation.type->type)
-				registerTypeReference(
-					implementation.type->name,
-					*implNode->m_typeNode,
-					&implementation.type->type
-				);
-
 			type->object.implementations.emplace_back(
 				std::move(implementation)
 			);
@@ -566,19 +510,11 @@ namespace bea {
 			/* Type parameter */
 			if (parameter.type == GenericType::Type) {
 
-				if (parameter.defaultNode) {
-
+				if (parameter.defaultNode)
 					generic.substitutedType =
 						BEA_OK(None, nodeToTypeID(
 							parameter.defaultNode.get())
 						);
-					if (!generic.substitutedType->type)
-						registerTypeReference(
-							generic.substitutedType->name,
-							*parameter.defaultNode,
-							&generic.substitutedType->type
-						);
-				}
 			}
 
 			/* Integer parameter */
@@ -617,6 +553,12 @@ namespace bea {
 		);
 		if (typeResult.okay)
 			typeID->type = typeResult.value;
+		else
+			registerTypeReference(
+				typeID->name,
+				*node,
+				&typeID->type
+			);
 
 		typeID->generics.resize(typeNode->m_genericArgumentNodes.size());
 		for (std::size_t i = 0; i < typeNode->m_genericArgumentNodes.size(); i++) {
