@@ -238,7 +238,7 @@ namespace bea {
 	bool operator!(TypeEquality equality);
 
 	struct Type {
-		bool external = false;
+		bool external = true;
 		BaseType base = BaseType::Object;
 		bool distinct = false;
 		Name name;

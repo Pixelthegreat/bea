@@ -213,7 +213,7 @@ namespace bea {
 	/* Visit "return" statement */
 	Result<None> NodeAnalyzerVisitor::visitReturnStatement(ReturnStatementNode& node) {
 
-		return Result<None>();
+		return visit(*node.m_node);
 	}
 
 	/* Visit "continue" statement */

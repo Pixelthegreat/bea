@@ -37,6 +37,7 @@ namespace bea {
 		 * Project source dependency
 		 */
 		struct SourceDependency {
+			Project *project = nullptr;
 			std::string outputPath{};
 			std::string shortPath{};
 			bool read = false;
@@ -50,6 +51,7 @@ namespace bea {
 			std::string path{};
 			std::string outputPath{};
 			std::string shortPath{};
+			Name moduleName;
 			bool recompile = false;
 
 			std::vector<std::unique_ptr<Token>> tokens;
@@ -162,7 +164,8 @@ namespace bea {
 		 */
 		Result<SourceDependency *> getSourceDependency(
 			Source& source,
-			const Name& name
+			const Name& name,
+			const Position& position
 		);
 	};
 }

@@ -381,6 +381,10 @@ namespace bea {
 				std::string shortPath = std::format(
 					"{}/{}", path, entryPath.filename().string()
 				);
+				Name moduleName = {
+					m_name,
+					entryPath.stem()
+				};
 				Hash hash(
 					(const std::uint8_t *)shortPath.c_str(),
 					shortPath.length()
@@ -402,6 +406,7 @@ namespace bea {
 				source->path = std::move(entryPathString);
 				source->outputPath = std::move(outputPath);
 				source->shortPath = std::move(shortPath);
+				source->moduleName = std::move(moduleName);
 				source->recompile = true;
 
 				if (source->recompile && m_name != "std") // TODO: remove second check
@@ -453,7 +458,9 @@ namespace bea {
 			));
 		GRCodeSerializer serializer(grStream);
 
-		source.context = std::make_unique<Context>(source.path);
+		source.context = std::make_unique<Context>(
+			source.path, source.moduleName
+		);
 		GlobalResolver globalResolver(
 			*source.context, serializer
 		);
@@ -481,16 +488,18 @@ namespace bea {
 			if (reference.resolved)
 				continue;
 			return Result<None>(
+				reference.position,
 				std::format(
 					"Unresolved reference '{}'",
 					reference.name
 				)
 			);
 		}
+		source.context->clearDeadFrames();
 
 		/* Local resolver analysis */
-		LocalResolver localResolver(*source.context);
-		BEA_OK(None, localResolver.analyze(*source.node));
+		//LocalResolver localResolver(*source.context);
+		//BEA_OK(None, localResolver.analyze(*source.node));
 
 		return Result<None>();
 	}
@@ -508,14 +517,16 @@ namespace bea {
 				continue;
 			if (reference.name.components.size() <= 1)
 				return Result<None>(
-					reference.node.m_position,
+					reference.position,
 					std::format(
 						"Unresolved reference '{}'",
 						reference.name
 					)
 				);
 			BEA_OK(None, getSourceDependency(
-				source, reference.name
+				source,
+				reference.name,
+				reference.position
 			));
 		}
 
@@ -526,9 +537,14 @@ namespace bea {
 		) {
 			if (!pair.second.read) {
 
+				std::string sourcePath =
+					pair.second.project->m_path +
+					pair.second.shortPath;
+
 				BEA_OK(None, source.context->resolveModule(
 					pair.second.outputPath + "/grdata.bin",
-					pair.first
+					pair.first,
+					sourcePath
 				));
 				source.dependencyDelta++;
 			}
@@ -541,7 +557,8 @@ namespace bea {
 	/* Get source dependency for name */
 	Result<Project::SourceDependency *> Project::getSourceDependency(
 		Source& source,
-		const Name& name
+		const Name& name,
+		const Position& position
 	) {
 		Result<Project *> result = getProject(name.components[0]);
 		Project *project = this;
@@ -612,6 +629,7 @@ namespace bea {
 		/* No dependency */
 		if (!dependency)
 			return Result<SourceDependency *>(
+				position,
 				std::format(
 					"Unresolved reference '{}'",
 					name
@@ -621,6 +639,7 @@ namespace bea {
 		/* Fill out dependency info */
 		if (!dependency->outputPath.length()) {
 
+			dependency->project = project;
 			dependency->shortPath = std::move(shortPathStream.str());
 			dependency->outputPath = std::move(outputPath);
 		}

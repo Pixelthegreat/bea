@@ -1,4 +1,16 @@
 module main
 
-pub func main() -> String {
+abstract class A {
+	pub func init()!
+}
+class B {
+	pub func init()!
+
+	impl A {}
+}
+
+pub func main() {
+
+	let a = new A()
+	let x = not a
 }

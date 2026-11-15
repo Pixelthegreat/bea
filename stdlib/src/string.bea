@@ -1,0 +1,12 @@
+module string
+
+/*
+ * @brief String object
+ */
+pub class String {
+
+	/*
+	 * @brief Initialize string
+	 */
+	pub func init()!
+}

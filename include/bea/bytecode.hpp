@@ -83,6 +83,8 @@ namespace bea {
 		 *
 		 * uint8_t op = GRCode::ExternalType;
 		 * Name name;
+		 * uint32_t line;
+		 * uint32_t column;
 		 */
 		ExternalType = 31,
 
@@ -92,6 +94,8 @@ namespace bea {
 		 *
 		 * uint8_t op = GRCode::ExternalEntity;
 		 * Name name;
+		 * uint32_t line;
+		 * uint32_t column;
 		 */
 		ExternalEntity = 32,
 
@@ -109,6 +113,7 @@ namespace bea {
 		 * Record of generic parameter
 		 *
 		 * uint8_t op = GRCode::GenericParameter;
+		 * string name;
 		 * uint8_t type; GenericType
 		 * uint8_t flags; 1 = hasDefault
 		 * uint64_t defaultValue? type == GenericType::Int
@@ -120,6 +125,7 @@ namespace bea {
 		 * Record of generic argument
 		 *
 		 * uint8_t op = GRCode::GenericArgument;
+		 * string name;
 		 * uint8_t type; GenericType
 		 * uint8_t flags; 1 = hasValue
 		 * uint64_t value? type == GenericType::Int

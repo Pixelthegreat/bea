@@ -1,0 +1,8 @@
+module none
+
+/*
+ * @brief Value representing nothing
+ */
+pub class None {}
+
+pub let None: None = new None()

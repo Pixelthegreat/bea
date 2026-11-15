@@ -225,10 +225,13 @@ namespace bea {
 	/* Write GRCode::ExternalType */
 	void GRCodeSerializer::writeExternal(
 		GRCode type,
-		const Name& name
+		const Name& name,
+		const Position& position
 	) {
 		writeU8((std::uint8_t)type);
 		writeName(name);
+		writeU32L((std::uint32_t)position.line);
+		writeU32L((std::uint32_t)position.column);
 	}
 
 	/* Write GRCode::TypeID */
@@ -250,6 +253,7 @@ namespace bea {
 		GRCode type
 	) {
 		writeU8((std::uint8_t)type);
+		writeString(generic.name);
 		writeU8((std::uint8_t)generic.type);
 
 		switch (generic.type) {
@@ -303,11 +307,11 @@ namespace bea {
 				case GRCode::ExternalType:
 				case GRCode::ExternalEntity:
 					{
-						auto pair = readExternal();
-						pair.first = op;
+						auto tuple = readExternal();
+						std::get<0>(tuple) = op;
 
 						m_externalReferences.emplace_back(
-							std::move(pair)
+							std::move(tuple)
 						);
 					}
 					break;
@@ -325,20 +329,6 @@ namespace bea {
 		} while (byteOp);
 
 		return Result<None>();
-	}
-
-	/* Read name and add module */
-	Name GRCodeDeserializer::readDeclarationName() {
-
-		Name name = readName();
-
-		for (std::size_t i = 0; i < m_moduleName.size(); i++)
-			name.components.insert(
-				name.components.begin()+i,
-				m_moduleName.components[i]
-			);
-
-		return std::move(name);
 	}
 
 	/* Read GRCode::Use */
@@ -365,7 +355,7 @@ namespace bea {
 		std::uint8_t flags = readU8();
 
 		std::pair<Name, std::unique_ptr<Type>> pair = {
-			readDeclarationName(), std::make_unique<Type>()
+			readName(), std::make_unique<Type>()
 		};
 		Type *type = pair.second.get();
 		type->name = pair.first;
@@ -390,7 +380,7 @@ namespace bea {
 		for (std::size_t i = 0; i < publicMemberCount; i++) {
 
 			auto member = readClassMember();
-			type->object.publicMembers[std::move(member.first)] =
+			type->object.publicMembers.newEntry(std::move(member.first)) =
 				std::move(member.second);
 		}
 		SYNC_TYPES;
@@ -398,7 +388,7 @@ namespace bea {
 		for (std::size_t i = 0; i < privateMemberCount; i++) {
 
 			auto member = readClassMember();
-			type->object.privateMembers[std::move(member.first)] =
+			type->object.privateMembers.newEntry(std::move(member.first)) =
 				std::move(member.second);
 		}
 		SYNC_TYPES;
@@ -457,7 +447,7 @@ namespace bea {
 		variable = {};
 
 		if (m_inClass) name = readName();
-		else name = readDeclarationName();
+		else name = readName();
 
 		variable.overloadID = (std::size_t)readU16L();
 
@@ -507,11 +497,16 @@ namespace bea {
 	}
 
 	/* Read GRCode::ExternalType or GRCode::ExternalEntity */
-	std::pair<GRCode, Name> GRCodeDeserializer::readExternal() {
+	std::tuple<GRCode, Name, Position> GRCodeDeserializer::readExternal() {
 
 		return {
 			GRCode::ExternalType,
-			readName()
+			readName(),
+			{
+				.path = m_sourcePath.c_str(),
+				.line = (long)readU32L(),
+				.column = (long)readU32L(),
+			},
 		};
 	}
 
@@ -539,6 +534,7 @@ namespace bea {
 		GRCode op = (GRCode)readU8();
 
 		GenericInfo info{};
+		info.name = readString();
 		info.type = (GenericType)readU8();
 
 		std::uint8_t flags = readU8();

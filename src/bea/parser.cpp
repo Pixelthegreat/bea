@@ -923,6 +923,10 @@ namespace bea {
 		NodeP valueNode = nullptr;
 		if (m_token->type < TokenType::EndLine)
 			valueNode = BEA_OK(NodeP, parseExpr());
+		else {
+			valueNode = std::make_unique<VariableAccessNode>("None");
+			valueNode->m_position = position;
+		}
 
 		auto node = std::make_unique<ReturnStatementNode>(
 			std::move(valueNode)

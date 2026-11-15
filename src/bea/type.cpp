@@ -117,8 +117,6 @@ namespace bea {
 		}
 		if (count) stream << ">";
 
-		if (typeID.type) stream << *typeID.type;
-
 		return stream;
 	}
 
@@ -161,28 +159,8 @@ namespace bea {
 	/* Compare types */
 	TypeEquality Type::equalTo(const Type& other) const {
 
-		if (base != other.base) {
-
-			if (base > BaseType::F64 ||
-			    other.base > BaseType::F64)
-				return TypeEquality::None;
-
-			if ((distinct || other.distinct) &&
-			    this != &other)
-				return TypeEquality::None;
-
-			return TypeEquality::Coercible;
-		}
-
-		/* Function types */
-		if (base == BaseType::Function ||
-		    base == BaseType::Any)
-			return this == &other?
-				TypeEquality::Equivalent:
-				TypeEquality::None;
-
 		/* Object types */
-		else if (base == BaseType::Object) {
+		if (base == BaseType::Object) {
 
 			if (this == &other)
 				return TypeEquality::Equivalent;
@@ -203,6 +181,27 @@ namespace bea {
 			}
 			return TypeEquality::None;
 		}
+
+		/* Basic types */
+		else if (base != other.base) {
+
+			if ((distinct || other.distinct) &&
+			    this != &other)
+				return TypeEquality::None;
+
+			else if (base > BaseType::F64 ||
+				 other.base > BaseType::F64)
+				return TypeEquality::None;
+
+			return TypeEquality::Coercible;
+		}
+
+		/* Function types */
+		else if (base == BaseType::Function)
+			return this == &other?
+				TypeEquality::Equivalent:
+				TypeEquality::None;
+
 		return TypeEquality::Equivalent;
 	}
 

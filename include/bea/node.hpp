@@ -17,12 +17,15 @@ namespace bea {
 	struct Atom {
 		std::unique_ptr<TypeID> type = nullptr;
 		TypeEquality typeEquality = TypeEquality::None;
+		std::vector<TypeEquality> argumentTypeEqualities{};
 
 		const ObjectImplementation *operationImpl = nullptr;
 
 		std::size_t overloadID = 0;
 		VariableInfo *variable = nullptr;
 		std::size_t scopeID = 0;
+
+		bool flagDynamic = false;
 	};
 
 	/*

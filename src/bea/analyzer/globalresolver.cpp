@@ -45,7 +45,11 @@ namespace bea {
 			GRCode type = GRCode::ExternalType;
 			if (reference.type == Context::ReferenceType::Entity)
 				type = GRCode::ExternalEntity;
-			m_serializer.writeExternal(type, reference.name);
+			m_serializer.writeExternal(
+				type,
+				reference.name,
+				reference.position
+			);
 		}
 		return Result<None>();
 	}
@@ -64,19 +68,20 @@ namespace bea {
 			m_context.m_currentFrame->get(
 				node.m_name, true
 			);
-		if (!result.okay &&
-		    node.m_name != "true" &&
-		    node.m_name != "false" &&
-		    node.m_name != "null")
-			registerEntityReference(node.m_name, node);
+		if (!result.okay) {
 
+			if (node.m_name != "true" &&
+			    node.m_name != "false" &&
+			    node.m_name != "null")
+				registerEntityReference(node.m_name, node);
+		}
 		return Result<None>();
 	}
 
 	/* Visit "new" expression */
 	Result<None> GlobalResolver::visitNew(NewNode& node) {
 
-		std::unique_ptr<TypeID> typeID =
+		node.m_atom.type =
 			BEA_OK(None, nodeToTypeID(node.m_typeNode.get()));
 
 		for (const std::unique_ptr<Node>& argument: node.m_argumentNodes)
@@ -88,7 +93,7 @@ namespace bea {
 	/* Visit "cast" expression */
 	Result<None> GlobalResolver::visitCast(CastNode& node) {
 
-		std::unique_ptr<TypeID> typeID =
+		node.m_atom.type =
 			BEA_OK(None, nodeToTypeID(node.m_typeNode.get()));
 
 		BEA_OK(None, visit(*node.m_valueNode));
@@ -206,12 +211,36 @@ namespace bea {
 	/* Visit "let" statement */
 	Result<None> GlobalResolver::visitLetStatement(LetStatementNode& node) {
 
+		if (m_context.m_frames.size() == 1) {
+
+			for (Name& name: node.m_names) {
+
+				Name old_name = name;
+				name.components.insert(
+					name.components.begin(),
+					m_context.m_moduleName.components.begin(),
+					m_context.m_moduleName.components.end()
+				);
+				Name& aliasedTo = m_context.m_aliases[old_name];
+				if (aliasedTo.components.size() &&
+				    aliasedTo != name)
+					return Result<None>(
+						node.m_position,
+						std::format(
+							"Can't redeclare alias '{}'",
+							old_name
+						)
+					);
+				aliasedTo = name;
+			}
+		}
+
+		/* check type inference */
 		if (!node.m_typeNode && m_blockLevel == 1)
 			return Result<None>(
 				node.m_position,
 				"Global declaration can't have inferred type"
 			);
-
 		BEA_OK(None, visit(*node.m_valueNode));
 
 		/* Declare variables */
@@ -229,6 +258,7 @@ namespace bea {
 				);
 			VariableInfo& info =
 				m_context.m_currentFrame->newEntry(name);
+			info.scopeID = m_context.m_frames.size()-1;
 
 			info.flagPublic = node.m_public;
 			if (node.m_typeNode)
@@ -244,7 +274,28 @@ namespace bea {
 		FuncStatementNode& node,
 		Node& bodyNode
 	) {
+		if (m_context.m_frames.size() == 1) {
 
+			Name old_name = node.m_name;
+			node.m_name.components.insert(
+				node.m_name.components.begin(),
+				m_context.m_moduleName.components.begin(),
+				m_context.m_moduleName.components.end()
+			);
+			Name& aliasedTo = m_context.m_aliases[old_name];
+			if (aliasedTo.components.size() &&
+			    aliasedTo != node.m_name)
+				return Result<None>(
+					node.m_position,
+					std::format(
+						"Can't redeclare alias '{}'",
+						old_name
+					)
+				);
+			aliasedTo = node.m_name;
+		}
+
+		/* Get variable */
 		VariableInfo& info =
 			m_context.m_currentFrame->newEntry(node.m_name);
 
@@ -419,6 +470,25 @@ namespace bea {
 	/* Visit "class" statement */
 	Result<None> GlobalResolver::visitClassStatement(ClassStatementNode& node) {
 
+		Name old_name = node.m_name;
+		node.m_name.components.insert(
+			node.m_name.components.begin(),
+			m_context.m_moduleName.components.begin(),
+			m_context.m_moduleName.components.end()
+		);
+		Name& aliasedTo = m_context.m_aliases[old_name];
+		if (aliasedTo.components.size() &&
+		    aliasedTo != node.m_name)
+			return Result<None>(
+				node.m_position,
+				std::format(
+					"Can't redeclare alias '{}'",
+					old_name
+				)
+			);
+		aliasedTo = node.m_name;
+
+		/* Get type */
 		Result<Type *> result = m_context.getType(node.m_name);
 		if (result.okay)
 			return Result<None>(
@@ -599,6 +669,7 @@ namespace bea {
 			.type = Context::ReferenceType::Type,
 			.name = name,
 			.node = node,
+			.position = node.m_position,
 			.pType = pType,
 		};
 		m_context.m_externalReferences.emplace_back(std::move(reference));
@@ -613,6 +684,7 @@ namespace bea {
 			.type = Context::ReferenceType::Entity,
 			.name = name,
 			.node = node,
+			.position = node.m_position,
 		};
 		m_context.m_externalReferences.emplace_back(std::move(reference));
 	}

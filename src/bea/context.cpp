@@ -110,11 +110,21 @@ namespace bea {
 	/* Pop stack frame */
 	void Context::popFrame() {
 
+		m_deadFrames.emplace_back(std::move(
+			m_frames[m_frames.size()-1]
+		));
 		m_frames.pop_back();
+
 		if (!m_frames.empty())
 			m_currentFrame = m_frames[m_frames.size()-1].get();
 		else
 			m_currentFrame = nullptr;
+	}
+
+	/* Clear dead stack frames */
+	void Context::clearDeadFrames() {
+
+		m_deadFrames.clear();
 	}
 
 	/* Get type from current frame */
@@ -138,7 +148,6 @@ namespace bea {
 
 			if (reference.dealiased)
 				continue;
-
 			Name name = reference.name;
 
 			auto it = m_aliases.end();
@@ -181,7 +190,7 @@ namespace bea {
 	}
 
 	/* Resolve references */
-	Result<None> Context::resolveReferences() {
+	Result<None> Context::resolveReferences(bool internal) {
 
 		for (Reference& reference: m_externalReferences) {
 
@@ -214,7 +223,8 @@ namespace bea {
 	/* Resolve module */
 	Result<None> Context::resolveModule(
 		const std::string& path,
-		const Name& name
+		const Name& name,
+		const std::string& sourcePath
 	) {
 		m_aliases.clear();
 
@@ -229,7 +239,10 @@ namespace bea {
 			);
 
 		/* Deserialize file */
-		GRCodeDeserializer deserializer(stream, name);
+		GRCodeDeserializer deserializer(
+			stream, name,
+			sourcePath
+		);
 		BEA_OK(None, deserializer.readAll());
 
 		stream.close();
@@ -244,24 +257,32 @@ namespace bea {
 			m_baseFrame->m_types[std::move(pair.first)] =
 				std::move(pair.second);
 
+		m_strayNames.emplace_back(
+			deserializer.m_externalReferences.size()
+		);
+		std::vector<Name>& strayNames =
+			m_strayNames[m_strayNames.size()-1];
+
+		std::size_t i = 0;
 		for (
-			const std::pair<GRCode, Name>& pair:
+			const std::tuple<GRCode, Name, Position>& tuple:
 			deserializer.m_externalReferences
 		) {
 			ReferenceType type = ReferenceType::Type;
-			if (pair.first == GRCode::ExternalEntity)
+			if (std::get<0>(tuple) == GRCode::ExternalEntity)
 				type = ReferenceType::Entity;
 
-			m_strayNames.emplace_back(std::move(pair.second));
+			strayNames[i] = std::move(std::get<1>(tuple));
 
 			Reference reference = {
 				.type = type,
-				.name = m_strayNames[m_strayNames.size()-1],
+				.name = strayNames[i],
 				.node = dummyNode,
 			};
 			m_externalReferences.emplace_back(
 				std::move(reference)
 			);
+			i++;
 		}
 
 		/* Move variables */
@@ -287,6 +308,7 @@ namespace bea {
 			BaseType::Int, "Int"
 		);
 		m_intType = intType.get();
+		m_intType->external = false;
 
 		registerType("Int", std::move(intType));
 
@@ -295,6 +317,7 @@ namespace bea {
 			BaseType::Float, "Float"
 		);
 		m_floatType = floatType.get();
+		m_floatType->external = false;
 
 		registerType("Float", std::move(floatType));
 
@@ -303,12 +326,14 @@ namespace bea {
 			BaseType::Boolean, "Boolean"
 		);
 		m_booleanType = booleanType.get();
+		m_booleanType->external = false;
 
 		registerType("Boolean", std::move(booleanType));
 
 		/* String */
 		std::unique_ptr<Type> stringType = std::make_unique<Type>("String");
 		m_stringType = stringType.get();
+		m_stringType->external = false;
 
 		stringType->object = {
 		};
@@ -332,6 +357,9 @@ namespace bea {
 		if (!m_sourcePath.ends_with("stdlib/src/map.bea"))
 			m_aliases["Map"] = {"std", "map", "Map"};
 
+		if (!m_sourcePath.ends_with("stdlib/src/none.bea"))
+			m_aliases["None"] = {"std", "none", "None"};
+
 		if (!m_sourcePath.ends_with("stdlib/src/operator.bea")) {
 
 			m_aliases["Add"] = {"std", "operator", "Add"};
@@ -348,12 +376,16 @@ namespace bea {
 			m_aliases["LessThan"] = {"std", "operator", "LessThan"};
 			m_aliases["GreaterThan"] = {"std", "operator", "GreaterThan"};
 			m_aliases["True"] = {"std", "operator", "True"};
+			m_aliases["Index"] = {"std", "operator", "Index"};
 		}
 		if (!m_sourcePath.ends_with("stdlib/src/range.bea"))
 			m_aliases["Range"] = {"std", "range", "Range"};
 
-		if (!m_sourcePath.ends_with("stdlib/src/result.bea"))
+		if (!m_sourcePath.ends_with("stdlib/src/result.bea")) {
+
+			m_aliases["Error"] = {"std", "result", "Error"};
 			m_aliases["Result"] = {"std", "result", "Result"};
+		}
 
 		if (!m_sourcePath.ends_with("stdlib/src/set.bea"))
 			m_aliases["Set"] = {"std", "set", "Set"};
@@ -364,7 +396,7 @@ namespace bea {
 		std::ostream& stream,
 		const Context::Reference& reference
 	) {
-		stream << reference.node.m_position << ":" << reference.name << "(";
+		stream << reference.position << ":" << reference.name << "(";
 		switch (reference.type) {
 			case Context::ReferenceType::Type:
 				stream << "Type";

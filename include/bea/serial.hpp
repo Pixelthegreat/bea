@@ -96,7 +96,8 @@ namespace bea {
 		);
 		void writeExternal(
 			GRCode type,
-			const Name& name
+			const Name& name,
+			const Position& position
 		);
 		void writeTypeID(
 			const TypeID& typeID
@@ -118,16 +119,18 @@ namespace bea {
 	public:
 		GRCodeDeserializer(
 			std::istream& stream,
-			const Name& moduleName
+			const Name& moduleName,
+			const std::string& sourcePath
 		)
 			: Deserializer(stream),
-			  m_moduleName(moduleName) {}
+			  m_moduleName(moduleName),
+			  m_sourcePath(sourcePath) {}
 
 		std::vector<Pair<Name>> m_aliases;
 		std::vector<std::pair<Name, std::unique_ptr<Type>>> m_types;
 		std::vector<std::pair<Name, VariableInfo>> m_values;
 		std::vector<TypeID *> m_typeIDs;
-		std::vector<std::pair<GRCode, Name>> m_externalReferences;
+		std::vector<std::tuple<GRCode, Name, Position>> m_externalReferences;
 
 		/*
 		 * Read GRCode operations
@@ -135,16 +138,15 @@ namespace bea {
 		Result<None> readAll();
 	private:
 		const Name& m_moduleName;
+		const std::string& m_sourcePath;
 		std::size_t m_inClass = 0;
-
-		Name readDeclarationName();
 
 		Pair<Name> readUse();
 		std::pair<Name, std::unique_ptr<Type>> readClass();
 		std::pair<Name, VariableInfo> readClassField();
 		ObjectImplementation readClassImpl();
 		std::pair<Name, VariableInfo> readFunction();
-		std::pair<GRCode, Name> readExternal();
+		std::tuple<GRCode, Name, Position> readExternal();
 		std::unique_ptr<TypeID> readTypeID();
 		std::pair<GRCode, GenericInfo> readGeneric();
 		std::pair<Name, VariableInfo> readClassMember();

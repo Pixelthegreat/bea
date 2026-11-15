@@ -87,6 +87,7 @@ namespace bea {
 			ReferenceType type;
 			Name& name;
 			Node& node;
+			Position position;
 			Type **pType = nullptr;
 			bool dealiased = false;
 			bool resolved = false;
@@ -95,16 +96,22 @@ namespace bea {
 		/*
 		 * Context
 		 */
-		Context(const std::string& sourcePath)
-			: m_sourcePath(sourcePath) {
+		Context(
+			const std::string& sourcePath,
+			const Name& moduleName
+		)
+			: m_sourcePath(sourcePath),
+			  m_moduleName(moduleName) {
 
 			m_currentFrame = m_baseFrame = pushFrame();
 			initTypes();
 			initAliases();
 		}
 		const std::string& m_sourcePath;
+		const Name& m_moduleName;
 
 		std::vector<std::unique_ptr<Frame>> m_frames;
+		std::vector<std::unique_ptr<Frame>> m_deadFrames;
 
 		Type *m_intType = nullptr;
 		Type *m_floatType = nullptr;
@@ -117,7 +124,7 @@ namespace bea {
 		std::vector<Reference> m_externalReferences;
 		std::unordered_map<Name, Name> m_aliases;
 
-		std::vector<Name> m_strayNames;
+		std::vector<std::vector<Name>> m_strayNames;
 		std::vector<TypeID *> m_strayTypeIDs;
 
 		/*
@@ -125,6 +132,11 @@ namespace bea {
 		 */
 		Frame *pushFrame();
 		void popFrame();
+
+		/*
+		 * Clear dead stack frames
+		 */
+		void clearDeadFrames();
 
 		/*
 		 * Get type from current frame
@@ -149,14 +161,15 @@ namespace bea {
 		/*
 		 * Resolve references
 		 */
-		Result<None> resolveReferences();
+		Result<None> resolveReferences(bool internal = false);
 
 		/*
 		 * Resolve module
 		 */
 		Result<None> resolveModule(
 			const std::string& path,
-			const Name& name
+			const Name& name,
+			const std::string& sourcePath
 		);
 	private:
 		/*
