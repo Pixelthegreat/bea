@@ -329,15 +329,6 @@ namespace bea {
 		m_booleanType->external = false;
 
 		registerType("Boolean", std::move(booleanType));
-
-		/* String */
-		std::unique_ptr<Type> stringType = std::make_unique<Type>("String");
-		m_stringType = stringType.get();
-		m_stringType->external = false;
-
-		stringType->object = {
-		};
-		registerType("String", std::move(stringType));
 	}
 
 	/* Initialize aliases */
@@ -389,6 +380,36 @@ namespace bea {
 
 		if (!m_sourcePath.ends_with("stdlib/src/set.bea"))
 			m_aliases["Set"] = {"std", "set", "Set"};
+
+		if (!m_sourcePath.ends_with("stdlib/src/string.bea"))
+			m_aliases["String"] = {"std", "string", "String"};
+	}
+
+	/* Initialize proxy references */
+	void Context::initReferences() {
+
+		std::vector<Name> strayNames;
+
+		strayNames.emplace_back("String");
+		strayNames.emplace_back("List");
+		strayNames.emplace_back("Result");
+
+		m_externalReferences.emplace_back(Reference{
+			.type = ReferenceType::Type,
+			.name = strayNames[0],
+			.node = dummyNode,
+		});
+		m_externalReferences.emplace_back(Reference{
+			.type = ReferenceType::Type,
+			.name = strayNames[1],
+			.node = dummyNode,
+		});
+		m_externalReferences.emplace_back(Reference{
+			.type = ReferenceType::Type,
+			.name = strayNames[2],
+			.node = dummyNode,
+		});
+		m_strayNames.emplace_back(std::move(strayNames));
 	}
 
 	/* Reference printer */

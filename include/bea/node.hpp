@@ -20,6 +20,7 @@ namespace bea {
 		std::vector<TypeEquality> argumentTypeEqualities{};
 
 		const ObjectImplementation *operationImpl = nullptr;
+		const ObjectImplementation *operationImpl2 = nullptr;
 
 		std::size_t overloadID = 0;
 		VariableInfo *variable = nullptr;

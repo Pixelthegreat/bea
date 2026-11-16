@@ -16,6 +16,8 @@ namespace bea {
 		LocalResolver(Context& context)
 			: NodeAnalyzerVisitor(context) {}
 
+		virtual Result<None> visitBlock(BlockNode& node) override;
+
 		virtual Result<None> visitInteger(IntegerNode& node) override;
 		virtual Result<None> visitFloat(FloatNode& node) override;
 		virtual Result<None> visitString(StringNode& node) override;
@@ -25,8 +27,11 @@ namespace bea {
 		virtual Result<None> visitUnaryOperation(UnaryOperationNode& node) override;
 		virtual Result<None> visitAssignment(AssignmentNode& node) override;
 		virtual Result<None> visitBinaryOperation(BinaryOperationNode& node) override;
+		virtual Result<None> visitCarryResult(CarryResultNode& node) override;
 		virtual Result<None> visitNew(NewNode& node) override;
 		virtual Result<None> visitCast(CastNode& node) override;
+		virtual Result<None> visitList(ListNode& node) override;
+		virtual Result<None> visitCall(CallNode& node) override;
 		virtual Result<None> visitNamedAccess(NamedAccessNode& node) override;
 		virtual Result<None> visitIndexedAccess(IndexedAccessNode& node) override;
 
@@ -40,6 +45,8 @@ namespace bea {
 		virtual Result<None> visitClassStatement(ClassStatementNode& node) override;
 	private:
 		TypeID *m_returnType = nullptr;
+		Type *m_classType = nullptr;
+		bool m_noPushBlockFrame = false;
 
 		/*
 		 * Get type for type identifier

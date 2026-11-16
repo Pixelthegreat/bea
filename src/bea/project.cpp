@@ -498,8 +498,8 @@ namespace bea {
 		source.context->clearDeadFrames();
 
 		/* Local resolver analysis */
-		//LocalResolver localResolver(*source.context);
-		//BEA_OK(None, localResolver.analyze(*source.node));
+		LocalResolver localResolver(*source.context);
+		BEA_OK(None, localResolver.analyze(*source.node));
 
 		return Result<None>();
 	}

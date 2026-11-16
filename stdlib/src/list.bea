@@ -1,0 +1,17 @@
+module list
+
+/*
+ * @brief List object
+ */
+pub class List<T> {
+
+	/*
+	 * @brief Initialize list
+	 */
+	pub func init()!
+
+	/*
+	 * @brief Add item to list
+	 */
+	pub func add(item: T)!
+}

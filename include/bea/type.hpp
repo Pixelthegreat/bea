@@ -214,8 +214,8 @@ namespace bea {
 	};
 
 	struct ObjectType {
-		bool flagAbstract;
-		bool flagPublic;
+		bool flagAbstract = false;
+		bool flagPublic = false;
 		std::vector<GenericInfo> genericParameters;
 		OrderedMap<Name, VariableInfo> publicMembers;
 		OrderedMap<Name, VariableInfo> privateMembers;

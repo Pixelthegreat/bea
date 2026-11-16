@@ -12,7 +12,6 @@ namespace bea {
 	 */
 	class PostParseSimplifier : public NodeOptimizerVisitor {
 	public:
-		virtual Result<None> visitCarryResult(CarryResultNode& node) override;
 		virtual Result<None> visitRange(RangeNode& node) override;
 	};
 }

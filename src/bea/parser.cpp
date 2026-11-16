@@ -1501,19 +1501,17 @@ namespace bea {
 		advance(Skip::EndLine);
 
 		std::vector<NodeP> itemNodes;
-		if (!m_token->matchSymbol("]")) {
+
+		itemNodes.emplace_back(
+			BEA_OK(NodeP, parseExpr())
+		);
+		while (m_token->matchSymbol(",")) {
+
+			advance(Skip::EndLine);
 
 			itemNodes.emplace_back(
 				BEA_OK(NodeP, parseExpr())
 			);
-			while (m_token->matchSymbol(",")) {
-
-				advance(Skip::EndLine);
-
-				itemNodes.emplace_back(
-					BEA_OK(NodeP, parseExpr())
-				);
-			}
 		}
 		skipNewlines();
 

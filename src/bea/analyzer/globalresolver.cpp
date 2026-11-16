@@ -54,6 +54,27 @@ namespace bea {
 		return Result<None>();
 	}
 
+	/* Visit block */
+	Result<None> GlobalResolver::visitBlock(BlockNode& node) {
+
+		m_blockLevel++;
+
+		bool noPushBlockFrame = m_noPushBlockFrame;
+		m_noPushBlockFrame = false;
+
+		if (m_blockLevel == 1)
+			noPushBlockFrame = true;
+
+		if (!noPushBlockFrame) m_context.pushFrame();
+
+		for (std::size_t i = 0; i < node.m_nodes.size(); i++)
+			BEA_OK(None, visit(*node.m_nodes[i]));
+
+		if (!noPushBlockFrame) m_context.popFrame();
+		m_blockLevel--;
+		return Result<None>();
+	}
+
 	/* Visit type */
 	Result<None> GlobalResolver::visitType(TypeNode& node) {
 
@@ -328,7 +349,7 @@ namespace bea {
 
 		/* Create temporary constants for generic parameters */
 		Frame& frame = *m_context.pushFrame();
-		//if (!node.m_static) TODO
+		//if (!node.m_static && m_classType) TODO
 		//	VariableInfo& thisVariable = frame["this"];
 
 		for (const NodeGenericParameter& parameter: node.m_genericParameters) {
@@ -404,6 +425,7 @@ namespace bea {
 		}
 
 		/* Visit body */
+		m_noPushBlockFrame = true;
 		BEA_OK(None, visit(bodyNode));
 		m_context.popFrame();
 
@@ -452,6 +474,7 @@ namespace bea {
 
 		Frame& frame = *m_context.pushFrame();
 
+		m_noPushBlockFrame = true;
 		BEA_OK(None, visit(*node.m_bodyNode));
 
 		/* Move members */
@@ -526,6 +549,8 @@ namespace bea {
 		}
 
 		/* Visit nodes */
+		m_classType = type.get();
+
 		BlockNode *block = static_cast<BlockNode *>(node.m_bodyNode.get());
 		m_blockLevel++;
 
@@ -547,6 +572,7 @@ namespace bea {
 				std::move(implementation)
 			);
 		}
+		m_classType = nullptr;
 		m_blockLevel--;
 
 		/* Move members */

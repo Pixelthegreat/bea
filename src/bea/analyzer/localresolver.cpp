@@ -4,6 +4,27 @@
 
 namespace bea {
 
+	/* Visit block */
+	Result<None> LocalResolver::visitBlock(BlockNode& node) {
+
+		m_blockLevel++;
+
+		bool noPushBlockFrame = m_noPushBlockFrame;
+		m_noPushBlockFrame = false;
+
+		if (m_blockLevel == 1)
+			noPushBlockFrame = true;
+
+		if (!noPushBlockFrame) m_context.pushFrame();
+
+		for (std::size_t i = 0; i < node.m_nodes.size(); i++)
+			BEA_OK(None, visit(*node.m_nodes[i]));
+
+		if (!noPushBlockFrame) m_context.popFrame();
+		m_blockLevel--;
+		return Result<None>();
+	}
+
 	/* Visit integer constant */
 	Result<None> LocalResolver::visitInteger(IntegerNode& node) {
 
@@ -25,8 +46,8 @@ namespace bea {
 	/* Visit string constant */
 	Result<None> LocalResolver::visitString(StringNode& node) {
 
-		node.m_atom.type = std::make_unique<TypeID>(
-			m_context.m_stringType
+		node.m_atom.type = registerTypeID(
+			std::make_unique<TypeID>("std::string::String")
 		);
 		return Result<None>();
 	}
@@ -115,8 +136,17 @@ namespace bea {
 			);
 
 		/* Check if operator is implemented */
-		Type *type = node.m_atom.type->type;
-		if (!type || type->base <= BaseType::F64)
+		Type *type = node.m_node->m_atom.type->type;
+		if (!type) return Result<None>();
+
+		if ((type->base == BaseType::F32 ||
+		     type->base == BaseType::F64) &&
+		    node.m_operation == "not")
+			return Result<None>(
+				node.m_position,
+				"Invalid operation"
+			);
+		if (type->base <= BaseType::F64)
 			return Result<None>();
 
 		const char *interface = nullptr;
@@ -263,7 +293,9 @@ namespace bea {
 			node.m_leftNode->m_atom.type->equalTo(
 				*node.m_rightNode->m_atom.type
 			);
-		if (!node.m_atom.typeEquality)
+		if (!node.m_atom.typeEquality &&
+		    node.m_operation != "or" &&
+		    node.m_operation != "and")
 			return Result<None>(
 				node.m_position,
 				std::format(
@@ -273,8 +305,83 @@ namespace bea {
 				)
 			);
 
+		/* And / or */
 		if (node.m_operation == "or" ||
-		    node.m_operation == "and")
+		    node.m_operation == "and") {
+
+			node.m_atom.type = std::make_unique<TypeID>(
+				m_context.m_booleanType
+			);
+
+			Type *leftType = node.m_leftNode->m_atom.type->type;
+			Type *rightType = node.m_rightNode->m_atom.type->type;
+
+			/* Check left */
+			if (!leftType || leftType->base < BaseType::F32)
+				goto checkRightType;
+
+			else if (leftType->base != BaseType::Object)
+				return Result<None>(
+					node.m_leftNode->m_position,
+					"Value must be integral or implement "
+					"std::operator::True"
+				);
+			for (
+				const ObjectImplementation& implementation:
+				leftType->object.implementations
+			) {
+				if (implementation.type->name != "std::operator::True" ||
+				    implementation.type->generics.size())
+					continue;
+
+				node.m_atom.operationImpl = &implementation;
+				goto checkRightType;
+			}
+			return Result<None>(
+				node.m_leftNode->m_position,
+				std::format(
+					"Type {} doesn't implement std::operator::True",
+					*node.m_leftNode->m_atom.type
+				)
+			);
+checkRightType:
+			/* Check right */
+			if (!rightType || rightType->base < BaseType::F32)
+				return Result<None>();
+
+			else if (rightType->base != BaseType::Object)
+				return Result<None>(
+					node.m_rightNode->m_position,
+					"Value must be integral or implement "
+					"std::operator::True"
+				);
+			for (
+				const ObjectImplementation& implementation:
+				rightType->object.implementations
+			) {
+				if (implementation.type->name != "std::operator::True" ||
+				    implementation.type->generics.size())
+					continue;
+
+				node.m_atom.operationImpl2 = &implementation;
+				return Result<None>();
+			}
+			return Result<None>(
+				node.m_rightNode->m_position,
+				std::format(
+					"Type {} doesn't implement std::operator::True",
+					*node.m_rightNode->m_atom.type
+				)
+			);
+		}
+
+		/* Comparison operations */
+		if (node.m_operation == "==" ||
+		    node.m_operation == "!=" ||
+		    node.m_operation == "<" ||
+		    node.m_operation == ">" ||
+		    node.m_operation == "<=" ||
+		    node.m_operation == ">=")
 			node.m_atom.type = std::make_unique<TypeID>(
 				m_context.m_booleanType
 			);
@@ -319,9 +426,6 @@ namespace bea {
 			interface = "std::operator::GreaterThan";
 		else if (node.m_operation == ">=") /* greater than equals = not less than */
 			interface = "std::operator::LessThan";
-		else if (node.m_operation == "or" ||
-			 node.m_operation == "and")
-			interface = "std::operator::True";
 
 		if (!interface) return Result<None>();
 
@@ -354,10 +458,39 @@ namespace bea {
 		);
 	}
 
+	/* Visit carry result ("?" operator) */
+	Result<None> LocalResolver::visitCarryResult(CarryResultNode& node) {
+
+		BEA_OK(None, visit(*node.m_node));
+
+		if (m_returnType->name != "std::result::Result")
+			return Result<None>(
+				node.m_position,
+				"Return type must be std::result::Result<T>"
+			);
+
+		TypeID& typeID = *node.m_node->m_atom.type;
+		if (typeID.name != "std::result::Result")
+			return Result<None>(
+				node.m_position,
+				"Type must be std::result::Result<T>"
+			);
+		node.m_atom.type = registerTypeID(
+			std::make_unique<TypeID>(
+				*node.m_node->m_atom.type->
+				generics[0].substitutedType
+			)
+		);
+		return validateTypeID(*node.m_atom.type, node.m_position);
+	}
+
 	/* Visit "new" expression */
 	Result<None> LocalResolver::visitNew(NewNode& node) {
 
 		BEA_OK(None, visit(*node.m_typeNode));
+		node.m_atom.type = registerTypeID(
+			std::make_unique<TypeID>(*node.m_typeNode->m_atom.type)
+		);
 
 		for (std::unique_ptr<Node>& argument: node.m_argumentNodes)
 			BEA_OK(None, visit(*argument));
@@ -365,8 +498,7 @@ namespace bea {
 		Type *type = node.m_atom.type->type;
 
 		/* Check type for constructor */
-		if (type->base != BaseType::Object ||
-		    type->object.flagAbstract)
+		if (type->base != BaseType::Object)
 			return Result<None>(
 				node.m_position,
 				std::format(
@@ -487,6 +619,178 @@ namespace bea {
 		return Result<None>();
 	}
 
+	/* Visit list initializer */
+	Result<None> LocalResolver::visitList(ListNode& node) {
+
+		for (std::unique_ptr<Node>& item: node.m_itemNodes)
+			BEA_OK(None, visit(*item));
+
+		/* Check types */
+		TypeID& typeID = *node.m_itemNodes[0]->m_atom.type;
+
+		node.m_atom.argumentTypeEqualities.resize(
+			node.m_itemNodes.size()
+		);
+		node.m_atom.argumentTypeEqualities[0] =
+			TypeEquality::Equivalent;
+
+		for (std::unique_ptr<Node>& item: node.m_itemNodes) {
+
+			node.m_atom.argumentTypeEqualities[0] =
+				typeID.equalTo(*item->m_atom.type);
+			if (!node.m_atom.argumentTypeEqualities[0])
+				return Result<None>(
+					item->m_position,
+					std::format(
+						"Mismatched list item types ({} and {})",
+						typeID,
+						*item->m_atom.type
+					)
+				);
+		}
+
+		/* Set type identifier */
+		node.m_atom.type = registerTypeID(
+			std::make_unique<TypeID>("std::list::List")
+		);
+		GenericInfo generic{};
+
+		generic.type = GenericType::Type;
+		generic.substitutedType = registerTypeID(
+			std::make_unique<TypeID>(typeID)
+		);
+		node.m_atom.type->generics.emplace_back(
+			std::move(generic)
+		);
+		return Result<None>();
+	}
+
+	/* Visit function call */
+	Result<None> LocalResolver::visitCall(CallNode& node) {
+
+		for (std::unique_ptr<Node>& argument: node.m_argumentNodes)
+			BEA_OK(None, visit(*argument));
+
+		const Name *name = nullptr;
+		TypeID *typeID = nullptr;
+		std::unique_ptr<TypeID> pTypeID = nullptr;
+
+		OrderedMap<Name, VariableInfo> *variables[3] = {
+			nullptr, nullptr, nullptr
+		};
+
+		VariableAccessNode *varNode =
+			dynamic_cast<VariableAccessNode *>(
+				node.m_node.get()
+			);
+		NamedAccessNode *memberNode =
+			dynamic_cast<NamedAccessNode *>(
+				node.m_node.get()
+			);
+
+		/* Variable access */
+		if (varNode) {
+
+			name = &varNode->m_name;
+			variables[0] = &m_context.m_baseFrame->m_values;
+
+			pTypeID = std::make_unique<TypeID>(m_context.m_intType);
+			typeID = pTypeID.get();
+		}
+
+		/* Member access */
+		else if (memberNode) {
+
+			name = &memberNode->m_name;
+			BEA_OK(None, visit(*memberNode->m_node));
+
+			Type *type = memberNode->m_node->m_atom.type->type;
+			if (!type || type->base != BaseType::Object)
+				return Result<None>(
+					memberNode->m_position,
+					std::format(
+						"Type {} must be object to "
+						"access named member",
+						*memberNode->m_node->m_atom.type
+					)
+				);
+			variables[0] = &type->object.publicMembers;
+			if (m_classType == type)
+				variables[1] = &type->object.privateMembers;
+
+			typeID = memberNode->m_node->m_atom.type.get();
+		}
+		Type *type = typeID->type;
+
+		/* Search variables */
+		VariableInfo *variable = nullptr;
+		for (auto **it = variables; *it && !variable; it++) {
+			for (std::pair<Name, VariableInfo>& pair: **it) {
+
+				Type *fType = pair.second.type->type;
+
+				if (pair.first != *name || !fType ||
+				    fType->base != BaseType::Function ||
+				    fType->function.parameters.size() !=
+				    node.m_argumentNodes.size())
+					continue;
+
+				/* Check arguments */
+				BEA_OK(None, validateCall(
+					fType,
+					node.m_argumentNodes,
+					type->object.genericParameters,
+					typeID->generics,
+					node.m_atom.argumentTypeEqualities
+				));
+				TypeEquality lowest = TypeEquality::Equivalent;
+				for (
+					TypeEquality equality:
+					node.m_atom.argumentTypeEqualities
+				) {
+					if (equality < lowest)
+						lowest = equality;
+				}
+				if (!!lowest) {
+
+					variable = &pair.second;
+					break;
+				}
+			}
+		}
+
+		/* Error */
+		if (!variable) {
+
+			std::ostringstream stream;
+			stream << "No matching function for ";
+
+			if (memberNode) stream << *typeID << "::";
+			stream << *name << "(";
+
+			std::size_t i = 0;
+			for (const std::unique_ptr<Node>& argument: node.m_argumentNodes) {
+
+				if (i++) stream << ", ";
+				stream << *argument->m_atom.type;
+			}
+			stream << ")";
+
+			return Result<None>(
+				node.m_position,
+				stream.str()
+			);
+		}
+		node.m_atom.type = registerTypeID(
+			std::make_unique<TypeID>(
+				*variable->type->type->
+				function.returnType
+			)
+		);
+		node.m_atom.variable = variable;
+		return Result<None>();
+	}
+
 	/* Visit named member access */
 	Result<None> LocalResolver::visitNamedAccess(NamedAccessNode& node) {
 
@@ -498,22 +802,37 @@ namespace bea {
 				node.m_position,
 				std::format(
 					"Type {} must be object to "
-					"access indexed member",
+					"access named member",
 					*node.m_node->m_atom.type
 				)
 			);
 
 		/* Get field */
-		/* TODO: private members */
 		VariableInfo *variable = nullptr;
-		for (std::pair<Name, VariableInfo>& pair: type->object.publicMembers) {
-
+		for (
+			std::pair<Name, VariableInfo>& pair:
+			type->object.publicMembers
+		) {
 			if (pair.first == node.m_name) {
 
 				variable = &pair.second;
 				break;
 			}
 		}
+		if (!variable && m_classType == type) {
+
+			for (
+				std::pair<Name, VariableInfo>& pair:
+				type->object.privateMembers
+			) {
+				if (pair.first == node.m_name) {
+
+					variable = &pair.second;
+					break;
+				}
+			}
+		}
+
 		if (!variable)
 			return Result<None>(
 				node.m_position,
@@ -553,6 +872,8 @@ namespace bea {
 			break;
 		}
 		node.m_atom.type = std::make_unique<TypeID>(*typeID);
+		node.m_atom.variable = variable;
+
 		return Result<None>();
 	}
 
@@ -625,12 +946,6 @@ namespace bea {
 	/* Visit "let" statement */
 	Result<None> LocalResolver::visitLetStatement(LetStatementNode& node) {
 
-		std::vector<VariableInfo *> infos;
-		for (const Name& name: node.m_names) {
-
-			VariableInfo& info = m_context.m_currentFrame->m_values[name];
-			infos.push_back(&info);
-		}
 		if (!node.m_typeNode && !node.m_valueNode)
 			return Result<None>(
 				node.m_position,
@@ -661,10 +976,17 @@ namespace bea {
 					"Cannot assign function to variable"
 				);
 		}
-		for (VariableInfo *info: infos) {
 
-			if (info->type) continue;
-			info->type = std::make_unique<TypeID>(*node.m_atom.type);
+		/* Setup variables */
+		std::vector<VariableInfo *> infos;
+		for (const Name& name: node.m_names) {
+
+			VariableInfo& info = m_context.m_currentFrame->m_values[name];
+			infos.push_back(&info);
+
+			info.type = registerTypeID(
+				std::make_unique<TypeID>(*node.m_atom.type)
+			);
 		}
 
 		/* Check value type */
@@ -679,7 +1001,7 @@ namespace bea {
 				return Result<None>(
 					node.m_position,
 					std::format(
-						"Mismatched types ({} and {})",
+						"Mismatched assignment types ({} and {})",
 						*node.m_atom.type,
 						*node.m_valueNode->m_atom.type
 					)
@@ -739,6 +1061,7 @@ namespace bea {
 				*parameter.second.type
 			));
 		}
+		m_noPushBlockFrame = true;
 		return Result<None>();
 	}
 
@@ -747,7 +1070,22 @@ namespace bea {
 
 		BEA_OK(None, visitFuncStatement(node));
 
+		m_returnType = node.m_returnTypeNode->m_atom.type.get();
 		BEA_OK(None, visit(*node.m_bodyNode));
+
+		node.m_atom.typeEquality = m_returnType->equalTo(
+			*node.m_bodyNode->m_atom.type
+		);
+		if (!node.m_atom.typeEquality)
+			return Result<None>(
+				node.m_position,
+				std::format(
+					"Mismatched return types ({} and {})",
+					*m_returnType,
+					*node.m_bodyNode->m_atom.type
+				)
+			);
+
 		m_context.popFrame();
 
 		return Result<None>();

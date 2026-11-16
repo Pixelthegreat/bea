@@ -1,16 +1,11 @@
 module main
 
-abstract class A {
-	pub func init()!
-}
-class B {
-	pub func init()!
+pub func add(x: Int, y: Int) -> Int => x + y
 
-	impl A {}
-}
+pub func add(x: Int, y: Int, z: Int) -> Int => x + y + z
 
-pub func main() {
+pub func main() -> Result<Int> {
 
-	let a = new A()
-	let x = not a
+	let result = new Result<Int>()
+	let value = result?
 }

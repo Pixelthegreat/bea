@@ -22,6 +22,8 @@ namespace bea {
 
 		virtual Result<None> analyze(Node& node) override;
 
+		virtual Result<None> visitBlock(BlockNode& node) override;
+
 		virtual Result<None> visitType(TypeNode& node) override;
 		virtual Result<None> visitVariableAccess(VariableAccessNode& node) override;
 		virtual Result<None> visitNew(NewNode& node) override;
@@ -52,6 +54,9 @@ namespace bea {
 
 		OrderedMap<Name, VariableInfo> m_implMembers;
 		std::unordered_map<Name, std::unique_ptr<Type>> m_implTypes;
+
+		Type *m_classType = nullptr;
+		bool m_noPushBlockFrame = false;
 
 		/*
 		 * Create type identifier for type node

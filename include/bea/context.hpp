@@ -106,6 +106,7 @@ namespace bea {
 			m_currentFrame = m_baseFrame = pushFrame();
 			initTypes();
 			initAliases();
+			initReferences();
 		}
 		const std::string& m_sourcePath;
 		const Name& m_moduleName;
@@ -116,7 +117,6 @@ namespace bea {
 		Type *m_intType = nullptr;
 		Type *m_floatType = nullptr;
 		Type *m_booleanType = nullptr;
-		Type *m_stringType = nullptr;
 
 		Frame *m_currentFrame = nullptr;
 		Frame *m_baseFrame = nullptr;
@@ -181,6 +181,11 @@ namespace bea {
 		 * Initialize aliases
 		 */
 		void initAliases();
+
+		/*
+		 * Initialize proxy references
+		 */
+		void initReferences();
 	};
 
 	std::ostream& operator<<(
