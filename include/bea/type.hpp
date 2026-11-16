@@ -264,7 +264,10 @@ namespace bea {
 		/*
 		 * Compare types
 		 */
-		TypeEquality equalTo(const Type& other) const;
+		TypeEquality equalTo(
+			const Type& other,
+			const TypeID *typeID = nullptr
+		) const;
 	};
 
 	std::ostream& operator<<(std::ostream& stream, const Type& type);

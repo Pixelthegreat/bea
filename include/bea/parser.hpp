@@ -21,7 +21,7 @@ namespace bea {
 
 		using TokenMatchList = std::vector<std::tuple<TokenType, const char *>>;
 
-		Parser(const std::vector<std::unique_ptr<Token>>& tokens)
+		Parser(std::vector<std::unique_ptr<Token>>& tokens)
 			: m_tokens(tokens) {}
 
 		/*
@@ -29,10 +29,10 @@ namespace bea {
 		 */
 		Result parse();
 	private:
-		const std::vector<std::unique_ptr<Token>>& m_tokens;
+		std::vector<std::unique_ptr<Token>>& m_tokens;
 		std::size_t m_tokenIndex = 0;
 
-		const Token *m_token = nullptr;
+		Token *m_token = nullptr;
 
 		std::istringstream m_sstream;
 

@@ -349,8 +349,8 @@ namespace bea {
 
 		/* Create temporary constants for generic parameters */
 		Frame& frame = *m_context.pushFrame();
-		//if (!node.m_static && m_classType) TODO
-		//	VariableInfo& thisVariable = frame["this"];
+		if (!node.m_static && m_classType)
+			VariableInfo& thisVariable = frame["this"];
 
 		for (const NodeGenericParameter& parameter: node.m_genericParameters) {
 

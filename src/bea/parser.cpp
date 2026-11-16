@@ -1599,14 +1599,17 @@ namespace bea {
 			}
 			skipNewlines();
 
-			if (!m_token->matchSymbol(">")) return Result(
+			if (m_token->matchSymbol(">>")) /* Weird case to account for */
+				m_token->value = ">"; /* NOTE: This is stupid don't do this */
+
+			else if (!m_token->matchSymbol(">")) return Result(
 				m_token->position,
 				std::format(
 					"Expected '>' after generic arguments but got '{}'",
 					m_token->value
 				)
 			);
-			advance(Skip::EndLine);
+			else advance(Skip::EndLine);
 		}
 		return Result(std::move(node));
 	}

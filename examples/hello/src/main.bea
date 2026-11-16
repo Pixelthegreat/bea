@@ -1,11 +1,24 @@
 module main
 
-pub func add(x: Int, y: Int) -> Int => x + y
+abstract class IFace<T> {
+	pub abstract func getMyValue() -> IFace<T>
+}
 
-pub func add(x: Int, y: Int, z: Int) -> Int => x + y + z
+class A<T> {
+	pub func init()!
+
+	pub func doStuff() -> A<T> => this
+
+	impl IFace<T> {
+		func getMyValue() -> IFace<T> {
+
+			return this
+		}
+	}
+}
 
 pub func main() -> Result<Int> {
 
-	let result = new Result<Int>()
-	let value = result?
+	let a = new A<Int>()
+	let b: A<Int> = a.doStuff()
 }

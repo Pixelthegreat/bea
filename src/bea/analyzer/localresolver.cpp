@@ -781,11 +781,10 @@ checkRightType:
 				stream.str()
 			);
 		}
-		node.m_atom.type = registerTypeID(
-			std::make_unique<TypeID>(
-				*variable->type->type->
-				function.returnType
-			)
+		node.m_atom.type = substituteTypes(
+			*variable->type->type->function.returnType,
+			type->object.genericParameters,
+			typeID->generics
 		);
 		node.m_atom.variable = variable;
 		return Result<None>();
@@ -1029,7 +1028,30 @@ checkRightType:
 		Type *type = info->type->type;
 
 		Frame& frame = *m_context.pushFrame();
-		// TODO: this
+		if (!node.m_static && m_classType) {
+
+			VariableInfo& thisVariable = frame["this"];
+			thisVariable.type = std::make_unique<TypeID>(m_classType);
+
+			for (
+				const GenericInfo& parameter:
+				m_classType->object.genericParameters
+			) {
+				GenericInfo generic{};
+				generic.type = parameter.type;
+
+				if (parameter.type == GenericType::Type)
+					generic.substitutedType = registerTypeID(
+						std::make_unique<TypeID>(parameter.name)
+					);
+				else
+					generic.substitutedValue = 0;
+
+				thisVariable.type->generics.emplace_back(
+					std::move(generic)
+				);
+			}
+		}
 
 		/* Create temporary constants for generic parameters */
 		for (const GenericInfo& generic: type->function.genericParameters) {
@@ -1104,9 +1126,249 @@ checkRightType:
 		return Result<None>();
 	}
 
-	/* TODO: Visit "class" statement */
+	/* Visit "impl" statement */
+	Result<None> LocalResolver::visitImplStatement(ImplStatementNode& node) {
+
+		Type *type = node.m_typeNode->m_atom.type->type;
+
+		if (!type ||
+		    type->base != BaseType::Object ||
+		    !type->object.flagAbstract)
+			return Result<None>(
+				node.m_position,
+				std::format(
+					"Can't implement type {}",
+					*node.m_typeNode->m_atom.type
+				)
+			);
+
+		/* Visit body */
+		Frame& frame = *m_context.pushFrame();
+		frame.m_values = std::move(m_implementation->members);
+
+		m_noPushBlockFrame = true;
+		BEA_OK(None, visit(*node.m_bodyNode));
+
+		m_implementation->members = std::move(frame.m_values);
+		m_context.popFrame();
+
+		/* Check function implementations */
+		for (
+			std::pair<Name, VariableInfo>& pair:
+			m_implementation->members
+		) {
+			OrderedMap<Name, VariableInfo> *members[2] = {
+				&type->object.publicMembers,
+				&type->object.privateMembers,
+			};
+			VariableInfo *variable = nullptr;
+			Type *fType = pair.second.type->type;
+
+			for (std::size_t i = 0; i < 2; i++) {
+
+				if (variable) break;
+
+				/* Try and find function */
+				OrderedMap<Name, VariableInfo> *pMembers = members[i];
+				for (std::pair<Name, VariableInfo>& compare: *pMembers) {
+
+					Type *compareFType = compare.second.type->type;
+
+					if (pair.first != compare.first || !compareFType ||
+					    compareFType->base != BaseType::Function ||
+					    !compare.second.flagAbstract ||
+					    compareFType->function.parameters.size() !=
+					    fType->function.parameters.size())
+						continue;
+
+					/* Compare return types */
+					std::unique_ptr<TypeID> compareReturnType =
+						substituteTypes(
+							*compareFType->function.returnType,
+							type->object.genericParameters,
+							m_implementation->type->generics
+						);
+
+					TypeEquality typeEquality =
+						compareReturnType->equalTo(
+							*fType->function.returnType
+						);
+					if (typeEquality != TypeEquality::Equivalent)
+						continue;
+
+					/* Compare parameter types */
+					TypeEquality lowest = TypeEquality::Equivalent;
+					for (
+						std::size_t i = 0;
+						i < fType->function.parameters.size();
+						i++
+					) {
+						std::pair<Name, VariableInfo>& fParameter =
+							*(fType->function.
+							  parameters.data() + i);
+						std::pair<Name, VariableInfo>& cParameter =
+							*(compareFType->function.
+							  parameters.data() + i);
+
+						std::unique_ptr<TypeID> compareArgumentType =
+							substituteTypes(
+								*cParameter.
+								second.type,
+								type->object.
+								genericParameters,
+								m_implementation->
+								type->generics
+							);
+						typeEquality =
+							compareArgumentType->equalTo(
+								*fParameter.second.type
+							);
+						if (typeEquality < lowest)
+							lowest = typeEquality;
+					}
+					if (lowest != TypeEquality::Equivalent)
+						continue;
+
+					pair.second.overloadID =
+						compare.second.overloadID;
+					variable = &compare.second;
+				}
+			}
+
+			/* Error */
+			if (!variable) {
+
+				std::ostringstream stream;
+				stream <<
+					"No matching abstract function for " <<
+					*node.m_typeNode->m_atom.type << "::" <<
+					pair.first << "(";
+
+				std::size_t i = 0;
+				for (
+					const std::pair<Name, VariableInfo>& parameter:
+					fType->function.parameters
+				) {
+					if (i++) stream << ", ";
+					stream << *parameter.second.type;
+				}
+				stream << ") -> " << *fType->function.returnType;
+
+				return Result<None>(
+					node.m_position,
+					stream.str()
+				);
+			}
+		}
+		return Result<None>();
+	}
+
+	/* Visit "class" statement */
 	Result<None> LocalResolver::visitClassStatement(ClassStatementNode& node) {
 
+		Type *type = BEA_OK(None, m_context.getType(node.m_name));
+
+		Frame& frame = *m_context.pushFrame();
+
+		for (const NodeGenericParameter& parameter: node.m_genericParameters) {
+
+			if (parameter.defaultNode)
+				BEA_OK(None, visit(*parameter.defaultNode));
+		}
+
+		/* Copy members to frame */
+		for (
+			std::pair<Name, VariableInfo>& pair:
+			type->object.publicMembers
+		) {
+			VariableInfo& info = frame.m_values.newEntry(pair.first);
+
+			info.flagConstant = pair.second.flagConstant;
+			info.flagUseDefault = pair.second.flagUseDefault;
+			info.flagAbstract = pair.second.flagAbstract;
+			info.flagPublic = pair.second.flagPublic;
+			info.flagStatic = pair.second.flagStatic;
+			info.overloadID = pair.second.overloadID;
+			info.scopeID = pair.second.scopeID;
+			info.type = std::make_unique<TypeID>(*pair.second.type);
+		}
+		for (
+			std::pair<Name, VariableInfo>& pair:
+			type->object.privateMembers
+		) {
+			VariableInfo& info = frame.m_values.newEntry(pair.first);
+
+			info.flagConstant = pair.second.flagConstant;
+			info.flagUseDefault = pair.second.flagUseDefault;
+			info.flagAbstract = pair.second.flagAbstract;
+			info.flagPublic = pair.second.flagPublic;
+			info.flagStatic = pair.second.flagStatic;
+			info.overloadID = pair.second.overloadID;
+			info.scopeID = pair.second.scopeID;
+			info.type = std::make_unique<TypeID>(*pair.second.type);
+		}
+
+		/* Create temporary constants for generic parameters */
+		for (const GenericInfo& parameter: type->object.genericParameters) {
+
+			if (parameter.type == GenericType::Type) {
+
+				std::unique_ptr<Type>& type =
+					frame.m_types[parameter.name];
+				type = std::make_unique<Type>(
+					BaseType::Any,
+					parameter.name
+				);
+				frame.registerType(
+					parameter.name, std::move(type)
+				);
+			}
+			else if (parameter.type == GenericType::Int) {
+
+				VariableInfo& entry = frame.newEntry(parameter.name);
+				entry.type = std::make_unique<TypeID>(m_context.m_intType);
+			}
+		}
+
+		/* Visit nodes */
+		m_classType = type;
+
+		BlockNode *block = static_cast<BlockNode *>(node.m_bodyNode.get());
+		m_blockLevel++;
+
+		for (std::size_t i = 0; i < block->m_nodes.size(); i++) {
+
+			ImplStatementNode *implNode =
+				dynamic_cast<ImplStatementNode *>(
+					block->m_nodes[i].get()
+				);
+			if (implNode) {
+
+				BEA_OK(None, visit(*implNode->m_typeNode));
+
+				/* Get implementation */
+				for (
+					ObjectImplementation& implementation:
+					type->object.implementations
+				) {
+					TypeEquality equality =
+						implementation.type->equalTo(
+							*implNode->m_typeNode->m_atom.type
+						);
+					if (equality == TypeEquality::Equivalent) {
+
+						m_implementation = &implementation;
+						break;
+					}
+				}
+			}
+			BEA_OK(None, visit(*block->m_nodes[i]));
+		}
+
+		m_classType = nullptr;
+		m_blockLevel--;
+
+		m_context.popFrame();
 		return Result<None>();
 	}
 
@@ -1193,31 +1455,66 @@ checkRightType:
 		std::size_t i = 0;
 		for (std::unique_ptr<Node>& argument: arguments) {
 
-			/* Get generic type */
-			const TypeID *compareType =
-				(type->function.parameters.data() + i)->
-				second.type.get();
-
-			std::size_t j = 0;
-			for (const GenericInfo& parameter: genericParameters) {
-
-				j++;
-				if (parameter.type != GenericType::Type)
-					continue;
-
-				if (compareType->name.components.size() > 1 ||
-				    parameter.name != compareType->name.components[0])
-					continue;
-
-				compareType = genericArguments[j-1].substitutedType.get();
-				break;
-			}
-
 			/* Compare types */
+			TypeID& parameterType =
+				*(type->function.parameters.data() + i)->second.type;
+
+			std::unique_ptr<TypeID> compareType =
+				substituteTypes(
+					parameterType,
+					genericParameters,
+					genericArguments
+				);
+
 			typeEqualities[i++] = compareType->equalTo(
 				*argument->m_atom.type
 			);
 		}
 		return Result<None>();
+	}
+
+	/* Substitute generic types for type identifier */
+	std::unique_ptr<TypeID> LocalResolver::substituteTypes(
+		TypeID& typeID,
+		std::vector<GenericInfo>& genericParameters,
+		std::vector<GenericInfo>& genericArguments
+	) {
+		std::unique_ptr<TypeID> newTypeID =
+			std::make_unique<TypeID>(typeID);
+
+		for (std::size_t i = 0; i < genericParameters.size(); i++) {
+
+			GenericInfo& parameter = genericParameters[i];
+			GenericInfo& argument = genericArguments[i];
+
+			if (parameter.type != GenericType::Type)
+				continue;
+
+			if (typeID.name.components.size() == 1 &&
+			    typeID.name.components[0] == parameter.name) {
+
+				newTypeID = std::make_unique<TypeID>(
+					*argument.substitutedType
+				);
+				break;
+			}
+		}
+
+		/* Substitute own generic arguments */
+		for (std::size_t i = 0; i < typeID.generics.size(); i++) {
+
+			if (typeID.generics[i].type != GenericType::Type)
+				continue;
+
+			std::unique_ptr<TypeID> genericTypeID =
+				substituteTypes(
+					*typeID.generics[i].substitutedType,
+					genericParameters,
+					genericArguments
+				);
+			newTypeID->generics[i].substitutedType =
+				std::move(genericTypeID);
+		}
+		return std::move(newTypeID);
 	}
 }

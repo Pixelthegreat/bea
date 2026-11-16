@@ -42,10 +42,13 @@ namespace bea {
 		Result<None> visitFuncStatement(FuncStatementNode& node);
 		virtual Result<None> visitFuncExprStatement(FuncExprStatementNode& node) override;
 		virtual Result<None> visitFuncBlockStatement(FuncBlockStatementNode& node) override;
+
+		virtual Result<None> visitImplStatement(ImplStatementNode& node) override;
 		virtual Result<None> visitClassStatement(ClassStatementNode& node) override;
 	private:
 		TypeID *m_returnType = nullptr;
 		Type *m_classType = nullptr;
+		ObjectImplementation *m_implementation = nullptr;
 		bool m_noPushBlockFrame = false;
 
 		/*
@@ -72,6 +75,15 @@ namespace bea {
 			std::vector<GenericInfo>& genericParameters,
 			std::vector<GenericInfo>& genericArguments,
 			std::vector<TypeEquality>& typeEqualities
+		);
+
+		/*
+		 * Substitute generic types for type identifier
+		 */
+		std::unique_ptr<TypeID> substituteTypes(
+			TypeID& typeID,
+			std::vector<GenericInfo>& genericParameters,
+			std::vector<GenericInfo>& genericArguments
 		);
 	};
 }

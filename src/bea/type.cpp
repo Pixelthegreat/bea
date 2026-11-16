@@ -157,7 +157,10 @@ namespace bea {
 	}
 
 	/* Compare types */
-	TypeEquality Type::equalTo(const Type& other) const {
+	TypeEquality Type::equalTo(
+		const Type& other,
+		const TypeID *typeID
+	) const {
 
 		/* Object types */
 		if (base == BaseType::Object) {
@@ -178,6 +181,21 @@ namespace bea {
 
 				if (typeID.generics[0].substitutedType->type == this)
 					return TypeEquality::Coercible;
+			}
+
+			/* Check for implementation */
+			if (other.base != BaseType::Object || !typeID)
+				return TypeEquality::None;
+
+			for (
+				const ObjectImplementation& implementation:
+				other.object.implementations
+			) {
+				if (implementation.type->equalTo(
+					*typeID
+				    ) != TypeEquality::Equivalent)
+					continue;
+				return TypeEquality::Coercible;
 			}
 			return TypeEquality::None;
 		}
@@ -208,6 +226,19 @@ namespace bea {
 	/* Compare type identifiers */
 	TypeEquality TypeID::equalTo(const TypeID& other) const {
 
+		TypeEquality equality;
+		if (!type || !other.type)
+			equality =
+				name == other.name?
+				TypeEquality::Equivalent:
+				TypeEquality::None;
+		else
+			equality = type->equalTo(*other.type, this);
+
+		/* Compare generics */
+		if (equality < TypeEquality::Equivalent)
+			return equality;
+
 		if (generics.size() != other.generics.size())
 			return TypeEquality::None;
 		TypeEquality lowestGeneric = TypeEquality::Equivalent;
@@ -232,17 +263,6 @@ namespace bea {
 			if (equality < lowestGeneric)
 				lowestGeneric = equality;
 		}
-
-		/* Compare underlying types */
-		TypeEquality equality;
-		if (!type || !other.type)
-			equality =
-				name == other.name?
-				TypeEquality::Equivalent:
-				TypeEquality::None;
-		else
-			equality = type->equalTo(*other.type);
-
-		return lowestGeneric < equality? lowestGeneric: equality;
+		return lowestGeneric;
 	}
 }
