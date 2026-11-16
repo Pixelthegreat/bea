@@ -59,7 +59,7 @@ namespace bea {
 		if (s_projects.empty())
 			s_globalPath = path;
 
-		s_projects.emplace_back(std::make_unique<Project>(path, target));
+		s_projects.emplace_back(std::make_unique<Project>(path, url, target));
 		Project& project = *s_projects[s_projects.size()-1];
 
 		if (!std::filesystem::exists(path)) {
@@ -320,6 +320,8 @@ namespace bea {
 								csName
 							)
 						);
+					csUrl = url.u.str.ptr;
+					csPath = path.u.str.ptr;
 				}
 
 				/* Get or create project */
@@ -357,7 +359,25 @@ namespace bea {
 	/* Fetch project */
 	Result<None> Project::fetch() {
 
-		return Result<None>("Unimplemented");
+		std::cout << "Fetching '" << m_url << "'..." << std::endl;
+
+		const char *argv[] = {
+			"git", "clone",
+			m_url.c_str(),
+			m_path.c_str(),
+			"--quiet",
+			"--recursive",
+			NULL,
+		};
+		int code = reproc_run(argv, (reproc_options){0});
+
+		if (code < 0) return Result<None>(std::format(
+			"Can't run 'git': {}", reproc_strerror(code)
+		));
+		else if (code) return Result<None>(std::format(
+			"Can't fetch '{}'", m_url
+		));
+		return Result<None>();
 	}
 
 	/* Locate sources */

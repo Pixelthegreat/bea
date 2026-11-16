@@ -67,15 +67,18 @@ namespace bea {
 		 */
 		Project(
 			const std::string& path,
+			const std::string& url,
 			Target target = Target::Debug
 		)
 			: m_path(path),
+			  m_url(url),
 			  m_target(target) {}
 
 		static std::string s_defaultURL;
 		static std::string s_globalPath;
 
 		const std::string& getPath() const { return m_path; }
+		const std::string& getURL() const { return m_url; }
 		const std::string& getName() const { return m_name; }
 		Type getType() const { return m_type; }
 
@@ -101,6 +104,7 @@ namespace bea {
 		Result<None> run();
 	private:
 		std::string m_path;
+		std::string m_url;
 		std::string m_name;
 		Type m_type = Type::Executable;
 
