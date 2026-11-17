@@ -38,25 +38,3 @@ pub struct Result<T> {
 		this.okay = false
 	}
 }
-
-/*
- * @brief Create a success result
- *
- * @gparam T The type of result.
- *
- * @param value The value of the result.
- *
- * @returns The result.
- */
-pub func Okay<T>(value: T) -> Result<T> => new Result<T>(value)
-
-/*
- * @brief Create a failure result
- *
- * @gparam T The type of result.
- *
- * @param error The error of the result.
- *
- * @returns The result.
- */
-pub func Fail<T>(error: Error) -> Result<T> => new Result<T>(error)

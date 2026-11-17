@@ -3,6 +3,12 @@ module none
 /*
  * @brief Value representing nothing
  */
-pub class None {}
+pub class None {
+
+	/*
+	 * @brief Initialize
+	 */
+	pub func init()!
+}
 
 pub let None: None = new None()

@@ -1,0 +1,224 @@
+module operator
+
+/*
+ * @brief Addition operator
+ */
+abstract class Add {
+	/*
+	 * @brief Add values
+	 *
+	 * @param other Value to add to self
+	 *
+	 * @returns Newly added value
+	 */
+	pub abstract func add(other: Add) -> Add
+}
+
+/*
+ * @brief Subtraction operator
+ */
+abstract class Subtract {
+	/*
+	 * @brief Subtract values
+	 *
+	 * @param other Value to subtract from self
+	 *
+	 * @returns Newly subtracted value
+	 */
+	pub abstract func subtract(other: Subtract) -> Subtract
+}
+
+/*
+ * @brief Multiplication operator
+ */
+abstract class Multiply {
+	/*
+	 * @brief Multiply values
+	 *
+	 * @param other Value to multiply by self
+	 *
+	 * @returns Newly multiplied value
+	 */
+	pub abstract func multiply(other: Multiply) -> Multiply
+}
+
+/*
+ * @brief Division operator
+ */
+abstract class Divide {
+	/*
+	 * @brief Divide values
+	 *
+	 * @param other Value to divide self by
+	 *
+	 * @returns Newly divided value
+	 */
+	pub abstract func divide(other: Divide) -> Divide
+}
+
+/*
+ * @brief Modulus operator
+ */
+abstract class Modulo {
+	/*
+	 * @brief Get remainder of division operation
+	 *
+	 * @param other Value to divide self by
+	 *
+	 * @returns Remainder of newly divided value
+	 */
+	pub abstract func modulo(other: Modulo) -> Modulo
+}
+
+/*
+ * @brief Bitwise or operator
+ */
+abstract class BitwiseOr {
+	/*
+	 * @brief Bitwise or values
+	 *
+	 * @param other Value to bitwise or with
+	 *
+	 * @returns New value
+	 */
+	pub abstract func bitwiseOr(other: BitwiseOr) -> BitwiseOr
+}
+
+/*
+ * @brief Bitwise and operator
+ */
+abstract class BitwiseAnd {
+	/*
+	 * @brief Bitwise and values
+	 *
+	 * @param other Value to bitwise and with
+	 *
+	 * @returns New value
+	 */
+	pub abstract func bitwiseAnd(other: BitwiseAnd) -> BitwiseAnd
+}
+
+/*
+ * @brief Bitwise xor operator
+ */
+abstract class BitwiseXor {
+	/*
+	 * @brief Bitwise xor values
+	 *
+	 * @param other Value to bitwise xor with
+	 *
+	 * @returns New value
+	 */
+	pub abstract func bitwiseXor(other: BitwiseXor) -> BitwiseXor
+}
+
+/*
+ * @brief Bitwise left shift operator
+ */
+abstract class BitwiseLeftShift {
+	/*
+	 * @brief Bitwise left shift value
+	 *
+	 * @param other Value to bitwise left shift by
+	 *
+	 * @returns New value
+	 */
+	pub abstract func bitwiseLeftShift(other: BitwiseLeftShift) -> BitwiseLeftShift
+}
+
+/*
+ * @brief Bitwise right shift operator
+ */
+abstract class BitwiseRightShift {
+	/*
+	 * @brief Bitwise right shift value
+	 *
+	 * @param other Value to bitwise right shift by
+	 *
+	 * @returns New value
+	 */
+	pub abstract func bitwiseRightShift(other: BitwiseRightShift) -> BitwiseRightShift
+}
+
+/*
+ * @brief Equals operator
+ */
+abstract class Equals {
+	/*
+	 * @brief Compare equality of values
+	 *
+	 * @param other Value to compare with
+	 *
+	 * @returns True or false
+	 */
+	pub abstract func equals(other: Equals) -> Boolean
+}
+
+/*
+ * @brief Less than operator
+ */
+abstract class LessThan {
+	/*
+	 * @brief Compare order of values
+	 *
+	 * @param other Value to compare with
+	 *
+	 * @returns True or false
+	 */
+	pub abstract func lessThan(other: LessThan) -> Boolean
+}
+
+/*
+ * @brief Greater than operator
+ */
+abstract class GreaterThan {
+	/*
+	 * @brief Compare order of values
+	 *
+	 * @param other Value to compare with
+	 *
+	 * @returns True or false
+	 */
+	pub abstract func greaterThan(other: GreaterThan) -> Boolean
+}
+
+/*
+ * @brief Truthiness operator
+ */
+abstract class True {
+	/*
+	 * @brief Get truthiness of value
+	 *
+	 * @param other Value to get truthiness of
+	 *
+	 * @returns True or false
+	 */
+	pub abstract func isTrue(other: True) -> Boolean
+}
+
+/*
+ * @brief Index operator
+ *
+ * @gparam K The type of key used as an index
+ * @gparam V The type of value stored by the container
+ */
+abstract class Index<K, V> {
+	/*
+	 * @brief Get value at index
+	 *
+	 * @param index The index of the value
+	 *
+	 * @returns A result with the value
+	 */
+	pub abstract func get(index: K) -> Result<V>
+
+	/*
+	 * @brief Set value at index
+	 *
+	 * @param index The index of the value
+	 * @param value The value to set
+	 *
+	 * @returns The value assigned
+	 */
+	pub abstract func set(index: K, value: V) -> V
+}

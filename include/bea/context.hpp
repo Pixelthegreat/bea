@@ -107,6 +107,7 @@ namespace bea {
 			initTypes();
 			initAliases();
 			initReferences();
+			initConstants();
 		}
 		const std::string& m_sourcePath;
 		const Name& m_moduleName;
@@ -186,6 +187,11 @@ namespace bea {
 		 * Initialize proxy references
 		 */
 		void initReferences();
+
+		/*
+		 * Initialize constants
+		 */
+		void initConstants();
 	};
 
 	std::ostream& operator<<(

@@ -334,9 +334,6 @@ namespace bea {
 	/* Initialize aliases */
 	void Context::initAliases() {
 
-		if (!m_sourcePath.ends_with("stdlib/src/coerce.bea"))
-			m_aliases["Coerce"] = {"std", "coerce", "Coerce"};
-
 		if (!m_sourcePath.ends_with("stdlib/src/iterator.bea")) {
 
 			m_aliases["Iterable"] = {"std", "iterator", "Iterable"};
@@ -410,6 +407,16 @@ namespace bea {
 			.node = dummyNode,
 		});
 		m_strayNames.emplace_back(std::move(strayNames));
+	}
+
+	/* Initialize constants */
+	void Context::initConstants() {
+
+		VariableInfo& trueInfo = m_currentFrame->m_values["true"];
+		trueInfo.type = std::make_unique<TypeID>(m_booleanType);
+
+		VariableInfo& falseInfo = m_currentFrame->m_values["false"];
+		falseInfo.type = std::make_unique<TypeID>(m_booleanType);
 	}
 
 	/* Reference printer */

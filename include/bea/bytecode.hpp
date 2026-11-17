@@ -58,7 +58,7 @@ namespace bea {
 		 * Record of "func" statement
 		 *
 		 * uint8_t op = GRCode::Function;
-		 * uint8_t flags; 1 = static
+		 * uint8_t flags; 1 = static, 2 = abstract
 		 * Name name;
 		 * uint16_t overloadID;
 		 * uint16_t parameterCount;

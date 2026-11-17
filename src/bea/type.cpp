@@ -105,6 +105,7 @@ namespace bea {
 		for (const GenericInfo& generic: typeID.generics) {
 
 			if (!count++) stream << "<";
+			else stream << ", ";
 
 			switch (generic.type) {
 				case GenericType::Type:
@@ -159,7 +160,8 @@ namespace bea {
 	/* Compare types */
 	TypeEquality Type::equalTo(
 		const Type& other,
-		const TypeID *typeID
+		const TypeID *typeID,
+		const TypeID *otherTypeID
 	) const {
 
 		/* Object types */
@@ -170,16 +172,28 @@ namespace bea {
 
 			/* Check for type coercion */
 			for (
-				const ObjectImplementation& implementation:
-				object.implementations
+				const std::pair<Name, VariableInfo>& member:
+				object.publicMembers
 			) {
-				if (implementation.type->name != "std::coerce::Coerce" ||
-				    implementation.type->generics.size() != 1 ||
-				    !implementation.type->generics[0].substitutedType)
-					continue;
-				TypeID& typeID = *implementation.type;
+				Type *fType = member.second.type->type;
 
-				if (typeID.generics[0].substitutedType->type == this)
+				if (member.first != "init" || !fType ||
+				    fType->base != BaseType::Function ||
+				    fType->function.parameters.size() != 1)
+					continue;
+
+				TypeID& gTypeID =
+					*fType->function.parameters.data()[0].
+					second.type;
+
+				std::unique_ptr<TypeID> compareTypeID =
+					substituteTypes(
+						gTypeID,
+						this->object.genericParameters,
+						typeID->generics
+					);
+				if (compareTypeID->equalTo(*otherTypeID) ==
+				    TypeEquality::Equivalent)
 					return TypeEquality::Coercible;
 			}
 
@@ -233,7 +247,7 @@ namespace bea {
 				TypeEquality::Equivalent:
 				TypeEquality::None;
 		else
-			equality = type->equalTo(*other.type, this);
+			equality = type->equalTo(*other.type, this, &other);
 
 		/* Compare generics */
 		if (equality < TypeEquality::Equivalent)
@@ -264,5 +278,50 @@ namespace bea {
 				lowestGeneric = equality;
 		}
 		return lowestGeneric;
+	}
+
+	/* Substitute generic types for type identifier */
+	std::unique_ptr<TypeID> substituteTypes(
+		const TypeID& typeID,
+		const std::vector<GenericInfo>& genericParameters,
+		const std::vector<GenericInfo>& genericArguments
+	) {
+		std::unique_ptr<TypeID> newTypeID =
+			std::make_unique<TypeID>(typeID);
+
+		for (std::size_t i = 0; i < genericParameters.size(); i++) {
+
+			const GenericInfo& parameter = genericParameters[i];
+			const GenericInfo& argument = genericArguments[i];
+
+			if (parameter.type != GenericType::Type)
+				continue;
+
+			if (typeID.name.components.size() == 1 &&
+			    typeID.name.components[0] == parameter.name) {
+
+				newTypeID = std::make_unique<TypeID>(
+					*argument.substitutedType
+				);
+				break;
+			}
+		}
+
+		/* Substitute own generic arguments */
+		for (std::size_t i = 0; i < typeID.generics.size(); i++) {
+
+			if (typeID.generics[i].type != GenericType::Type)
+				continue;
+
+			std::unique_ptr<TypeID> genericTypeID =
+				substituteTypes(
+					*typeID.generics[i].substitutedType,
+					genericParameters,
+					genericArguments
+				);
+			newTypeID->generics[i].substitutedType =
+				std::move(genericTypeID);
+		}
+		return std::move(newTypeID);
 	}
 }

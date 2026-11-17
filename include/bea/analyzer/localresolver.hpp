@@ -35,7 +35,13 @@ namespace bea {
 		virtual Result<None> visitNamedAccess(NamedAccessNode& node) override;
 		virtual Result<None> visitIndexedAccess(IndexedAccessNode& node) override;
 
+		virtual Result<None> visitIfStatement(IfStatementNode& node) override;
+		virtual Result<None> visitWhichStatement(WhichStatementNode& node) override;
+		virtual Result<None> visitForStatement(ForStatementNode& node) override;
+		virtual Result<None> visitWhileStatement(WhileStatementNode& node) override;
 		virtual Result<None> visitReturnStatement(ReturnStatementNode& node) override;
+		virtual Result<None> visitContinueStatement(ContinueStatementNode& node) override;
+		virtual Result<None> visitBreakStatement(BreakStatementNode& node) override;
 
 		virtual Result<None> visitLetStatement(LetStatementNode& node) override;
 
@@ -50,6 +56,7 @@ namespace bea {
 		Type *m_classType = nullptr;
 		ObjectImplementation *m_implementation = nullptr;
 		bool m_noPushBlockFrame = false;
+		std::size_t m_loopLevel = 0;
 
 		/*
 		 * Get type for type identifier
@@ -75,15 +82,6 @@ namespace bea {
 			std::vector<GenericInfo>& genericParameters,
 			std::vector<GenericInfo>& genericArguments,
 			std::vector<TypeEquality>& typeEqualities
-		);
-
-		/*
-		 * Substitute generic types for type identifier
-		 */
-		std::unique_ptr<TypeID> substituteTypes(
-			TypeID& typeID,
-			std::vector<GenericInfo>& genericParameters,
-			std::vector<GenericInfo>& genericArguments
 		);
 	};
 }

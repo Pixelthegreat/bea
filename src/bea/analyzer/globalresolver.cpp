@@ -89,13 +89,8 @@ namespace bea {
 			m_context.m_currentFrame->get(
 				node.m_name, true
 			);
-		if (!result.okay) {
-
-			if (node.m_name != "true" &&
-			    node.m_name != "false" &&
-			    node.m_name != "null")
-				registerEntityReference(node.m_name, node);
-		}
+		if (!result.okay)
+			registerEntityReference(node.m_name, node);
 		return Result<None>();
 	}
 
@@ -127,19 +122,11 @@ namespace bea {
 
 		for (Pair<std::unique_ptr<Node>>& pair: node.m_conditionalClauseNodes) {
 
-			m_context.pushFrame();
-
 			BEA_OK(None, visit(*pair[0]));
 			BEA_OK(None, visit(*pair[1]));
-
-			m_context.popFrame();
 		}
-		if (node.m_elseClauseNode) {
-
-			m_context.pushFrame();
+		if (node.m_elseClauseNode)
 			BEA_OK(None, visit(*node.m_elseClauseNode));
-			m_context.popFrame();
-		}
 		return Result<None>();
 	}
 
@@ -187,6 +174,8 @@ namespace bea {
 		VariableInfo& variable = frame[node.m_name];
 
 		BEA_OK(None, visit(*node.m_iterableNode));
+
+		m_noPushBlockFrame = true;
 		BEA_OK(None, visit(*node.m_bodyNode));
 
 		m_context.popFrame();
@@ -196,12 +185,9 @@ namespace bea {
 	/* Visit "while" statement */
 	Result<None> GlobalResolver::visitWhileStatement(WhileStatementNode& node) {
 
-		m_context.pushFrame();
-
 		BEA_OK(None, visit(*node.m_conditionNode));
 		BEA_OK(None, visit(*node.m_bodyNode));
 
-		m_context.popFrame();
 		return Result<None>();
 	}
 
@@ -377,7 +363,7 @@ namespace bea {
 
 		for (const NodeGenericParameter& parameter: node.m_genericParameters) {
 
-			GenericInfo& generic = type->function.genericParameters[i];
+			GenericInfo& generic = type->function.genericParameters[i++];
 
 			generic.name = parameter.name.components[0];
 			generic.type = parameter.type;
@@ -598,7 +584,7 @@ namespace bea {
 
 		for (const NodeGenericParameter& parameter: node.m_genericParameters) {
 
-			GenericInfo& generic = type->object.genericParameters[i];
+			GenericInfo& generic = type->object.genericParameters[i++];
 
 			generic.name = parameter.name.components[0];
 			generic.type = parameter.type;

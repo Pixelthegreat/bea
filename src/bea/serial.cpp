@@ -201,7 +201,14 @@ namespace bea {
 		Type& type = *variable.type->type;
 
 		writeU8((std::uint8_t)GRCode::Function);
-		writeU8(0); /* TODO: static and public */
+
+		std::uint8_t flags = 0;
+		if (variable.flagStatic)
+			flags |= 1;
+		if (variable.flagAbstract)
+			flags |= 2;
+		writeU8(flags);
+
 		writeName(name);
 		writeU16L((std::uint16_t)variable.overloadID);
 
@@ -416,6 +423,7 @@ namespace bea {
 	/* Read GRCode::ClassImpl */
 	ObjectImplementation GRCodeDeserializer::readClassImpl() {
 
+		readU8(); /* GRCode::ClassImpl */
 		std::unique_ptr<TypeID> typeID = readTypeID();
 
 		ObjectImplementation impl = {
@@ -445,6 +453,11 @@ namespace bea {
 		VariableInfo& variable = pair.second;
 
 		variable = {};
+
+		if (flags & 1)
+			variable.flagStatic = true;
+		if (flags & 2)
+			variable.flagAbstract = true;
 
 		if (m_inClass) name = readName();
 		else name = readName();

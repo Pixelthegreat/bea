@@ -1,6 +1,3 @@
 [project]
 name = "hello"
 kind = "exec"
-
-[project.dependencies]
-std = "stdlib"

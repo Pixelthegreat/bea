@@ -164,6 +164,7 @@ namespace bea {
 		bool flagAbstract = false;
 		bool flagPublic = false;
 		bool flagStatic = false;
+		bool flagImplemented = false;
 		std::size_t overloadID = 0;
 		std::unique_ptr<TypeID> type = nullptr;
 		std::size_t scopeID = 0;
@@ -266,7 +267,8 @@ namespace bea {
 		 */
 		TypeEquality equalTo(
 			const Type& other,
-			const TypeID *typeID = nullptr
+			const TypeID *typeID = nullptr,
+			const TypeID *otherTypeID = nullptr
 		) const;
 	};
 
@@ -320,6 +322,15 @@ namespace bea {
 	};
 
 	std::ostream& operator<<(std::ostream& stream, const TypeID& typeID);
+
+	/*
+	 * Substitute generic types for type identifier
+	 */
+	std::unique_ptr<TypeID> substituteTypes(
+		const TypeID& typeID,
+		const std::vector<GenericInfo>& genericParameters,
+		const std::vector<GenericInfo>& genericArguments
+	);
 }
 
 /*

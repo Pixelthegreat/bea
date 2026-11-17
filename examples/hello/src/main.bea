@@ -1,24 +1,12 @@
 module main
 
-abstract class IFace<T> {
-	pub abstract func getMyValue() -> IFace<T>
-}
-
-class A<T> {
+class A {
 	pub func init()!
-
-	pub func doStuff() -> A<T> => this
-
-	impl IFace<T> {
-		func getMyValue() -> IFace<T> {
-
-			return this
-		}
-	}
 }
 
-pub func main() -> Result<Int> {
+pub func main() {
 
-	let a = new A<Int>()
-	let b: A<Int> = a.doStuff()
+	for i in 0..10 {
+		let j: Int = i
+	}
 }

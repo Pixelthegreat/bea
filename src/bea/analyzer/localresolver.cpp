@@ -186,7 +186,7 @@ namespace bea {
 			std::format(
 				"Invalid operation (Type {} doesn't "
 				"implement {} interface)",
-				type->name,
+				*node.m_node->m_atom.type,
 				interface
 			)
 		);
@@ -277,7 +277,7 @@ namespace bea {
 			std::format(
 				"Invalid operation (Type {} doesn't "
 				"implement {} interface)",
-				type->name,
+				*node.m_atom.type,
 				interface
 			)
 		);
@@ -452,7 +452,7 @@ checkRightType:
 			std::format(
 				"Invalid operation (Type {} doesn't "
 				"implement {} interface)",
-				type->name,
+				*node.m_atom.type,
 				interface
 			)
 		);
@@ -853,7 +853,7 @@ checkRightType:
 				)
 			);
 
-		/* Get substituted generic type */
+		/* Get generic substituted type */
 		TypeID *typeID = variable->type.get();
 
 		std::size_t i = 0;
@@ -873,6 +873,11 @@ checkRightType:
 		node.m_atom.type = std::make_unique<TypeID>(*typeID);
 		node.m_atom.variable = variable;
 
+		node.m_atom.type = substituteTypes(
+			*variable->type,
+			type->object.genericParameters,
+			node.m_node->m_atom.type->generics
+		);
 		return Result<None>();
 	}
 
@@ -922,6 +927,147 @@ checkRightType:
 		return Result<None>();
 	}
 
+	/* Visit "if" statement */
+	Result<None> LocalResolver::visitIfStatement(IfStatementNode& node) {
+
+		for (Pair<std::unique_ptr<Node>>& pair: node.m_conditionalClauseNodes) {
+
+			BEA_OK(None, visit(*pair[0]));
+			BEA_OK(None, visit(*pair[1]));
+
+			/* Check condition type */
+			Type *type = pair[0]->m_atom.type->type;
+			if (type->base < BaseType::F32)
+				continue;
+			else if (type->base != BaseType::Object)
+				return Result<None>(
+					pair[0]->m_position,
+					"Invalid operation"
+				);
+
+			/* Find interface */
+			bool found = false;
+			for (
+				const ObjectImplementation& implementation:
+				type->object.implementations
+			) {
+				if (implementation.type->name != "std::operator::True" ||
+				    !implementation.type->generics.empty())
+					continue;
+				found = true;
+				break;
+			}
+			if (found) continue;
+
+			return Result<None>(
+				pair[0]->m_position,
+				std::format(
+					"Invalid operation (Type {} doesn't "
+					"implement std::operator::True interface)",
+					*pair[0]->m_atom.type
+				)
+			);
+		}
+		if (node.m_elseClauseNode)
+			BEA_OK(None, visit(*node.m_elseClauseNode));
+		return Result<None>();
+	}
+
+	/* Visit "which" statement */
+	Result<None> LocalResolver::visitWhichStatement(WhichStatementNode& node) {
+
+		return Result<None>("Unimplemented");
+	}
+
+	/* Visit "for" statement */
+	Result<None> LocalResolver::visitForStatement(ForStatementNode& node) {
+
+		BEA_OK(None, visit(*node.m_iterableNode));
+		Frame& frame = *m_context.pushFrame();
+
+		Type *type = node.m_iterableNode->m_atom.type->type;
+		if (!type || type->base != BaseType::Object)
+			return Result<None>(
+				node.m_position,
+				"Invalid operation"
+			);
+
+		/* Look for iterable implementation */
+		TypeID *typeID = nullptr;
+		for (
+			const ObjectImplementation& implementation:
+			type->object.implementations
+		) {
+			if (implementation.type->name != "std::iterator::Iterable" ||
+			    implementation.type->generics.size() != 1 ||
+			    !implementation.type->generics[0].substitutedType)
+				continue;
+
+			typeID = implementation.type->generics[0].substitutedType.get();
+			node.m_atom.operationImpl = &implementation;
+			break;
+		}
+		if (!typeID) return Result<None>(
+			node.m_position,
+			std::format(
+				"Invalid operation (Type {} doesn't "
+				"implement std::iterator::Iterable<T> interface)",
+				*node.m_iterableNode->m_atom.type
+			)
+		);
+		VariableInfo& iterVariable = frame.m_values[node.m_name];
+		iterVariable.type = registerTypeID(
+			std::make_unique<TypeID>(*typeID)
+		);
+		node.m_atom.type = std::make_unique<TypeID>(*iterVariable.type);
+
+		/* Visit body */
+		m_noPushBlockFrame = true;
+		BEA_OK(None, visit(*node.m_bodyNode));
+
+		m_context.popFrame();
+		return Result<None>();
+	}
+
+	/* Visit "while" statement */
+	Result<None> LocalResolver::visitWhileStatement(WhileStatementNode& node) {
+
+		m_loopLevel++;
+
+		BEA_OK(None, visit(*node.m_conditionNode));
+		BEA_OK(None, visit(*node.m_bodyNode));
+
+		m_loopLevel--;
+
+		Type *type = node.m_conditionNode->m_atom.type->type;
+		if (type->base < BaseType::F32)
+			return Result<None>();
+		else if (type->base != BaseType::Object)
+			return Result<None>(
+				node.m_position,
+				"Invalid operation"
+			);
+
+		/* Find implementation */
+		for (
+			const ObjectImplementation& implementation:
+			type->object.implementations
+		) {
+			if (implementation.type->name != "std::operator::True" ||
+			    !implementation.type->generics.empty())
+				continue;
+			return Result<None>();
+		}
+		return Result<None>(
+			node.m_position,
+			std::format(
+				"Invalid operation (Type {} doesn't "
+				"implement std::operator::True interface)",
+				*node.m_conditionNode->m_atom.type
+			)
+		);
+	}
+
 	/* Visit "return" statement */
 	Result<None> LocalResolver::visitReturnStatement(ReturnStatementNode& node) {
 
@@ -938,6 +1084,28 @@ checkRightType:
 					*m_returnType,
 					*node.m_node->m_atom.type
 				)
+			);
+		return Result<None>();
+	}
+
+	/* Visit "continue" statement */
+	Result<None> LocalResolver::visitContinueStatement(ContinueStatementNode& node) {
+
+		if (!m_loopLevel)
+			return Result<None>(
+				node.m_position,
+				"Attempt to continue out of loop"
+			);
+		return Result<None>();
+	}
+
+	/* Visit "break" statement */
+	Result<None> LocalResolver::visitBreakStatement(BreakStatementNode& node) {
+
+		if (!m_loopLevel)
+			return Result<None>(
+				node.m_position,
+				"Attempt to break out of loop"
 			);
 		return Result<None>();
 	}
@@ -1180,6 +1348,16 @@ checkRightType:
 					    compareFType->function.parameters.size() !=
 					    fType->function.parameters.size())
 						continue;
+					if (compare.second.flagImplemented)
+						return Result<None>(
+							node.m_position,
+							std::format(
+								"Can't implement abstract "
+								"function {}::{} twice",
+								*compare.second.type,
+								pair.first
+							)
+						);
 
 					/* Compare return types */
 					std::unique_ptr<TypeID> compareReturnType =
@@ -1232,6 +1410,7 @@ checkRightType:
 					pair.second.overloadID =
 						compare.second.overloadID;
 					variable = &compare.second;
+					compare.second.flagImplemented = true;
 				}
 			}
 
@@ -1259,6 +1438,27 @@ checkRightType:
 					stream.str()
 				);
 			}
+		}
+
+		/* Determine if all necessary functions are implemented */
+		for (std::pair<Name, VariableInfo>& pair: type->object.publicMembers) {
+
+			Type *fType = pair.second.type->type;
+			if (!fType || fType->base != BaseType::Function ||
+			    !pair.second.flagAbstract ||
+			    pair.second.flagUseDefault)
+				continue;
+			if (!pair.second.flagImplemented)
+				return Result<None>(
+					node.m_position,
+					std::format(
+						"Abstract function {}::{} "
+						"not implemented",
+						*node.m_typeNode->m_atom.type,
+						pair.first
+					)
+				);
+			pair.second.flagImplemented = false;
 		}
 		return Result<None>();
 	}
@@ -1471,50 +1671,5 @@ checkRightType:
 			);
 		}
 		return Result<None>();
-	}
-
-	/* Substitute generic types for type identifier */
-	std::unique_ptr<TypeID> LocalResolver::substituteTypes(
-		TypeID& typeID,
-		std::vector<GenericInfo>& genericParameters,
-		std::vector<GenericInfo>& genericArguments
-	) {
-		std::unique_ptr<TypeID> newTypeID =
-			std::make_unique<TypeID>(typeID);
-
-		for (std::size_t i = 0; i < genericParameters.size(); i++) {
-
-			GenericInfo& parameter = genericParameters[i];
-			GenericInfo& argument = genericArguments[i];
-
-			if (parameter.type != GenericType::Type)
-				continue;
-
-			if (typeID.name.components.size() == 1 &&
-			    typeID.name.components[0] == parameter.name) {
-
-				newTypeID = std::make_unique<TypeID>(
-					*argument.substitutedType
-				);
-				break;
-			}
-		}
-
-		/* Substitute own generic arguments */
-		for (std::size_t i = 0; i < typeID.generics.size(); i++) {
-
-			if (typeID.generics[i].type != GenericType::Type)
-				continue;
-
-			std::unique_ptr<TypeID> genericTypeID =
-				substituteTypes(
-					*typeID.generics[i].substitutedType,
-					genericParameters,
-					genericArguments
-				);
-			newTypeID->generics[i].substitutedType =
-				std::move(genericTypeID);
-		}
-		return std::move(newTypeID);
 	}
 }

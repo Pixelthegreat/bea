@@ -429,7 +429,7 @@ namespace bea {
 				source->moduleName = std::move(moduleName);
 				source->recompile = true;
 
-				if (source->recompile && m_name != "std") // TODO: remove second check
+				if (source->recompile)
 					m_rebuild = true;
 
 				m_sources.emplace_back(std::move(source));

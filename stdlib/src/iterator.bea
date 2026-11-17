@@ -10,7 +10,7 @@ pub abstract class Iterable<T> {
 	 * @brief Retrieve an iterator for this object
 	 * @returns An iterator.
 	 */
-	pub func iterator() -> Iterator<T>
+	pub abstract func iterator() -> Iterator<T>
 }
 
 /*
@@ -23,11 +23,11 @@ pub abstract class Iterator<T> {
 	 * @brief Check if iterator has reached end
 	 * @returns End of iterator status.
 	 */
-	func isAtEnd() -> Boolean
+	pub abstract func isAtEnd() -> Boolean
 
 	/*
 	 * @brief Get next item from iterator
 	 * @returns The next item.
 	 */
-	func next() -> T
+	pub abstract func next() -> T
 }
