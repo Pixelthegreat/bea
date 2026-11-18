@@ -11,6 +11,7 @@
 #include <bea/optimizer/postparsesimplifier.hpp>
 #include <bea/analyzer/globalresolver.hpp>
 #include <bea/analyzer/localresolver.hpp>
+#include <bea/analyzer/documenter.hpp>
 #include <bea/project.hpp>
 
 namespace bea {
@@ -237,6 +238,7 @@ namespace bea {
 		toml_datum_t name = toml_seek(result.toptab, "project.name");
 		toml_datum_t type = toml_seek(result.toptab, "project.type");
 		toml_datum_t noStdlib = toml_seek(result.toptab, "project.options.noStdlib");
+		toml_datum_t genDocs = toml_seek(result.toptab, "project.options.genDocs");
 		toml_datum_t dependencies = toml_seek(result.toptab, "project.dependencies");
 
 		if (name.type != TOML_STRING) {
@@ -250,6 +252,11 @@ namespace bea {
 
 		if (noStdlib.type == TOML_BOOLEAN)
 			m_options.noStdlib = noStdlib.u.boolean;
+
+		if (genDocs.type == TOML_BOOLEAN && genDocs.u.boolean)
+			m_options.genDocs = m_path + "/doc/json";
+		else if (genDocs.type == TOML_STRING)
+			m_options.genDocs = std::format("{}/{}", m_path, genDocs.u.str.ptr);
 
 		/* Parse type */
 		if (type.type == TOML_STRING) {
@@ -521,6 +528,45 @@ namespace bea {
 		LocalResolver localResolver(*source.context);
 		BEA_OK(None, localResolver.analyze(*source.node));
 
+		/* Documentation generation */
+		if (!m_options.genDocs.empty()) {
+
+			std::ostringstream stream;
+			stream << m_options.genDocs;
+
+			std::ostringstream dirStream;
+			dirStream << m_options.genDocs;
+
+			for (
+				std::size_t i = 1;
+				i < source.moduleName.components.size();
+				i++
+			) {
+				if (i < source.moduleName.components.size()-1)
+					dirStream << "/" << source.moduleName.components[i];
+				stream << "/" << source.moduleName.components[i];
+			}
+
+			stream << ".json";
+			std::string jsonPath = stream.str();
+
+			std::filesystem::create_directories(dirStream.str());
+			dirStream.clear();
+
+			/* Open output file */
+			std::ofstream docStream(jsonPath);
+			if (!docStream.is_open())
+				return Result<None>(
+					std::format(
+						"Can't open file '{}': {}",
+						jsonPath, std::strerror(errno)
+					)
+				);
+			Documenter documenter(*source.context, docStream);
+			BEA_OK(None, documenter.analyze(*source.node));
+
+			docStream.close();
+		}
 		return Result<None>();
 	}
 

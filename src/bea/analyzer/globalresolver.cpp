@@ -20,10 +20,11 @@ namespace bea {
 		Frame& frame = *m_context.m_baseFrame;
 		for (std::pair<Name, VariableInfo>& pair: frame) {
 
-			/* TODO: Update for function pointers */
 			if (pair.second.type->type &&
 			    pair.second.type->type->base == BaseType::Function)
 				m_serializer.writeFunction(pair.first, pair.second);
+			else
+				m_serializer.writeLet(pair.first, pair.second);
 		}
 
 		/* Serialize type information */

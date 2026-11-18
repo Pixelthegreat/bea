@@ -1,0 +1,34 @@
+{
+	"classes": {
+		"std::string::String": {
+			"signature": "class std::string::String",
+			"briefDescription": "String object",
+			"description": "",
+			"genericParameters": {
+			},
+			"fields": {
+			},
+			"functions": {
+				"init#0": {
+					"signature": "func init() -> std::none::None",
+					"briefDescription": "Construct empty string",
+					"description": "",
+					"genericParameters": {
+					},
+					"parameters": {
+					},
+					"returns": {
+						"type": "",
+						"description": ""
+					}
+				}
+			},
+			"implementations": [
+			]
+		}
+	},
+	"functions": {
+	},
+	"globals": {
+	}
+}

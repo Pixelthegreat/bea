@@ -88,6 +88,9 @@ namespace bea {
 		if (m_tokenIndex >= m_tokens.size())
 			return;
 		m_token = m_tokens[m_tokenIndex++].get();
+
+		if (m_token->type == TokenType::Comment)
+			m_lastCommentToken = m_token;
 	}
 
 	void Parser::advance(Parser::Skip skipLevel) {
@@ -170,6 +173,9 @@ namespace bea {
 	/* Parse "class" statement */
 	Parser::Result Parser::parseClassStatement() {
 
+		const Token *commentToken = m_lastCommentToken;
+		m_lastCommentToken = nullptr;
+
 		bool abstract = false;
 		if (m_token->matchKeyword("abstract")) {
 
@@ -233,6 +239,7 @@ namespace bea {
 		node->m_position = position;
 		node->m_abstract = abstract;
 		node->m_genericParameters = std::move(genericParameters);
+		node->m_commentToken = commentToken;
 
 		if (kind == "struct")
 			node->m_copy = true;
@@ -242,6 +249,9 @@ namespace bea {
 
 	/* Parse "func" statement */
 	Parser::Result Parser::parseFuncStatement() {
+
+		const Token *commentToken = m_lastCommentToken;
+		m_lastCommentToken = nullptr;
 
 		bool isStatic = false, isAbstract = false;
 
@@ -365,6 +375,7 @@ namespace bea {
 			node->m_position = position;
 			node->m_genericParameters = std::move(genericParameters);
 			node->m_parameters = std::move(parameters);
+			node->m_commentToken = commentToken;
 
 			return Result(std::move(node));
 		}
@@ -393,12 +404,16 @@ namespace bea {
 		node->m_useDefault = useDefault;
 		node->m_genericParameters = std::move(genericParameters);
 		node->m_parameters = std::move(parameters);
+		node->m_commentToken = commentToken;
 
 		return Result(std::move(node));
 	}
 
 	/* Parse "let" statement */
 	Parser::Result Parser::parseLetStatement() {
+
+		const Token *commentToken = m_lastCommentToken;
+		m_lastCommentToken = nullptr;
 
 		Position position = m_token->position;
 		advance();
@@ -435,6 +450,7 @@ namespace bea {
 			names, std::move(typeNode), std::move(valueNode)
 		);
 		node->m_position = position;
+		node->m_commentToken = commentToken;
 
 		return Result(std::move(node));
 	}
@@ -451,10 +467,7 @@ namespace bea {
 			dynamic_cast<ExportableNode *>(statement.get());
 		if (statementP) statementP->m_public = true;
 
-		auto node = std::make_unique<PubStatementNode>(std::move(statement));
-		node->m_position = position;
-
-		return Result(std::move(node));
+		return Result(std::move(statement));
 	}
 
 	/* Parse block of in-class statements */
@@ -526,10 +539,7 @@ namespace bea {
 			dynamic_cast<ExportableNode *>(statement.get());
 		if (statementP) statementP->m_public = true;
 
-		auto node = std::make_unique<PubStatementNode>(std::move(statement));
-		node->m_position = position;
-
-		return Result(std::move(node));
+		return Result(std::move(statement));
 	}
 
 	/* Parse in-class "impl" statement */
@@ -593,6 +603,9 @@ namespace bea {
 	/* Parse in-class field declaration */
 	Parser::Result Parser::parseClassField() {
 
+		const Token *commentToken = m_lastCommentToken;
+		m_lastCommentToken = nullptr;
+
 		Position position = m_token->position;
 
 		Name name = BEA_OK(NodeP, parseName());
@@ -618,6 +631,7 @@ namespace bea {
 			std::move(name), std::move(type), std::move(value)
 		);
 		node->m_position = position;
+		node->m_commentToken = commentToken;
 
 		return Result(std::move(node));
 	}

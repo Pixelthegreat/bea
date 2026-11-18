@@ -1,0 +1,106 @@
+{
+	"classes": {
+		"std::range::Range": {
+			"signature": "class std::range::Range",
+			"briefDescription": "Range iterator",
+			"description": "Ranges can either be constructed like `new Range(0, 10)`, or they can be constructed using the builtin range syntax like `0..10`.",
+			"genericParameters": {
+			},
+			"fields": {
+				"start": {
+					"type": "Int",
+					"briefDescription": "The start of the range",
+					"description": ""
+				},
+				"end": {
+					"type": "Int",
+					"briefDescription": "The end of the range",
+					"description": ""
+				},
+				"step": {
+					"type": "Int",
+					"briefDescription": "The step of the range (default is 1)",
+					"description": ""
+				},
+				"position": {
+					"type": "Int",
+					"briefDescription": "The current position of the range",
+					"description": ""
+				}
+			},
+			"functions": {
+				"init#0": {
+					"signature": "func init(end: Int) -> std::none::None",
+					"briefDescription": "Construct range with end",
+					"description": "",
+					"genericParameters": {
+					},
+					"parameters": {
+						"end": {
+							"type": "Int",
+							"description": "The end value of the range"
+						}
+					},
+					"returns": {
+						"type": "",
+						"description": ""
+					}
+				},
+				"init#1": {
+					"signature": "func init(start: Int, end: Int) -> std::none::None",
+					"briefDescription": "Construct range with start and end",
+					"description": "",
+					"genericParameters": {
+					},
+					"parameters": {
+						"start": {
+							"type": "Int",
+							"description": "The start value of the range"
+						},
+						"end": {
+							"type": "Int",
+							"description": "The end value of the range"
+						}
+					},
+					"returns": {
+						"type": "",
+						"description": ""
+					}
+				},
+				"init#2": {
+					"signature": "func init(start: Int, end: Int, step: Int) -> std::none::None",
+					"briefDescription": "Construct range with start, end and step",
+					"description": "",
+					"genericParameters": {
+					},
+					"parameters": {
+						"start": {
+							"type": "Int",
+							"description": "The start value of the range"
+						},
+						"end": {
+							"type": "Int",
+							"description": "The end value of the range"
+						},
+						"step": {
+							"type": "Int",
+							"description": "The step value of the range"
+						}
+					},
+					"returns": {
+						"type": "",
+						"description": ""
+					}
+				}
+			},
+			"implementations": [
+				"std::iterator::Iterable<Int>",
+				"std::iterator::Iterator<Int>"
+			]
+		}
+	},
+	"functions": {
+	},
+	"globals": {
+	}
+}

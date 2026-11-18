@@ -1,0 +1,26 @@
+{
+	"classes": {
+		"std::none::None": {
+			"signature": "class std::none::None",
+			"briefDescription": "Value representing nothing",
+			"description": "",
+			"genericParameters": {
+			},
+			"fields": {
+			},
+			"functions": {
+			},
+			"implementations": [
+			]
+		}
+	},
+	"functions": {
+	},
+	"globals": {
+		"std::none::None": {
+			"type": "std::none::None",
+			"briefDescription": "Value representing nothing",
+			"description": ""
+		}
+	}
+}

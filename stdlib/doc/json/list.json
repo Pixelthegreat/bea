@@ -1,0 +1,51 @@
+{
+	"classes": {
+		"std::list::List": {
+			"signature": "class std::list::List<T>",
+			"briefDescription": "List object",
+			"description": "",
+			"genericParameters": {
+			},
+			"fields": {
+			},
+			"functions": {
+				"init#0": {
+					"signature": "func init() -> std::none::None",
+					"briefDescription": "Construct list",
+					"description": "",
+					"genericParameters": {
+					},
+					"parameters": {
+					},
+					"returns": {
+						"type": "",
+						"description": ""
+					}
+				},
+				"add#0": {
+					"signature": "func add(item: T) -> std::none::None",
+					"briefDescription": "Add item to list",
+					"description": "",
+					"genericParameters": {
+					},
+					"parameters": {
+						"item": {
+							"type": "T",
+							"description": "The item to add"
+						}
+					},
+					"returns": {
+						"type": "",
+						"description": ""
+					}
+				}
+			},
+			"implementations": [
+			]
+		}
+	},
+	"functions": {
+	},
+	"globals": {
+	}
+}

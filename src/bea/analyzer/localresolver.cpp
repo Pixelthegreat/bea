@@ -903,7 +903,19 @@ checkRightType:
 			const ObjectImplementation& implementation:
 			type->object.implementations
 		) {
-			if (implementation.type->name != "std::operator::Index")
+			if (implementation.type->name != "std::operator::Index" ||
+			    implementation.type->generics.size() != 2 ||
+			    !implementation.type->generics[0].substitutedType ||
+			    !implementation.type->generics[1].substitutedType)
+				continue;
+
+			std::unique_ptr<TypeID> compareTypeID = substituteTypes(
+				*implementation.type->generics[0].substitutedType,
+				type->object.genericParameters,
+				node.m_node->m_atom.type->generics
+			);
+			if (compareTypeID->equalTo(*node.m_indexNode->m_atom.type) !=
+			    TypeEquality::Equivalent)
 				continue;
 
 			node.m_atom.operationImpl = &implementation;
@@ -914,16 +926,27 @@ checkRightType:
 				node.m_position,
 				std::format(
 					"Invalid operation (Type {} doesn't "
-					"implement std::operator::Index interface)",
-					*node.m_node->m_atom.type
+					"implement std::operator::Index<{}> interface)",
+					*node.m_node->m_atom.type,
+					*node.m_indexNode->m_atom.type
 				)
 			);
+
+		/* Create Result<T> type */
 		node.m_atom.type = registerTypeID(
-			std::make_unique<TypeID>(
+				std::make_unique<TypeID>(
+					"std::result::Result"
+				)
+			);
+		node.m_atom.type->generics.resize(1);
+
+		node.m_atom.type->generics[0].type = GenericType::Type;
+
+		node.m_atom.type->generics[0].substitutedType =
+			registerTypeID(std::make_unique<TypeID>(
 				*node.m_atom.operationImpl->
-				type->generics[0].substitutedType
-			)
-		);
+				type->generics[1].substitutedType
+			));
 		return Result<None>();
 	}
 

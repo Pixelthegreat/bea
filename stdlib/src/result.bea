@@ -2,14 +2,17 @@ module result
 
 /*
  * @brief Common error
- *
- * @field message The error message.
  */
 pub class Error {
+	/*
+	 * @brief Error message
+	 */
 	pub message: String
 
 	/*
-	 * @brief Initialize error
+	 * @brief Construct error
+	 *
+	 * @param message std::string::String The error message
 	 */
 	pub func init(message: String)!
 }
@@ -17,23 +20,37 @@ pub class Error {
 /*
  * @brief Common result
  *
- * @gparam T The type of value carried by the result.
- *
- * @field value The value carried by the result.
- * @field error The optional error carried by the result.
- * @field okay `true` if the result is a success, `false` otherwise.
+ * @gparam T The type of value carried by the result
  */
 pub struct Result<T> {
+	/*
+	 * @brief The value carried by the result
+	 */
 	pub value: T
+	/*
+	 * @brief The optional error carried by the result
+	 */
 	pub error: Error
+	/*
+	 * @brief okay Indicates if the result is a success
+	 */
 	pub okay: Boolean = true
 
 	/*
-	 * @name init
-	 * @brief Initialize result
+	 * @brief Construct result with default value
 	 */
 	pub func init()!
+	/*
+	 * @brief Construct result with value
+	 *
+	 * @param T value The value
+	 */
 	pub func init(value: T)!
+	/*
+	 * @brief Construct fail result with error
+	 *
+	 * @param Error error The error
+	 */
 	pub func init(error: Error) {
 		this.okay = false
 	}

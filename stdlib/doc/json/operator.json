@@ -1,0 +1,481 @@
+{
+	"classes": {
+		"std::operator::Add": {
+			"signature": "abstract class std::operator::Add",
+			"briefDescription": "Addition operator",
+			"description": "",
+			"genericParameters": {
+			},
+			"fields": {
+			},
+			"functions": {
+				"add#0": {
+					"signature": "abstract func add(other: std::operator::Add) -> std::operator::Add",
+					"briefDescription": "Add values",
+					"description": "",
+					"genericParameters": {
+					},
+					"parameters": {
+						"other": {
+							"type": "Add",
+							"description": "Value to add to self"
+						}
+					},
+					"returns": {
+						"type": "Add",
+						"description": ""
+					}
+				}
+			},
+			"implementations": [
+			]
+		},
+		"std::operator::Subtract": {
+			"signature": "abstract class std::operator::Subtract",
+			"briefDescription": "Subtraction operator",
+			"description": "",
+			"genericParameters": {
+			},
+			"fields": {
+			},
+			"functions": {
+				"subtract#0": {
+					"signature": "abstract func subtract(other: std::operator::Subtract) -> std::operator::Subtract",
+					"briefDescription": "Subtract values",
+					"description": "",
+					"genericParameters": {
+					},
+					"parameters": {
+						"other": {
+							"type": "Subtract",
+							"description": "Value to subtract from self"
+						}
+					},
+					"returns": {
+						"type": "Subtract",
+						"description": ""
+					}
+				}
+			},
+			"implementations": [
+			]
+		},
+		"std::operator::Multiply": {
+			"signature": "abstract class std::operator::Multiply",
+			"briefDescription": "Multiplication operator",
+			"description": "",
+			"genericParameters": {
+			},
+			"fields": {
+			},
+			"functions": {
+				"multiply#0": {
+					"signature": "abstract func multiply(other: std::operator::Multiply) -> std::operator::Multiply",
+					"briefDescription": "Multiply values",
+					"description": "",
+					"genericParameters": {
+					},
+					"parameters": {
+						"other": {
+							"type": "Multiply",
+							"description": "Value to multiply by self"
+						}
+					},
+					"returns": {
+						"type": "Multiply",
+						"description": ""
+					}
+				}
+			},
+			"implementations": [
+			]
+		},
+		"std::operator::Divide": {
+			"signature": "abstract class std::operator::Divide",
+			"briefDescription": "Division operator",
+			"description": "",
+			"genericParameters": {
+			},
+			"fields": {
+			},
+			"functions": {
+				"divide#0": {
+					"signature": "abstract func divide(other: std::operator::Divide) -> std::operator::Divide",
+					"briefDescription": "Divide values",
+					"description": "",
+					"genericParameters": {
+					},
+					"parameters": {
+						"other": {
+							"type": "Divide",
+							"description": "Value to divide self by"
+						}
+					},
+					"returns": {
+						"type": "Divide",
+						"description": ""
+					}
+				}
+			},
+			"implementations": [
+			]
+		},
+		"std::operator::Modulo": {
+			"signature": "abstract class std::operator::Modulo",
+			"briefDescription": "Modulus operator",
+			"description": "",
+			"genericParameters": {
+			},
+			"fields": {
+			},
+			"functions": {
+				"modulo#0": {
+					"signature": "abstract func modulo(other: std::operator::Modulo) -> std::operator::Modulo",
+					"briefDescription": "Get remainder of division operation",
+					"description": "",
+					"genericParameters": {
+					},
+					"parameters": {
+						"other": {
+							"type": "Modulo",
+							"description": "Value to divide self by"
+						}
+					},
+					"returns": {
+						"type": "Modulo",
+						"description": ""
+					}
+				}
+			},
+			"implementations": [
+			]
+		},
+		"std::operator::BitwiseOr": {
+			"signature": "abstract class std::operator::BitwiseOr",
+			"briefDescription": "Bitwise or operator",
+			"description": "",
+			"genericParameters": {
+			},
+			"fields": {
+			},
+			"functions": {
+				"bitwiseOr#0": {
+					"signature": "abstract func bitwiseOr(other: std::operator::BitwiseOr) -> std::operator::BitwiseOr",
+					"briefDescription": "Bitwise or values",
+					"description": "",
+					"genericParameters": {
+					},
+					"parameters": {
+						"other": {
+							"type": "BitwiseOr",
+							"description": "Value to bitwise or with"
+						}
+					},
+					"returns": {
+						"type": "BitwiseOr",
+						"description": ""
+					}
+				}
+			},
+			"implementations": [
+			]
+		},
+		"std::operator::BitwiseAnd": {
+			"signature": "abstract class std::operator::BitwiseAnd",
+			"briefDescription": "Bitwise and operator",
+			"description": "",
+			"genericParameters": {
+			},
+			"fields": {
+			},
+			"functions": {
+				"bitwiseAnd#0": {
+					"signature": "abstract func bitwiseAnd(other: std::operator::BitwiseAnd) -> std::operator::BitwiseAnd",
+					"briefDescription": "Bitwise and values",
+					"description": "",
+					"genericParameters": {
+					},
+					"parameters": {
+						"other": {
+							"type": "BitwiseAnd",
+							"description": "Value to bitwise and with"
+						}
+					},
+					"returns": {
+						"type": "BitwiseAnd",
+						"description": ""
+					}
+				}
+			},
+			"implementations": [
+			]
+		},
+		"std::operator::BitwiseXor": {
+			"signature": "abstract class std::operator::BitwiseXor",
+			"briefDescription": "Bitwise xor operator",
+			"description": "",
+			"genericParameters": {
+			},
+			"fields": {
+			},
+			"functions": {
+				"bitwiseXor#0": {
+					"signature": "abstract func bitwiseXor(other: std::operator::BitwiseXor) -> std::operator::BitwiseXor",
+					"briefDescription": "Bitwise xor values",
+					"description": "",
+					"genericParameters": {
+					},
+					"parameters": {
+						"other": {
+							"type": "BitwiseXor",
+							"description": "Value to bitwise xor with"
+						}
+					},
+					"returns": {
+						"type": "BitwiseXor",
+						"description": ""
+					}
+				}
+			},
+			"implementations": [
+			]
+		},
+		"std::operator::BitwiseLeftShift": {
+			"signature": "abstract class std::operator::BitwiseLeftShift",
+			"briefDescription": "Bitwise left shift operator",
+			"description": "",
+			"genericParameters": {
+			},
+			"fields": {
+			},
+			"functions": {
+				"bitwiseLeftShift#0": {
+					"signature": "abstract func bitwiseLeftShift(other: std::operator::BitwiseLeftShift) -> std::operator::BitwiseLeftShift",
+					"briefDescription": "Bitwise left shift value",
+					"description": "",
+					"genericParameters": {
+					},
+					"parameters": {
+						"other": {
+							"type": "BitwiseLeftShift",
+							"description": "Value to bitwise left shift by"
+						}
+					},
+					"returns": {
+						"type": "BitwiseLeftShift",
+						"description": ""
+					}
+				}
+			},
+			"implementations": [
+			]
+		},
+		"std::operator::BitwiseRightShift": {
+			"signature": "abstract class std::operator::BitwiseRightShift",
+			"briefDescription": "Bitwise right shift operator",
+			"description": "",
+			"genericParameters": {
+			},
+			"fields": {
+			},
+			"functions": {
+				"bitwiseRightShift#0": {
+					"signature": "abstract func bitwiseRightShift(other: std::operator::BitwiseRightShift) -> std::operator::BitwiseRightShift",
+					"briefDescription": "Bitwise right shift value",
+					"description": "",
+					"genericParameters": {
+					},
+					"parameters": {
+						"other": {
+							"type": "BitwiseRightShift",
+							"description": "Value to bitwise right shift by"
+						}
+					},
+					"returns": {
+						"type": "BitwiseRightShift",
+						"description": ""
+					}
+				}
+			},
+			"implementations": [
+			]
+		},
+		"std::operator::Equals": {
+			"signature": "abstract class std::operator::Equals",
+			"briefDescription": "Equals operator",
+			"description": "",
+			"genericParameters": {
+			},
+			"fields": {
+			},
+			"functions": {
+				"equals#0": {
+					"signature": "abstract func equals(other: std::operator::Equals) -> Boolean",
+					"briefDescription": "Compare equality of values",
+					"description": "",
+					"genericParameters": {
+					},
+					"parameters": {
+						"other": {
+							"type": "Equals",
+							"description": "Value to compare with"
+						}
+					},
+					"returns": {
+						"type": "Boolean",
+						"description": ""
+					}
+				}
+			},
+			"implementations": [
+			]
+		},
+		"std::operator::LessThan": {
+			"signature": "abstract class std::operator::LessThan",
+			"briefDescription": "Less than operator",
+			"description": "",
+			"genericParameters": {
+			},
+			"fields": {
+			},
+			"functions": {
+				"lessThan#0": {
+					"signature": "abstract func lessThan(other: std::operator::LessThan) -> Boolean",
+					"briefDescription": "Compare order of values",
+					"description": "",
+					"genericParameters": {
+					},
+					"parameters": {
+						"other": {
+							"type": "LessThan",
+							"description": "Value to compare with"
+						}
+					},
+					"returns": {
+						"type": "Boolean",
+						"description": ""
+					}
+				}
+			},
+			"implementations": [
+			]
+		},
+		"std::operator::GreaterThan": {
+			"signature": "abstract class std::operator::GreaterThan",
+			"briefDescription": "Greater than operator",
+			"description": "",
+			"genericParameters": {
+			},
+			"fields": {
+			},
+			"functions": {
+				"greaterThan#0": {
+					"signature": "abstract func greaterThan(other: std::operator::GreaterThan) -> Boolean",
+					"briefDescription": "Compare order of values",
+					"description": "",
+					"genericParameters": {
+					},
+					"parameters": {
+						"other": {
+							"type": "Equals",
+							"description": "Value to compare with"
+						}
+					},
+					"returns": {
+						"type": "Boolean",
+						"description": ""
+					}
+				}
+			},
+			"implementations": [
+			]
+		},
+		"std::operator::True": {
+			"signature": "abstract class std::operator::True",
+			"briefDescription": "Truthiness operator",
+			"description": "",
+			"genericParameters": {
+			},
+			"fields": {
+			},
+			"functions": {
+				"isTrue#0": {
+					"signature": "abstract func isTrue(other: std::operator::True) -> Boolean",
+					"briefDescription": "Get truthiness of value",
+					"description": "",
+					"genericParameters": {
+					},
+					"parameters": {
+						"other": {
+							"type": "True",
+							"description": "Value to get truthiness of"
+						}
+					},
+					"returns": {
+						"type": "Boolean",
+						"description": ""
+					}
+				}
+			},
+			"implementations": [
+			]
+		},
+		"std::operator::Index": {
+			"signature": "abstract class std::operator::Index<K, V>",
+			"briefDescription": "Index operator",
+			"description": "",
+			"genericParameters": {
+				"K": "The type of key used as an index",
+				"V": "The type of value stored by the container"
+			},
+			"fields": {
+			},
+			"functions": {
+				"get#0": {
+					"signature": "abstract func get(index: K) -> std::result::Result<V>",
+					"briefDescription": "Get value at index",
+					"description": "",
+					"genericParameters": {
+					},
+					"parameters": {
+						"index": {
+							"type": "K",
+							"description": "The index of the value"
+						}
+					},
+					"returns": {
+						"type": "Result<V>",
+						"description": ""
+					}
+				},
+				"set#0": {
+					"signature": "abstract func set(index: K, value: V) -> V",
+					"briefDescription": "Set value at index",
+					"description": "",
+					"genericParameters": {
+					},
+					"parameters": {
+						"index": {
+							"type": "K",
+							"description": "The index of the value"
+						},
+						"value": {
+							"type": "V",
+							"description": "The value to set"
+						}
+					},
+					"returns": {
+						"type": "V",
+						"description": "The value assigned"
+					}
+				}
+			},
+			"implementations": [
+			]
+		}
+	},
+	"functions": {
+	},
+	"globals": {
+	}
+}

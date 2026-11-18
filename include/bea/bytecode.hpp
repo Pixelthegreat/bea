@@ -19,6 +19,15 @@ namespace bea {
 		Use = 1,
 
 		/*
+		 * Record of "let" statement
+		 *
+		 * uint8_t op = GRCode::Let;
+		 * Name name;
+		 * TypeID type;
+		 */
+		Let = 2,
+
+		/*
 		 * Record of "class" statement
 		 *
 		 * uint8_t op = GRCode::Class;

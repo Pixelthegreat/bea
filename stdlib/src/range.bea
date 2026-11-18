@@ -2,37 +2,57 @@ module range
 
 /*
  * @brief Range iterator
+ *
+ * @desc Ranges can either be constructed like `new\
+ * Range(0, 10)`, or they can be constructed using the\
+ * builtin range syntax like `0..10`.
  */
-class Range {
+pub class Range {
+	/*
+	 * @brief The start of the range
+	 */
 	pub start: Int
+	/*
+	 * @brief The end of the range
+	 */
 	pub end: Int
+	/*
+	 * @brief The step of the range (default is 1)
+	 */
 	pub step: Int = 1
+	/*
+	 * @brief The current position of the range
+	 */
 	pub position: Int
 
 	/*
-	 * @brief Constructor
+	 * @brief Construct range with end
 	 *
-	 * @param start The start value of the range.
-	 * @param end The end value of the range.
-	 * @param step The step value of the range.
+	 * @param end Int The end value of the range
 	 */
 	pub func init(end: Int)!
+	/*
+	 * @brief Construct range with start and end
+	 *
+	 * @param start Int The start value of the range
+	 * @param end Int The end value of the range
+	 */
 	pub func init(start: Int, end: Int)!
+	/*
+	 * @brief Construct range with start, end and step
+	 *
+	 * @param start Int The start value of the range
+	 * @param end Int The end value of the range
+	 * @param step Int The step value of the range
+	 */
 	pub func init(start: Int, end: Int, step: Int)!
 
-	/*
-	 * @brief Iterable implementation
-	 */
 	impl Iterable<Int> {
 		func iterator() -> Iterator<Int> {
 			this.position = this.start
 			return this
 		}
 	}
-
-	/*
-	 * @brief Iterator implementation
-	 */
 	impl Iterator<Int> {
 		func isAtEnd() -> Boolean => this.position < this.end
 		func next() -> Int {

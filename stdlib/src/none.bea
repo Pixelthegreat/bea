@@ -4,11 +4,10 @@ module none
  * @brief Value representing nothing
  */
 pub class None {
-
-	/*
-	 * @brief Initialize
-	 */
 	pub func init()!
 }
 
+/*
+ * @brief Value representing nothing
+ */
 pub let None: None = new None()

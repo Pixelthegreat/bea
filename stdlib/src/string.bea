@@ -6,7 +6,7 @@ module string
 pub class String {
 
 	/*
-	 * @brief Initialize string
+	 * @brief Construct empty string
 	 */
 	pub func init()!
 }

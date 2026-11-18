@@ -3,13 +3,13 @@ module operator
 /*
  * @brief Addition operator
  */
-abstract class Add {
+pub abstract class Add {
 	/*
 	 * @brief Add values
 	 *
-	 * @param other Value to add to self
+	 * @param other Add Value to add to self
 	 *
-	 * @returns Newly added value
+	 * @returns Add
 	 */
 	pub abstract func add(other: Add) -> Add
 }
@@ -17,13 +17,13 @@ abstract class Add {
 /*
  * @brief Subtraction operator
  */
-abstract class Subtract {
+pub abstract class Subtract {
 	/*
 	 * @brief Subtract values
 	 *
-	 * @param other Value to subtract from self
+	 * @param other Subtract Value to subtract from self
 	 *
-	 * @returns Newly subtracted value
+	 * @returns Subtract
 	 */
 	pub abstract func subtract(other: Subtract) -> Subtract
 }
@@ -31,13 +31,13 @@ abstract class Subtract {
 /*
  * @brief Multiplication operator
  */
-abstract class Multiply {
+pub abstract class Multiply {
 	/*
 	 * @brief Multiply values
 	 *
-	 * @param other Value to multiply by self
+	 * @param other Multiply Value to multiply by self
 	 *
-	 * @returns Newly multiplied value
+	 * @returns Multiply
 	 */
 	pub abstract func multiply(other: Multiply) -> Multiply
 }
@@ -45,13 +45,13 @@ abstract class Multiply {
 /*
  * @brief Division operator
  */
-abstract class Divide {
+pub abstract class Divide {
 	/*
 	 * @brief Divide values
 	 *
-	 * @param other Value to divide self by
+	 * @param other Divide Value to divide self by
 	 *
-	 * @returns Newly divided value
+	 * @returns Divide
 	 */
 	pub abstract func divide(other: Divide) -> Divide
 }
@@ -59,13 +59,13 @@ abstract class Divide {
 /*
  * @brief Modulus operator
  */
-abstract class Modulo {
+pub abstract class Modulo {
 	/*
 	 * @brief Get remainder of division operation
 	 *
-	 * @param other Value to divide self by
+	 * @param other Modulo Value to divide self by
 	 *
-	 * @returns Remainder of newly divided value
+	 * @returns Modulo
 	 */
 	pub abstract func modulo(other: Modulo) -> Modulo
 }
@@ -73,13 +73,13 @@ abstract class Modulo {
 /*
  * @brief Bitwise or operator
  */
-abstract class BitwiseOr {
+pub abstract class BitwiseOr {
 	/*
 	 * @brief Bitwise or values
 	 *
-	 * @param other Value to bitwise or with
+	 * @param other BitwiseOr Value to bitwise or with
 	 *
-	 * @returns New value
+	 * @returns BitwiseOr
 	 */
 	pub abstract func bitwiseOr(other: BitwiseOr) -> BitwiseOr
 }
@@ -87,13 +87,13 @@ abstract class BitwiseOr {
 /*
  * @brief Bitwise and operator
  */
-abstract class BitwiseAnd {
+pub abstract class BitwiseAnd {
 	/*
 	 * @brief Bitwise and values
 	 *
-	 * @param other Value to bitwise and with
+	 * @param other BitwiseAnd Value to bitwise and with
 	 *
-	 * @returns New value
+	 * @returns BitwiseAnd
 	 */
 	pub abstract func bitwiseAnd(other: BitwiseAnd) -> BitwiseAnd
 }
@@ -101,13 +101,13 @@ abstract class BitwiseAnd {
 /*
  * @brief Bitwise xor operator
  */
-abstract class BitwiseXor {
+pub abstract class BitwiseXor {
 	/*
 	 * @brief Bitwise xor values
 	 *
-	 * @param other Value to bitwise xor with
+	 * @param other BitwiseXor Value to bitwise xor with
 	 *
-	 * @returns New value
+	 * @returns BitwiseXor
 	 */
 	pub abstract func bitwiseXor(other: BitwiseXor) -> BitwiseXor
 }
@@ -115,13 +115,13 @@ abstract class BitwiseXor {
 /*
  * @brief Bitwise left shift operator
  */
-abstract class BitwiseLeftShift {
+pub abstract class BitwiseLeftShift {
 	/*
 	 * @brief Bitwise left shift value
 	 *
-	 * @param other Value to bitwise left shift by
+	 * @param other BitwiseLeftShift Value to bitwise left shift by
 	 *
-	 * @returns New value
+	 * @returns BitwiseLeftShift
 	 */
 	pub abstract func bitwiseLeftShift(other: BitwiseLeftShift) -> BitwiseLeftShift
 }
@@ -129,13 +129,13 @@ abstract class BitwiseLeftShift {
 /*
  * @brief Bitwise right shift operator
  */
-abstract class BitwiseRightShift {
+pub abstract class BitwiseRightShift {
 	/*
 	 * @brief Bitwise right shift value
 	 *
-	 * @param other Value to bitwise right shift by
+	 * @param other BitwiseRightShift Value to bitwise right shift by
 	 *
-	 * @returns New value
+	 * @returns BitwiseRightShift
 	 */
 	pub abstract func bitwiseRightShift(other: BitwiseRightShift) -> BitwiseRightShift
 }
@@ -143,13 +143,13 @@ abstract class BitwiseRightShift {
 /*
  * @brief Equals operator
  */
-abstract class Equals {
+pub abstract class Equals {
 	/*
 	 * @brief Compare equality of values
 	 *
-	 * @param other Value to compare with
+	 * @param other Equals Value to compare with
 	 *
-	 * @returns True or false
+	 * @returns Boolean
 	 */
 	pub abstract func equals(other: Equals) -> Boolean
 }
@@ -157,13 +157,13 @@ abstract class Equals {
 /*
  * @brief Less than operator
  */
-abstract class LessThan {
+pub abstract class LessThan {
 	/*
 	 * @brief Compare order of values
 	 *
-	 * @param other Value to compare with
+	 * @param other LessThan Value to compare with
 	 *
-	 * @returns True or false
+	 * @returns Boolean
 	 */
 	pub abstract func lessThan(other: LessThan) -> Boolean
 }
@@ -171,13 +171,13 @@ abstract class LessThan {
 /*
  * @brief Greater than operator
  */
-abstract class GreaterThan {
+pub abstract class GreaterThan {
 	/*
 	 * @brief Compare order of values
 	 *
-	 * @param other Value to compare with
+	 * @param other Equals Value to compare with
 	 *
-	 * @returns True or false
+	 * @returns Boolean
 	 */
 	pub abstract func greaterThan(other: GreaterThan) -> Boolean
 }
@@ -185,13 +185,13 @@ abstract class GreaterThan {
 /*
  * @brief Truthiness operator
  */
-abstract class True {
+pub abstract class True {
 	/*
 	 * @brief Get truthiness of value
 	 *
-	 * @param other Value to get truthiness of
+	 * @param other True Value to get truthiness of
 	 *
-	 * @returns True or false
+	 * @returns Boolean
 	 */
 	pub abstract func isTrue(other: True) -> Boolean
 }
@@ -202,23 +202,23 @@ abstract class True {
  * @gparam K The type of key used as an index
  * @gparam V The type of value stored by the container
  */
-abstract class Index<K, V> {
+pub abstract class Index<K, V> {
 	/*
 	 * @brief Get value at index
 	 *
-	 * @param index The index of the value
+	 * @param index K The index of the value
 	 *
-	 * @returns A result with the value
+	 * @returns Result<V>
 	 */
 	pub abstract func get(index: K) -> Result<V>
 
 	/*
 	 * @brief Set value at index
 	 *
-	 * @param index The index of the value
-	 * @param value The value to set
+	 * @param index K The index of the value
+	 * @param value V The value to set
 	 *
-	 * @returns The value assigned
+	 * @returns V The value assigned
 	 */
 	pub abstract func set(index: K, value: V) -> V
 }

@@ -1,6 +1,7 @@
 [project]
-name = "std"
-kind = "lib"
+name="std"
+kind="lib"
 
 [project.options]
-noStdlib = true
+noStdlib=true
+genDocs="doc/json"

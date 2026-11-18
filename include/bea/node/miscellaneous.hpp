@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bea/core.hpp>
+#include <bea/token.hpp>
 #include <bea/node.hpp>
 
 namespace bea {
@@ -10,7 +11,8 @@ namespace bea {
 	 */
 	class ExportableNode : public Node {
 	public:
-		bool m_public, m_abstract;
+		bool m_public = false, m_abstract = false;
+		const Token *m_commentToken = nullptr;
 	};
 
 	/*

@@ -33,6 +33,7 @@ namespace bea {
 		std::size_t m_tokenIndex = 0;
 
 		Token *m_token = nullptr;
+		const Token *m_lastCommentToken = nullptr;
 
 		std::istringstream m_sstream;
 

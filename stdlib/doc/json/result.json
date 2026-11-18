@@ -1,0 +1,119 @@
+{
+	"classes": {
+		"std::result::Error": {
+			"signature": "class std::result::Error",
+			"briefDescription": "Common error",
+			"description": "",
+			"genericParameters": {
+			},
+			"fields": {
+				"message": {
+					"type": "std::string::String",
+					"briefDescription": "Error message",
+					"description": ""
+				}
+			},
+			"functions": {
+				"init#0": {
+					"signature": "func init(message: std::string::String) -> std::none::None",
+					"briefDescription": "Construct error",
+					"description": "",
+					"genericParameters": {
+					},
+					"parameters": {
+						"message": {
+							"type": "std::string::String",
+							"description": "The error message"
+						}
+					},
+					"returns": {
+						"type": "",
+						"description": ""
+					}
+				}
+			},
+			"implementations": [
+			]
+		},
+		"std::result::Result": {
+			"signature": "struct std::result::Result<T>",
+			"briefDescription": "Common result",
+			"description": "",
+			"genericParameters": {
+				"T": "The type of value carried by the result"
+			},
+			"fields": {
+				"value": {
+					"type": "T",
+					"briefDescription": "The value carried by the result",
+					"description": ""
+				},
+				"error": {
+					"type": "std::result::Error",
+					"briefDescription": "The optional error carried by the result",
+					"description": ""
+				},
+				"okay": {
+					"type": "Boolean",
+					"briefDescription": "okay Indicates if the result is a success",
+					"description": ""
+				}
+			},
+			"functions": {
+				"init#0": {
+					"signature": "func init() -> std::none::None",
+					"briefDescription": "Construct result with default value",
+					"description": "",
+					"genericParameters": {
+					},
+					"parameters": {
+					},
+					"returns": {
+						"type": "",
+						"description": ""
+					}
+				},
+				"init#1": {
+					"signature": "func init(value: T) -> std::none::None",
+					"briefDescription": "Construct result with value",
+					"description": "",
+					"genericParameters": {
+					},
+					"parameters": {
+						"T": {
+							"type": "value",
+							"description": "The value"
+						}
+					},
+					"returns": {
+						"type": "",
+						"description": ""
+					}
+				},
+				"init#2": {
+					"signature": "func init(error: std::result::Error) -> std::none::None",
+					"briefDescription": "Construct fail result with error",
+					"description": "",
+					"genericParameters": {
+					},
+					"parameters": {
+						"Error": {
+							"type": "error",
+							"description": "The error"
+						}
+					},
+					"returns": {
+						"type": "",
+						"description": ""
+					}
+				}
+			},
+			"implementations": [
+			]
+		}
+	},
+	"functions": {
+	},
+	"globals": {
+	}
+}

@@ -6,12 +6,14 @@ module list
 pub class List<T> {
 
 	/*
-	 * @brief Initialize list
+	 * @brief Construct list
 	 */
 	pub func init()!
 
 	/*
 	 * @brief Add item to list
+	 *
+	 * @param item T The item to add
 	 */
 	pub func add(item: T)!
 }

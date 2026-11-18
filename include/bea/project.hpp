@@ -114,6 +114,7 @@ namespace bea {
 
 		struct {
 			bool noStdlib = false;
+			std::string genDocs{};
 		} m_options;
 
 		bool m_rebuild = false;

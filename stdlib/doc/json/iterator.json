@@ -1,0 +1,75 @@
+{
+	"classes": {
+		"std::iterator::Iterable": {
+			"signature": "abstract class std::iterator::Iterable<T>",
+			"briefDescription": "Iterable object",
+			"description": "",
+			"genericParameters": {
+				"T": "The type of value returned by the iterator"
+			},
+			"fields": {
+			},
+			"functions": {
+				"iterator#0": {
+					"signature": "abstract func iterator() -> std::iterator::Iterator<T>",
+					"briefDescription": "Create an iterator for this object",
+					"description": "",
+					"genericParameters": {
+					},
+					"parameters": {
+					},
+					"returns": {
+						"type": "Iterator<T>",
+						"description": ""
+					}
+				}
+			},
+			"implementations": [
+			]
+		},
+		"std::iterator::Iterator": {
+			"signature": "abstract class std::iterator::Iterator<T>",
+			"briefDescription": "Iterator",
+			"description": "",
+			"genericParameters": {
+				"T": "The type of value returned by the iterator"
+			},
+			"fields": {
+			},
+			"functions": {
+				"isAtEnd#0": {
+					"signature": "abstract func isAtEnd() -> Boolean",
+					"briefDescription": "Check if iterator has reached end",
+					"description": "",
+					"genericParameters": {
+					},
+					"parameters": {
+					},
+					"returns": {
+						"type": "Boolean",
+						"description": ""
+					}
+				},
+				"next#0": {
+					"signature": "abstract func next() -> T",
+					"briefDescription": "Get next item from iterator",
+					"description": "",
+					"genericParameters": {
+					},
+					"parameters": {
+					},
+					"returns": {
+						"type": "T",
+						"description": ""
+					}
+				}
+			},
+			"implementations": [
+			]
+		}
+	},
+	"functions": {
+	},
+	"globals": {
+	}
+}

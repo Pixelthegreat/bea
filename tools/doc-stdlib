@@ -1,0 +1,149 @@
+#!/usr/bin/env python3
+#
+# Author: Elliot Kohlmyer
+# Date: November 18th, 2026
+# Purpose: Convert JSON documentation to Markdown for
+#          the standard library (stdlib); This tool is
+#          not intended to be permanent, and should
+#          eventually be replaced with a proper program
+#          called beadoc
+#
+import os
+import json
+
+# generate markdown global documentation #
+def generate_md_global(fp, name, global_):
+    fp.write(f'### `{name}`\n```bea\nlet {name}: {global_["type"]}\n```\nBrief: {global_["briefDescription"]}\n')
+
+    description = global_['description']
+    if description:
+        fp.write(f'{description}\n')
+    fp.write('\n')
+
+# generate markdown function documentation #
+def generate_md_function(fp, name, function, level=3, basename=None):
+    if basename is None: basename = ''
+
+    name, fid = name.split('#')
+    fp.write(f'{"#" * level} `{basename}{name}` \\({fid}\\)\n```bea\n{function["signature"]}\n```\n')
+
+    fp.write(f'Brief: {function["briefDescription"]}\n')
+    description = function["description"]
+    if description:
+        fp.write(f'\n{description}\n')
+    fp.write('\n_Parameters:_\n')
+
+    for pname, parameter in function["parameters"].items():
+        fp.write(f'- `{pname}: {parameter["type"]}`: {parameter["description"]}\n')
+
+    returns = function['returns']
+    type = returns["type"]
+    if not type: type = 'std::none::None'
+
+    fp.write(f'\n_Returns:_\n- `{type}`')
+    rdesc = returns["description"]
+    if rdesc: fp.write(f': {rdesc}')
+
+    fp.write('\n\n')
+
+# generate markdown class documentation #
+def generate_md_class(fp, name, klass):
+    fp.write(f'### `{name}`\n```bea\n{klass["signature"]}\n```\n')
+
+    implementations = klass['implementations']
+    if implementations:
+        fp.write('_Implements:_\n')
+        for implementation in implementations:
+            fp.write(f'- `{implementation}`\n')
+        fp.write('\n')
+
+    fp.write(f'Brief: {klass["briefDescription"]}\n')
+    description = klass['description']
+    if description:
+        fp.write(f'\n{description}\n')
+    fp.write('\n')
+
+    gparameters = klass['genericParameters']
+    if gparameters:
+        fp.write('_Generic parameters:_\n')
+        for pname, pdesc in gparameters.items():
+            fp.write(f'- `{pname}`: {pdesc}\n')
+        fp.write('\n')
+
+    fields = klass['fields']
+    if fields:
+        fp.write('_Fields:_\n')
+        for fname, field in fields.items():
+            fp.write(f'- `{fname}: {field["type"]}`: {field["briefDescription"]}\n')
+
+    functions = klass['functions']
+    for fname, function in functions.items():
+        generate_md_function(fp, fname, function, level=4, basename=f'{name}::')
+
+# generate documentation in markdown format #
+def generate_md(module_name, input_path, output_path):
+    with open(input_path, 'r') as fp:
+        data = json.load(fp)
+    with open(output_path, 'w') as fp:
+        fp.write(f'# Module `{module_name}`\n\n## Table of Contents\n')
+
+        # Generate table of contents #
+        klasses = data['classes']
+        if klasses:
+            fp.write('- [Classes](#classes)\n')
+            for name, klass in klasses.items():
+                fp.write(f'  - [`{name}`](#{name.replace("::","").lower()})\n')
+
+                for fname, function in klass['functions'].items():
+                    fname, fid = fname.split('#')
+                    fp.write(f'    - [`{fname}` \\({fid}\\)](#{(name+fname).replace("::","").lower()}-{fid})\n')
+
+        functions = data['functions']
+        if functions:
+            fp.write('- [Functions](#functions)\n')
+            for name, function in functions.items():
+                name, fid = name.split('#')
+                fp.write(f'  - [`{name}`](#{name.replace("::","").lower()}-{fid})\n')
+
+        globals = data['globals']
+        if globals:
+            fp.write('- [Globals](#globals)\n')
+            for name, global_ in globals.items():
+                fp.write(f'  - [`{name}`](#{name.replace("::","").lower()})\n')
+
+        fp.write('\n')
+
+        # Generate class information #
+        if klasses:
+            fp.write('## Classes\n\n')
+            for name, klass in klasses.items():
+                generate_md_class(fp, name, klass)
+
+        # Generate function information #
+        if functions:
+            fp.write('## Functions\n\n')
+            for name, function in functions.items():
+                generate_md_class(fp, name, function)
+
+        # Generate global information #
+        if globals:
+            fp.write('## Globals\n\n')
+            for name, global_ in globals.items():
+                generate_md_global(fp, name, global_)
+
+# main #
+def main():
+    try: os.mkdir('stdlib/doc/md')
+    except FileExistsError: pass
+
+    for filename in os.listdir('stdlib/doc/json'):
+        basename = os.path.splitext(filename)[0]
+
+        input_path = f'stdlib/doc/json/{filename}'
+        output_path = f'stdlib/doc/md/{basename}.md'
+
+        print(f'\'{input_path}\' -> \'{output_path}\'')
+        generate_md(f'std::{basename}', input_path, output_path)
+
+if __name__ == '__main__':
+    main()

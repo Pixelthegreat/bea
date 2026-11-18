@@ -127,6 +127,16 @@ namespace bea {
 		writeName(alias);
 	}
 
+	/* Write GRCode::Let */
+	void GRCodeSerializer::writeLet(
+		const Name& name,
+		const VariableInfo& variable
+	) {
+		writeU8((std::uint8_t)GRCode::Let);
+		writeName(name);
+		writeTypeID(*variable.type);
+	}
+
 	/* Write GRCode::Class */
 	void GRCodeSerializer::writeClass(
 		const Name& name,
@@ -305,6 +315,9 @@ namespace bea {
 				case GRCode::Use:
 					m_aliases.emplace_back(readUse());
 					break;
+				case GRCode::Let:
+					m_values.emplace_back(readLet());
+					break;
 				case GRCode::Class:
 					m_types.emplace_back(readClass());
 					break;
@@ -344,6 +357,17 @@ namespace bea {
 		return {
 			readName(),
 			readName()
+		};
+	}
+
+	/* Read GRCode::Let */
+	std::pair<Name, VariableInfo> GRCodeDeserializer::readLet() {
+
+		return {
+			readName(),
+			VariableInfo{
+				.type = readTypeID(),
+			},
 		};
 	}
 

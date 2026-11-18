@@ -79,6 +79,10 @@ namespace bea {
 			const Name& name,
 			const Name& alias
 		);
+		void writeLet(
+			const Name& name,
+			const VariableInfo& variable
+		);
 		void writeClass(
 			const Name& name,
 			const Type& type
@@ -142,6 +146,7 @@ namespace bea {
 		std::size_t m_inClass = 0;
 
 		Pair<Name> readUse();
+		std::pair<Name, VariableInfo> readLet();
 		std::pair<Name, std::unique_ptr<Type>> readClass();
 		std::pair<Name, VariableInfo> readClassField();
 		ObjectImplementation readClassImpl();
