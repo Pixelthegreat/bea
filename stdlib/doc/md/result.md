@@ -19,6 +19,9 @@ Brief: Common error
 
 _Fields:_
 - `message: std::string::String`: Error message
+
+---
+
 #### `std::result::Error::init` \(0\)
 ```bea
 func init(message: std::string::String) -> std::none::None
@@ -30,6 +33,8 @@ _Parameters:_
 
 _Returns:_
 - `std::none::None`
+
+---
 
 ### `std::result::Result`
 ```bea
@@ -44,6 +49,9 @@ _Fields:_
 - `value: T`: The value carried by the result
 - `error: std::result::Error`: The optional error carried by the result
 - `okay: Boolean`: okay Indicates if the result is a success
+
+---
+
 #### `std::result::Result::init` \(0\)
 ```bea
 func init() -> std::none::None
@@ -54,6 +62,8 @@ _Parameters:_
 
 _Returns:_
 - `std::none::None`
+
+---
 
 #### `std::result::Result::init` \(1\)
 ```bea
@@ -67,6 +77,8 @@ _Parameters:_
 _Returns:_
 - `std::none::None`
 
+---
+
 #### `std::result::Result::init` \(2\)
 ```bea
 func init(error: std::result::Error) -> std::none::None
@@ -78,4 +90,6 @@ _Parameters:_
 
 _Returns:_
 - `std::none::None`
+
+---
 

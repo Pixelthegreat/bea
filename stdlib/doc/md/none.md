@@ -14,6 +14,8 @@ class std::none::None
 ```
 Brief: Value representing nothing
 
+---
+
 ## Globals
 
 ### `std::none::None`
@@ -21,4 +23,6 @@ Brief: Value representing nothing
 let std::none::None: std::none::None
 ```
 Brief: Value representing nothing
+
+---
 

@@ -13,6 +13,8 @@ class std::string::String
 ```
 Brief: String object
 
+---
+
 #### `std::string::String::init` \(0\)
 ```bea
 func init() -> std::none::None
@@ -23,4 +25,6 @@ _Parameters:_
 
 _Returns:_
 - `std::none::None`
+
+---
 

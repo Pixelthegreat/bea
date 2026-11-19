@@ -17,8 +17,8 @@ def generate_md_global(fp, name, global_):
 
     description = global_['description']
     if description:
-        fp.write(f'{description}\n')
-    fp.write('\n')
+        fp.write(f'\n{description}\n')
+    fp.write('\n---\n\n')
 
 # generate markdown function documentation #
 def generate_md_function(fp, name, function, level=3, basename=None):
@@ -44,7 +44,7 @@ def generate_md_function(fp, name, function, level=3, basename=None):
     rdesc = returns["description"]
     if rdesc: fp.write(f': {rdesc}')
 
-    fp.write('\n\n')
+    fp.write('\n\n---\n\n')
 
 # generate markdown class documentation #
 def generate_md_class(fp, name, klass):
@@ -61,20 +61,20 @@ def generate_md_class(fp, name, klass):
     description = klass['description']
     if description:
         fp.write(f'\n{description}\n')
-    fp.write('\n')
 
     gparameters = klass['genericParameters']
     if gparameters:
-        fp.write('_Generic parameters:_\n')
+        fp.write('\n_Generic parameters:_\n')
         for pname, pdesc in gparameters.items():
             fp.write(f'- `{pname}`: {pdesc}\n')
-        fp.write('\n')
 
     fields = klass['fields']
     if fields:
-        fp.write('_Fields:_\n')
+        fp.write('\n_Fields:_\n')
         for fname, field in fields.items():
             fp.write(f'- `{fname}: {field["type"]}`: {field["briefDescription"]}\n')
+
+    fp.write('\n---\n\n')
 
     functions = klass['functions']
     for fname, function in functions.items():

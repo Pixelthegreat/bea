@@ -19,6 +19,8 @@ Brief: Iterable object
 _Generic parameters:_
 - `T`: The type of value returned by the iterator
 
+---
+
 #### `std::iterator::Iterable::iterator` \(0\)
 ```bea
 abstract func iterator() -> std::iterator::Iterator<T>
@@ -30,6 +32,8 @@ _Parameters:_
 _Returns:_
 - `Iterator<T>`
 
+---
+
 ### `std::iterator::Iterator`
 ```bea
 abstract class std::iterator::Iterator<T>
@@ -38,6 +42,8 @@ Brief: Iterator
 
 _Generic parameters:_
 - `T`: The type of value returned by the iterator
+
+---
 
 #### `std::iterator::Iterator::isAtEnd` \(0\)
 ```bea
@@ -50,6 +56,8 @@ _Parameters:_
 _Returns:_
 - `Boolean`
 
+---
+
 #### `std::iterator::Iterator::next` \(0\)
 ```bea
 abstract func next() -> T
@@ -60,4 +68,6 @@ _Parameters:_
 
 _Returns:_
 - `T`
+
+---
 

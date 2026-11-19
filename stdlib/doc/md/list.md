@@ -14,6 +14,8 @@ class std::list::List<T>
 ```
 Brief: List object
 
+---
+
 #### `std::list::List::init` \(0\)
 ```bea
 func init() -> std::none::None
@@ -24,6 +26,8 @@ _Parameters:_
 
 _Returns:_
 - `std::none::None`
+
+---
 
 #### `std::list::List::add` \(0\)
 ```bea
@@ -36,4 +40,6 @@ _Parameters:_
 
 _Returns:_
 - `std::none::None`
+
+---
 

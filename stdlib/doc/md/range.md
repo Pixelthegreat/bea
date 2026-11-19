@@ -26,6 +26,9 @@ _Fields:_
 - `end: Int`: The end of the range
 - `step: Int`: The step of the range (default is 1)
 - `position: Int`: The current position of the range
+
+---
+
 #### `std::range::Range::init` \(0\)
 ```bea
 func init(end: Int) -> std::none::None
@@ -37,6 +40,8 @@ _Parameters:_
 
 _Returns:_
 - `std::none::None`
+
+---
 
 #### `std::range::Range::init` \(1\)
 ```bea
@@ -51,6 +56,8 @@ _Parameters:_
 _Returns:_
 - `std::none::None`
 
+---
+
 #### `std::range::Range::init` \(2\)
 ```bea
 func init(start: Int, end: Int, step: Int) -> std::none::None
@@ -64,4 +71,6 @@ _Parameters:_
 
 _Returns:_
 - `std::none::None`
+
+---
 

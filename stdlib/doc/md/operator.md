@@ -42,6 +42,8 @@ abstract class std::operator::Add
 ```
 Brief: Addition operator
 
+---
+
 #### `std::operator::Add::add` \(0\)
 ```bea
 abstract func add(other: std::operator::Add) -> std::operator::Add
@@ -54,11 +56,15 @@ _Parameters:_
 _Returns:_
 - `Add`
 
+---
+
 ### `std::operator::Subtract`
 ```bea
 abstract class std::operator::Subtract
 ```
 Brief: Subtraction operator
+
+---
 
 #### `std::operator::Subtract::subtract` \(0\)
 ```bea
@@ -72,11 +78,15 @@ _Parameters:_
 _Returns:_
 - `Subtract`
 
+---
+
 ### `std::operator::Multiply`
 ```bea
 abstract class std::operator::Multiply
 ```
 Brief: Multiplication operator
+
+---
 
 #### `std::operator::Multiply::multiply` \(0\)
 ```bea
@@ -90,11 +100,15 @@ _Parameters:_
 _Returns:_
 - `Multiply`
 
+---
+
 ### `std::operator::Divide`
 ```bea
 abstract class std::operator::Divide
 ```
 Brief: Division operator
+
+---
 
 #### `std::operator::Divide::divide` \(0\)
 ```bea
@@ -108,11 +122,15 @@ _Parameters:_
 _Returns:_
 - `Divide`
 
+---
+
 ### `std::operator::Modulo`
 ```bea
 abstract class std::operator::Modulo
 ```
 Brief: Modulus operator
+
+---
 
 #### `std::operator::Modulo::modulo` \(0\)
 ```bea
@@ -126,11 +144,15 @@ _Parameters:_
 _Returns:_
 - `Modulo`
 
+---
+
 ### `std::operator::BitwiseOr`
 ```bea
 abstract class std::operator::BitwiseOr
 ```
 Brief: Bitwise or operator
+
+---
 
 #### `std::operator::BitwiseOr::bitwiseOr` \(0\)
 ```bea
@@ -144,11 +166,15 @@ _Parameters:_
 _Returns:_
 - `BitwiseOr`
 
+---
+
 ### `std::operator::BitwiseAnd`
 ```bea
 abstract class std::operator::BitwiseAnd
 ```
 Brief: Bitwise and operator
+
+---
 
 #### `std::operator::BitwiseAnd::bitwiseAnd` \(0\)
 ```bea
@@ -162,11 +188,15 @@ _Parameters:_
 _Returns:_
 - `BitwiseAnd`
 
+---
+
 ### `std::operator::BitwiseXor`
 ```bea
 abstract class std::operator::BitwiseXor
 ```
 Brief: Bitwise xor operator
+
+---
 
 #### `std::operator::BitwiseXor::bitwiseXor` \(0\)
 ```bea
@@ -180,11 +210,15 @@ _Parameters:_
 _Returns:_
 - `BitwiseXor`
 
+---
+
 ### `std::operator::BitwiseLeftShift`
 ```bea
 abstract class std::operator::BitwiseLeftShift
 ```
 Brief: Bitwise left shift operator
+
+---
 
 #### `std::operator::BitwiseLeftShift::bitwiseLeftShift` \(0\)
 ```bea
@@ -198,11 +232,15 @@ _Parameters:_
 _Returns:_
 - `BitwiseLeftShift`
 
+---
+
 ### `std::operator::BitwiseRightShift`
 ```bea
 abstract class std::operator::BitwiseRightShift
 ```
 Brief: Bitwise right shift operator
+
+---
 
 #### `std::operator::BitwiseRightShift::bitwiseRightShift` \(0\)
 ```bea
@@ -216,11 +254,15 @@ _Parameters:_
 _Returns:_
 - `BitwiseRightShift`
 
+---
+
 ### `std::operator::Equals`
 ```bea
 abstract class std::operator::Equals
 ```
 Brief: Equals operator
+
+---
 
 #### `std::operator::Equals::equals` \(0\)
 ```bea
@@ -234,11 +276,15 @@ _Parameters:_
 _Returns:_
 - `Boolean`
 
+---
+
 ### `std::operator::LessThan`
 ```bea
 abstract class std::operator::LessThan
 ```
 Brief: Less than operator
+
+---
 
 #### `std::operator::LessThan::lessThan` \(0\)
 ```bea
@@ -252,11 +298,15 @@ _Parameters:_
 _Returns:_
 - `Boolean`
 
+---
+
 ### `std::operator::GreaterThan`
 ```bea
 abstract class std::operator::GreaterThan
 ```
 Brief: Greater than operator
+
+---
 
 #### `std::operator::GreaterThan::greaterThan` \(0\)
 ```bea
@@ -270,11 +320,15 @@ _Parameters:_
 _Returns:_
 - `Boolean`
 
+---
+
 ### `std::operator::True`
 ```bea
 abstract class std::operator::True
 ```
 Brief: Truthiness operator
+
+---
 
 #### `std::operator::True::isTrue` \(0\)
 ```bea
@@ -288,6 +342,8 @@ _Parameters:_
 _Returns:_
 - `Boolean`
 
+---
+
 ### `std::operator::Index`
 ```bea
 abstract class std::operator::Index<K, V>
@@ -297,6 +353,8 @@ Brief: Index operator
 _Generic parameters:_
 - `K`: The type of key used as an index
 - `V`: The type of value stored by the container
+
+---
 
 #### `std::operator::Index::get` \(0\)
 ```bea
@@ -310,6 +368,8 @@ _Parameters:_
 _Returns:_
 - `Result<V>`
 
+---
+
 #### `std::operator::Index::set` \(0\)
 ```bea
 abstract func set(index: K, value: V) -> V
@@ -322,4 +382,6 @@ _Parameters:_
 
 _Returns:_
 - `V`: The value assigned
+
+---
 
