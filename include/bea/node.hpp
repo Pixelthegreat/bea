@@ -19,14 +19,20 @@ namespace bea {
 		TypeEquality typeEquality = TypeEquality::None;
 		std::vector<TypeEquality> argumentTypeEqualities{};
 
-		const ObjectImplementation *operationImpl = nullptr;
-		const ObjectImplementation *operationImpl2 = nullptr;
+		ObjectImplementation *operationImpl = nullptr;
+		ObjectImplementation *operationImpl2 = nullptr;
 
 		std::size_t overloadID = 0;
 		VariableInfo *variable = nullptr;
 		std::size_t scopeID = 0;
 
 		bool flagDynamic = false;
+		bool flagExpanded = false;
+
+		/*
+		 * Make copy of atom
+		 */
+		Atom copy();
 	};
 
 	/*
@@ -38,6 +44,7 @@ namespace bea {
 		Atom m_atom;
 
 		virtual Result<None> visit(NodeVisitor& visitor) = 0;
+		virtual std::unique_ptr<Node> copy();
 	};
 
 	std::ostream& operator<<(std::ostream& stream, Node& node);

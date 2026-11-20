@@ -10,7 +10,7 @@ namespace bea {
 	 */
 	class NodeVisitor {
 	public:
-		Result<None> visit(Node& node);
+		virtual Result<None> visit(Node& node);
 
 		virtual Result<None> visitBlock(BlockNode& node);
 

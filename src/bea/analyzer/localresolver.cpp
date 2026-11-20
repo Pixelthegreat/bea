@@ -114,8 +114,7 @@ namespace bea {
 		if (node.m_operation == "++" || node.m_operation == "--") {
 
 			if (!dynamic_cast<VariableAccessNode *>(node.m_node.get()) &&
-			    !dynamic_cast<NamedAccessNode *>(node.m_node.get()) &&
-			    !dynamic_cast<IndexedAccessNode *>(node.m_node.get()))
+			    !dynamic_cast<NamedAccessNode *>(node.m_node.get()))
 				return Result<None>(
 					node.m_position,
 					"Can't increment or decrement "
@@ -141,7 +140,10 @@ namespace bea {
 
 		if ((type->base == BaseType::F32 ||
 		     type->base == BaseType::F64) &&
-		    node.m_operation == "not")
+		    (node.m_operation == "not" ||
+		     node.m_operation == "~" ||
+		     node.m_operation == "++" ||
+		     node.m_operation == "--"))
 			return Result<None>(
 				node.m_position,
 				"Invalid operation"
@@ -151,9 +153,9 @@ namespace bea {
 
 		const char *interface = nullptr;
 		if (node.m_operation == "-")
-			interface = "std::operator::Multiply";
+			interface = "std::operator::Subtract";
 		else if (node.m_operation == "~")
-			interface = "std::operator::BitwiseNot";
+			interface = "std::operator::BitwiseXor";
 		else if (node.m_operation == "++")
 			interface = "std::operator::Add";
 		else if (node.m_operation == "--")
@@ -171,7 +173,7 @@ namespace bea {
 
 		/* Find appropriate interface implementation */
 		for (
-			const ObjectImplementation& implementation:
+			ObjectImplementation& implementation:
 			type->object.implementations
 		) {
 			if (implementation.type->name != interface ||
@@ -221,13 +223,38 @@ namespace bea {
 					*node.m_rightNode->m_atom.type
 				)
 			);
-		node.m_atom.type = std::make_unique<TypeID>(
-			*node.m_leftNode->m_atom.type
-		);
+
+		/* Get value type */
+		IndexedAccessNode *indexNode =
+			dynamic_cast<IndexedAccessNode *>(
+				node.m_leftNode.get()
+			);
+		if (indexNode)
+			node.m_atom.type = std::make_unique<TypeID>(
+				*indexNode->m_atom.type->
+				generics[0].substitutedType
+			);
+		else
+			node.m_atom.type = std::make_unique<TypeID>(
+				*node.m_leftNode->m_atom.type
+			);
 
 		/* Check if operator is implemented */
 		Type *type = node.m_atom.type->type;
-		if (!type || type->base <= BaseType::F64)
+
+		if ((type->base == BaseType::F32 ||
+		     type->base == BaseType::F64) &&
+		    (node.m_operation == "|=" ||
+		     node.m_operation == "&=" ||
+		     node.m_operation == "^=" ||
+		     node.m_operation == "<<=" ||
+		     node.m_operation == ">>="))
+			return Result<None>(
+				node.m_position,
+				"Invalid operation"
+			);
+
+		else if (type->base <= BaseType::F64)
 			return Result<None>();
 
 		const char *interface = nullptr;
@@ -262,7 +289,7 @@ namespace bea {
 
 		/* Find appropriate interface implementation */
 		for (
-			const ObjectImplementation& implementation:
+			ObjectImplementation& implementation:
 			type->object.implementations
 		) {
 			if (implementation.type->name == interface &&
@@ -327,7 +354,7 @@ namespace bea {
 					"std::operator::True"
 				);
 			for (
-				const ObjectImplementation& implementation:
+				ObjectImplementation& implementation:
 				leftType->object.implementations
 			) {
 				if (implementation.type->name != "std::operator::True" ||
@@ -356,7 +383,7 @@ checkRightType:
 					"std::operator::True"
 				);
 			for (
-				const ObjectImplementation& implementation:
+				ObjectImplementation& implementation:
 				rightType->object.implementations
 			) {
 				if (implementation.type->name != "std::operator::True" ||
@@ -392,7 +419,19 @@ checkRightType:
 
 		/* Check if operator is implemented */
 		Type *type = node.m_atom.type->type;
-		if (!type || type->base <= BaseType::F64)
+		if ((type->base == BaseType::F32 ||
+		     type->base == BaseType::F64) &&
+		    (node.m_operation == "|" ||
+		     node.m_operation == "&" ||
+		     node.m_operation == "^" ||
+		     node.m_operation == "<<" ||
+		     node.m_operation == ">>"))
+			return Result<None>(
+				node.m_position,
+				"Invalid operation"
+			);
+
+		if (type->base <= BaseType::F64)
 			return Result<None>();
 
 		const char *interface = nullptr;
@@ -437,7 +476,7 @@ checkRightType:
 
 		/* Find appropriate interface implementation */
 		for (
-			const ObjectImplementation& implementation:
+			ObjectImplementation& implementation:
 			type->object.implementations
 		) {
 			if (implementation.type->name == interface &&
@@ -560,6 +599,8 @@ checkRightType:
 				stream.str()
 			);
 		}
+		node.m_atom.variable = variable;
+
 		return Result<None>();
 	}
 
@@ -603,7 +644,7 @@ checkRightType:
 		/* Look for class implementation */
 		node.m_atom.flagDynamic = true;
 		for (
-			const ObjectImplementation& implementation:
+			ObjectImplementation& implementation:
 			type->object.implementations
 		) {
 			node.m_atom.typeEquality =
@@ -870,11 +911,10 @@ checkRightType:
 				generics[i-1].substitutedType.get();
 			break;
 		}
-		node.m_atom.type = std::make_unique<TypeID>(*typeID);
 		node.m_atom.variable = variable;
 
 		node.m_atom.type = substituteTypes(
-			*variable->type,
+			*typeID,
 			type->object.genericParameters,
 			node.m_node->m_atom.type->generics
 		);
@@ -900,7 +940,7 @@ checkRightType:
 
 		/* Get implementation */
 		for (
-			const ObjectImplementation& implementation:
+			ObjectImplementation& implementation:
 			type->object.implementations
 		) {
 			if (implementation.type->name != "std::operator::Index" ||
@@ -1018,7 +1058,7 @@ checkRightType:
 		/* Look for iterable implementation */
 		TypeID *typeID = nullptr;
 		for (
-			const ObjectImplementation& implementation:
+			ObjectImplementation& implementation:
 			type->object.implementations
 		) {
 			if (implementation.type->name != "std::iterator::Iterable" ||
@@ -1108,6 +1148,9 @@ checkRightType:
 					*node.m_node->m_atom.type
 				)
 			);
+		node.m_atom.type = std::make_unique<TypeID>(
+			*m_returnType
+		);
 		return Result<None>();
 	}
 

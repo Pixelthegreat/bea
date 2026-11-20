@@ -12,6 +12,30 @@ pub abstract class Add {
 	 * @returns Add
 	 */
 	pub abstract func add(other: Add) -> Add
+	/*
+	 * @brief Prefix increment value
+	 *
+	 * @returns Add
+	 */
+	pub abstract func preIncrement() -> Add!
+	/*
+	 * @brief Postfix increment value
+	 *
+	 * @returns Add
+	 */
+	pub abstract func postIncrement() -> Add!
+	/*
+	 * @brief Prefix decrement value
+	 *
+	 * @returns Add
+	 */
+	pub abstract func preDecrement() -> Add!
+	/*
+	 * @brief Postfix decrement value
+	 *
+	 * @returns Add
+	 */
+	pub abstract func postDecrement() -> Add!
 }
 
 /*
@@ -26,6 +50,12 @@ pub abstract class Subtract {
 	 * @returns Subtract
 	 */
 	pub abstract func subtract(other: Subtract) -> Subtract
+	/*
+	 * @brief Negate value
+	 *
+	 * @returns Subtract
+	 */
+	pub abstract func negate() -> Subtract!
 }
 
 /*
@@ -110,6 +140,12 @@ pub abstract class BitwiseXor {
 	 * @returns BitwiseXor
 	 */
 	pub abstract func bitwiseXor(other: BitwiseXor) -> BitwiseXor
+	/*
+	 * @brief Bitwise not value (Equivalent to xor'ing by all ones)
+	 *
+	 * @returns BitwiseXor
+	 */
+	pub abstract func bitwiseNot() -> BitwiseXor!
 }
 
 /*
@@ -189,11 +225,9 @@ pub abstract class True {
 	/*
 	 * @brief Get truthiness of value
 	 *
-	 * @param other True Value to get truthiness of
-	 *
 	 * @returns Boolean
 	 */
-	pub abstract func isTrue(other: True) -> Boolean
+	pub abstract func isTrue() -> Boolean
 }
 
 /*

@@ -19,6 +19,7 @@ namespace bea {
 		Name m_name;
 	protected:
 		virtual Result<None> visit(NodeVisitor& visitor) override;
+		virtual std::unique_ptr<Node> copy() override;
 	};
 
 	/*
@@ -43,6 +44,7 @@ namespace bea {
 		std::unique_ptr<Node> m_node;
 	protected:
 		virtual Result<None> visit(NodeVisitor& visitor) override;
+		virtual std::unique_ptr<Node> copy() override;
 	};
 
 	/*
@@ -68,6 +70,7 @@ namespace bea {
 		std::unique_ptr<Node> m_rightNode;
 	protected:
 		virtual Result<None> visit(NodeVisitor& visitor) override;
+		virtual std::unique_ptr<Node> copy() override;
 	};
 
 	/*
@@ -93,6 +96,7 @@ namespace bea {
 		std::unique_ptr<Node> m_rightNode;
 	protected:
 		virtual Result<None> visit(NodeVisitor& visitor) override;
+		virtual std::unique_ptr<Node> copy() override;
 	};
 
 	/*
@@ -108,6 +112,7 @@ namespace bea {
 		std::unique_ptr<Node> m_node;
 	protected:
 		virtual Result<None> visit(NodeVisitor& visitor) override;
+		virtual std::unique_ptr<Node> copy() override;
 	};
 
 	/*
@@ -125,6 +130,7 @@ namespace bea {
 		std::unique_ptr<Node> m_typeNode;
 	protected:
 		virtual Result<None> visit(NodeVisitor& visitor) override;
+		virtual std::unique_ptr<Node> copy() override;
 	};
 
 	/*
@@ -146,6 +152,7 @@ namespace bea {
 		std::unique_ptr<Node> m_valueNode;
 	protected:
 		virtual Result<None> visit(NodeVisitor& visitor) override;
+		virtual std::unique_ptr<Node> copy() override;
 	};
 
 	/*
@@ -158,6 +165,7 @@ namespace bea {
 		std::vector<std::unique_ptr<Node>> m_itemNodes;
 	protected:
 		virtual Result<None> visit(NodeVisitor& visitor) override;
+		virtual std::unique_ptr<Node> copy() override;
 	};
 
 	/*
@@ -174,6 +182,7 @@ namespace bea {
 		std::unique_ptr<Node> m_node;
 	protected:
 		virtual Result<None> visit(NodeVisitor& visitor) override;
+		virtual std::unique_ptr<Node> copy() override;
 	};
 
 	/*
@@ -202,6 +211,7 @@ namespace bea {
 		Name m_name;
 	protected:
 		virtual Result<None> visit(NodeVisitor& visitor) override;
+		virtual std::unique_ptr<Node> copy() override;
 	};
 
 	/*
@@ -223,6 +233,7 @@ namespace bea {
 		std::unique_ptr<Node> m_indexNode;
 	protected:
 		virtual Result<None> visit(NodeVisitor& visitor) override;
+		virtual std::unique_ptr<Node> copy() override;
 	};
 
 	/*
@@ -244,5 +255,6 @@ namespace bea {
 		std::unique_ptr<Node> m_endNode;
 	protected:
 		virtual Result<None> visit(NodeVisitor& visitor) override;
+		virtual std::unique_ptr<Node> copy() override;
 	};
 }

@@ -5,6 +5,29 @@
 
 namespace bea {
 
+	/* Make copy of atom */
+	Atom Atom::copy() {
+
+		return {
+			.type = type? std::make_unique<TypeID>(*type): nullptr,
+			.typeEquality = typeEquality,
+			.argumentTypeEqualities = argumentTypeEqualities,
+			.operationImpl = operationImpl,
+			.operationImpl2 = operationImpl2,
+			.overloadID = overloadID,
+			.variable = variable,
+			.scopeID = scopeID,
+			.flagDynamic = flagDynamic,
+			.flagExpanded = flagExpanded,
+		};
+	}
+
+	/* Default copy implementation */
+	std::unique_ptr<Node> Node::copy() {
+
+		return nullptr;
+	}
+
 	/* Print shorthand */
 	std::ostream& operator<<(std::ostream& stream, Node& node) {
 

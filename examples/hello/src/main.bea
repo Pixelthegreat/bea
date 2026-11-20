@@ -1,34 +1,4 @@
 module main
 
-class Vector2<T> {
-	x: T
-	y: T
-
-	pub func init(x: T, y: T)!
-
-	impl Index<Int, T> {
-		func get(index: Int) -> Result<T> {
-			if index == 0 {
-				return this.x
-			} elif index == 1 {
-				return this.y
-			}
-		}
-		func set(index: Int, value: T) -> T {
-			if index == 0 {
-				this.x = value
-			} elif index == 1 {
-				this.y = value
-			}
-			return value
-		}
-	}
-}
-
-pub func main() -> Result<None> {
-
-	let v = new Vector2<Float>(1, 2)
-	let x = v[0]?
-
-	v[0] = x
+pub func main() {
 }

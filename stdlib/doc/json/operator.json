@@ -25,6 +25,58 @@
 						"type": "Add",
 						"description": ""
 					}
+				},
+				"preIncrement#0": {
+					"signature": "abstract func preIncrement() -> std::operator::Add",
+					"briefDescription": "Prefix increment value",
+					"description": "",
+					"genericParameters": {
+					},
+					"parameters": {
+					},
+					"returns": {
+						"type": "Add",
+						"description": ""
+					}
+				},
+				"postIncrement#0": {
+					"signature": "abstract func postIncrement() -> std::operator::Add",
+					"briefDescription": "Postfix increment value",
+					"description": "",
+					"genericParameters": {
+					},
+					"parameters": {
+					},
+					"returns": {
+						"type": "Add",
+						"description": ""
+					}
+				},
+				"preDecrement#0": {
+					"signature": "abstract func preDecrement() -> std::operator::Add",
+					"briefDescription": "Prefix decrement value",
+					"description": "",
+					"genericParameters": {
+					},
+					"parameters": {
+					},
+					"returns": {
+						"type": "Add",
+						"description": ""
+					}
+				},
+				"postDecrement#0": {
+					"signature": "abstract func postDecrement() -> std::operator::Add",
+					"briefDescription": "Postfix decrement value",
+					"description": "",
+					"genericParameters": {
+					},
+					"parameters": {
+					},
+					"returns": {
+						"type": "Add",
+						"description": ""
+					}
 				}
 			},
 			"implementations": [
@@ -50,6 +102,19 @@
 							"type": "Subtract",
 							"description": "Value to subtract from self"
 						}
+					},
+					"returns": {
+						"type": "Subtract",
+						"description": ""
+					}
+				},
+				"negate#0": {
+					"signature": "abstract func negate() -> std::operator::Subtract",
+					"briefDescription": "Negate value",
+					"description": "",
+					"genericParameters": {
+					},
+					"parameters": {
 					},
 					"returns": {
 						"type": "Subtract",
@@ -235,6 +300,19 @@
 						"type": "BitwiseXor",
 						"description": ""
 					}
+				},
+				"bitwiseNot#0": {
+					"signature": "abstract func bitwiseNot() -> std::operator::BitwiseXor",
+					"briefDescription": "Bitwise not value (Equivalent to xor'ing by all ones)",
+					"description": "",
+					"genericParameters": {
+					},
+					"parameters": {
+					},
+					"returns": {
+						"type": "BitwiseXor",
+						"description": ""
+					}
 				}
 			},
 			"implementations": [
@@ -400,16 +478,12 @@
 			},
 			"functions": {
 				"isTrue#0": {
-					"signature": "abstract func isTrue(other: std::operator::True) -> Boolean",
+					"signature": "abstract func isTrue() -> Boolean",
 					"briefDescription": "Get truthiness of value",
 					"description": "",
 					"genericParameters": {
 					},
 					"parameters": {
-						"other": {
-							"type": "True",
-							"description": "Value to get truthiness of"
-						}
 					},
 					"returns": {
 						"type": "Boolean",

@@ -16,6 +16,7 @@ namespace bea {
 		std::intmax_t m_value;
 	protected:
 		virtual Result<None> visit(NodeVisitor& visitor) override;
+		virtual std::unique_ptr<Node> copy() override;
 	};
 
 	/*
@@ -28,6 +29,7 @@ namespace bea {
 		double m_value;
 	protected:
 		virtual Result<None> visit(NodeVisitor& visitor) override;
+		virtual std::unique_ptr<Node> copy() override;
 	};
 
 	/*
@@ -40,6 +42,7 @@ namespace bea {
 		const std::string& m_value;
 	protected:
 		virtual Result<None> visit(NodeVisitor& visitor) override;
+		virtual std::unique_ptr<Node> copy() override;
 	};
 
 	/*
@@ -57,5 +60,6 @@ namespace bea {
 		Name m_name;
 	protected:
 		virtual Result<None> visit(NodeVisitor& visitor) override;
+		virtual std::unique_ptr<Node> copy() override;
 	};
 }

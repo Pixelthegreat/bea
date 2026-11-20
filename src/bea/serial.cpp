@@ -217,6 +217,8 @@ namespace bea {
 			flags |= 1;
 		if (variable.flagAbstract)
 			flags |= 2;
+		if (variable.flagUseDefault)
+			flags |= 4;
 		writeU8(flags);
 
 		writeName(name);
@@ -482,6 +484,8 @@ namespace bea {
 			variable.flagStatic = true;
 		if (flags & 2)
 			variable.flagAbstract = true;
+		if (flags & 4)
+			variable.flagUseDefault = true;
 
 		if (m_inClass) name = readName();
 		else name = readName();

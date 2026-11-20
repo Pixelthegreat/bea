@@ -9,6 +9,7 @@
 #include <bea/lexer.hpp>
 #include <bea/parser.hpp>
 #include <bea/optimizer/postparsesimplifier.hpp>
+#include <bea/optimizer/implicitexpander.hpp>
 #include <bea/analyzer/globalresolver.hpp>
 #include <bea/analyzer/localresolver.hpp>
 #include <bea/analyzer/documenter.hpp>
@@ -567,6 +568,15 @@ namespace bea {
 
 			docStream.close();
 		}
+
+		/* Optimization passes */
+		//std::cout << "== BEFORE ==\n" << *source.node << std::endl;
+
+		ImplicitExpander implicitExpander(*source.context);
+		BEA_OK(None, implicitExpander.visit(*source.node));
+
+		//std::cout << "== AFTER ==\n" << *source.node << "\n" << std::endl;
+
 		return Result<None>();
 	}
 
