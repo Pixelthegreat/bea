@@ -177,6 +177,9 @@ namespace bea {
 			dynamic_cast<IndexedAccessNode *>(
 				node.m_leftNode.get()
 			);
+		ObjectImplementation *operationImpl = nullptr;
+		if (indexNode) operationImpl =
+			indexNode->m_atom.operationImpl;
 
 		node.m_leftNode = getReplacement(
 			std::move(node.m_leftNode),
@@ -226,25 +229,6 @@ namespace bea {
 			/* TODO: Find a better way to do this */
 			*(std::string *)&node.m_operation = s_assignOperations[0];
 
-			/* result.value */
-			if (indexNode) {
-
-				CallNode *callNode =
-					static_cast<CallNode *>(
-						leftNode.get()
-					);
-
-				auto memberNode = std::make_unique<NamedAccessNode>(
-					std::move(leftNode),
-					"value"
-				);
-				memberNode->m_atom.type = std::make_unique<TypeID>(
-					*callNode->m_atom.type->
-					generics[0].substitutedType
-				);
-				leftNode = std::move(memberNode);
-			}
-
 			/* Create binary operation */
 			auto binopNode = std::make_unique<BinaryOperationNode>(
 				*operation,
@@ -276,7 +260,9 @@ namespace bea {
 				callNode->m_node.get()
 			);
 		memberNode->m_name = "set";
-		callNode->m_atom.variable++;
+		callNode->m_atom.variable =
+			&operationImpl->type->type->
+			object.publicMembers.data()[1].second;
 
 		callNode->m_argumentNodes.emplace_back(
 			std::move(node.m_rightNode)

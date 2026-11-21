@@ -32,7 +32,7 @@ pub struct Result<T> {
 	 */
 	pub error: Error
 	/*
-	 * @brief okay Indicates if the result is a success
+	 * @brief Indicates if the result is a success
 	 */
 	pub okay: Boolean = true
 
@@ -43,15 +43,15 @@ pub struct Result<T> {
 	/*
 	 * @brief Construct result with value
 	 *
-	 * @param T value The value
+	 * @param value T The value
 	 */
 	pub func init(value: T)!
 	/*
 	 * @brief Construct fail result with error
 	 *
-	 * @param Error error The error
+	 * @param error Error The error
 	 */
-	pub func init(error: Error) {
+	pub func init(error: Error)! {
 		this.okay = false
 	}
 }

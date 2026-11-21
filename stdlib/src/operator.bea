@@ -240,14 +240,20 @@ pub abstract class Index<K, V> {
 	/*
 	 * @brief Get value at index
 	 *
+	 * @desc This function should make use of\
+	 * assertions for bounds checks.
+	 *
 	 * @param index K The index of the value
 	 *
-	 * @returns Result<V>
+	 * @returns V
 	 */
-	pub abstract func get(index: K) -> Result<V>
+	pub abstract func get(index: K) -> V
 
 	/*
 	 * @brief Set value at index
+	 *
+	 * @desc This function should make use of\
+	 * assertions for bounds checks.
 	 *
 	 * @param index K The index of the value
 	 * @param value V The value to set

@@ -506,9 +506,9 @@
 			},
 			"functions": {
 				"get#0": {
-					"signature": "abstract func get(index: K) -> std::result::Result<V>",
+					"signature": "abstract func get(index: K) -> V",
 					"briefDescription": "Get value at index",
-					"description": "",
+					"description": "This function should make use of assertions for bounds checks.",
 					"genericParameters": {
 					},
 					"parameters": {
@@ -518,14 +518,14 @@
 						}
 					},
 					"returns": {
-						"type": "Result<V>",
+						"type": "V",
 						"description": ""
 					}
 				},
 				"set#0": {
 					"signature": "abstract func set(index: K, value: V) -> V",
 					"briefDescription": "Set value at index",
-					"description": "",
+					"description": "This function should make use of assertions for bounds checks.",
 					"genericParameters": {
 					},
 					"parameters": {

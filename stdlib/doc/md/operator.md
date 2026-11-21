@@ -4,8 +4,13 @@
 - [Classes](#classes)
   - [`std::operator::Add`](#stdoperatoradd)
     - [`add` \(0\)](#stdoperatoraddadd-0)
+    - [`preIncrement` \(0\)](#stdoperatoraddpreincrement-0)
+    - [`postIncrement` \(0\)](#stdoperatoraddpostincrement-0)
+    - [`preDecrement` \(0\)](#stdoperatoraddpredecrement-0)
+    - [`postDecrement` \(0\)](#stdoperatoraddpostdecrement-0)
   - [`std::operator::Subtract`](#stdoperatorsubtract)
     - [`subtract` \(0\)](#stdoperatorsubtractsubtract-0)
+    - [`negate` \(0\)](#stdoperatorsubtractnegate-0)
   - [`std::operator::Multiply`](#stdoperatormultiply)
     - [`multiply` \(0\)](#stdoperatormultiplymultiply-0)
   - [`std::operator::Divide`](#stdoperatordivide)
@@ -18,6 +23,7 @@
     - [`bitwiseAnd` \(0\)](#stdoperatorbitwiseandbitwiseand-0)
   - [`std::operator::BitwiseXor`](#stdoperatorbitwisexor)
     - [`bitwiseXor` \(0\)](#stdoperatorbitwisexorbitwisexor-0)
+    - [`bitwiseNot` \(0\)](#stdoperatorbitwisexorbitwisenot-0)
   - [`std::operator::BitwiseLeftShift`](#stdoperatorbitwiseleftshift)
     - [`bitwiseLeftShift` \(0\)](#stdoperatorbitwiseleftshiftbitwiseleftshift-0)
   - [`std::operator::BitwiseRightShift`](#stdoperatorbitwiserightshift)
@@ -58,6 +64,58 @@ _Returns:_
 
 ---
 
+#### `std::operator::Add::preIncrement` \(0\)
+```bea
+abstract func preIncrement() -> std::operator::Add
+```
+Brief: Prefix increment value
+
+_Parameters:_
+
+_Returns:_
+- `Add`
+
+---
+
+#### `std::operator::Add::postIncrement` \(0\)
+```bea
+abstract func postIncrement() -> std::operator::Add
+```
+Brief: Postfix increment value
+
+_Parameters:_
+
+_Returns:_
+- `Add`
+
+---
+
+#### `std::operator::Add::preDecrement` \(0\)
+```bea
+abstract func preDecrement() -> std::operator::Add
+```
+Brief: Prefix decrement value
+
+_Parameters:_
+
+_Returns:_
+- `Add`
+
+---
+
+#### `std::operator::Add::postDecrement` \(0\)
+```bea
+abstract func postDecrement() -> std::operator::Add
+```
+Brief: Postfix decrement value
+
+_Parameters:_
+
+_Returns:_
+- `Add`
+
+---
+
 ### `std::operator::Subtract`
 ```bea
 abstract class std::operator::Subtract
@@ -74,6 +132,19 @@ Brief: Subtract values
 
 _Parameters:_
 - `other: Subtract`: Value to subtract from self
+
+_Returns:_
+- `Subtract`
+
+---
+
+#### `std::operator::Subtract::negate` \(0\)
+```bea
+abstract func negate() -> std::operator::Subtract
+```
+Brief: Negate value
+
+_Parameters:_
 
 _Returns:_
 - `Subtract`
@@ -212,6 +283,19 @@ _Returns:_
 
 ---
 
+#### `std::operator::BitwiseXor::bitwiseNot` \(0\)
+```bea
+abstract func bitwiseNot() -> std::operator::BitwiseXor
+```
+Brief: Bitwise not value (Equivalent to xor'ing by all ones)
+
+_Parameters:_
+
+_Returns:_
+- `BitwiseXor`
+
+---
+
 ### `std::operator::BitwiseLeftShift`
 ```bea
 abstract class std::operator::BitwiseLeftShift
@@ -332,12 +416,11 @@ Brief: Truthiness operator
 
 #### `std::operator::True::isTrue` \(0\)
 ```bea
-abstract func isTrue(other: std::operator::True) -> Boolean
+abstract func isTrue() -> Boolean
 ```
 Brief: Get truthiness of value
 
 _Parameters:_
-- `other: True`: Value to get truthiness of
 
 _Returns:_
 - `Boolean`
@@ -358,15 +441,17 @@ _Generic parameters:_
 
 #### `std::operator::Index::get` \(0\)
 ```bea
-abstract func get(index: K) -> std::result::Result<V>
+abstract func get(index: K) -> V
 ```
 Brief: Get value at index
+
+This function should make use of assertions for bounds checks.
 
 _Parameters:_
 - `index: K`: The index of the value
 
 _Returns:_
-- `Result<V>`
+- `V`
 
 ---
 
@@ -375,6 +460,8 @@ _Returns:_
 abstract func set(index: K, value: V) -> V
 ```
 Brief: Set value at index
+
+This function should make use of assertions for bounds checks.
 
 _Parameters:_
 - `index: K`: The index of the value

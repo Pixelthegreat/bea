@@ -971,22 +971,12 @@ checkRightType:
 					*node.m_indexNode->m_atom.type
 				)
 			);
-
-		/* Create Result<T> type */
 		node.m_atom.type = registerTypeID(
-				std::make_unique<TypeID>(
-					"std::result::Result"
-				)
-			);
-		node.m_atom.type->generics.resize(1);
-
-		node.m_atom.type->generics[0].type = GenericType::Type;
-
-		node.m_atom.type->generics[0].substitutedType =
-			registerTypeID(std::make_unique<TypeID>(
+			std::make_unique<TypeID>(
 				*node.m_atom.operationImpl->
 				type->generics[1].substitutedType
-			));
+			)
+		);
 		return Result<None>();
 	}
 
@@ -1078,11 +1068,12 @@ checkRightType:
 				*node.m_iterableNode->m_atom.type
 			)
 		);
-		VariableInfo& iterVariable = frame.m_values[node.m_name];
-		iterVariable.type = registerTypeID(
+		VariableInfo& itemVariable = frame.m_values[node.m_name];
+		itemVariable.type = registerTypeID(
 			std::make_unique<TypeID>(*typeID)
 		);
-		node.m_atom.type = std::make_unique<TypeID>(*iterVariable.type);
+		node.m_atom.type = std::make_unique<TypeID>(*itemVariable.type);
+		node.m_atom.scopeID = m_context.m_frames.size()-1;
 
 		/* Visit body */
 		m_noPushBlockFrame = true;

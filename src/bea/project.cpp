@@ -9,7 +9,9 @@
 #include <bea/lexer.hpp>
 #include <bea/parser.hpp>
 #include <bea/optimizer/postparsesimplifier.hpp>
+#include <bea/optimizer/statementsimplifier.hpp>
 #include <bea/optimizer/implicitexpander.hpp>
+#include <bea/optimizer/constantfolder.hpp>
 #include <bea/analyzer/globalresolver.hpp>
 #include <bea/analyzer/localresolver.hpp>
 #include <bea/analyzer/documenter.hpp>
@@ -437,7 +439,7 @@ namespace bea {
 				source->moduleName = std::move(moduleName);
 				source->recompile = true;
 
-				if (source->recompile)
+				if (source->recompile && m_name != "std")
 					m_rebuild = true;
 
 				m_sources.emplace_back(std::move(source));
@@ -570,12 +572,18 @@ namespace bea {
 		}
 
 		/* Optimization passes */
-		//std::cout << "== BEFORE ==\n" << *source.node << std::endl;
+		std::cout << "== BEFORE ==\n" << *source.node << std::endl;
+
+		StatementSimplifier statementSimplifier(*source.context);
+		BEA_OK(None, statementSimplifier.visit(*source.node));
 
 		ImplicitExpander implicitExpander(*source.context);
 		BEA_OK(None, implicitExpander.visit(*source.node));
 
-		//std::cout << "== AFTER ==\n" << *source.node << "\n" << std::endl;
+		ConstantFolder constantFolder(*source.context);
+		BEA_OK(None, constantFolder.visit(*source.node));
+
+		std::cout << "== AFTER ==\n" << *source.node << "\n" << std::endl;
 
 		return Result<None>();
 	}

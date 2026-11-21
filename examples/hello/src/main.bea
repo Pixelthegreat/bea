@@ -1,4 +1,21 @@
 module main
 
-pub func main() {
+pub func main() -> Result<None> {
+
+	1 + 2 * 3
+	1 + 6
+	7
+	-1
+	let x: Float = 3
+	let y: Int = 3.0
+
+	if (2500) {
+	} elif (not 1) {
+	}
+
+	for i in 0..10 {
+		i + 1
+	}
+	let result = new Result<Int>()
+	result?
 }
