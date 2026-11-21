@@ -160,7 +160,8 @@ namespace bea {
 			BEA_OK(None, visit(*std::get<0>(pair)));
 			BEA_OK(None, visit(*std::get<1>(pair)));
 		}
-		BEA_OK(None, visit(*node.m_elseClauseNode));
+		if (node.m_elseClauseNode)
+			BEA_OK(None, visit(*node.m_elseClauseNode));
 
 		return Result<None>();
 	}
@@ -251,8 +252,10 @@ namespace bea {
 	/* Visit "let" statement */
 	Result<None> NodeAnalyzerVisitor::visitLetStatement(LetStatementNode& node) {
 
-		BEA_OK(None, visit(*node.m_typeNode));
-		BEA_OK(None, visit(*node.m_valueNode));
+		if (node.m_typeNode)
+			BEA_OK(None, visit(*node.m_typeNode));
+		if (node.m_valueNode)
+			BEA_OK(None, visit(*node.m_valueNode));
 
 		return Result<None>();
 	}
@@ -281,7 +284,8 @@ namespace bea {
 	Result<None> NodeAnalyzerVisitor::visitClassFieldStatement(ClassFieldStatementNode& node) {
 
 		BEA_OK(None, visit(*node.m_typeNode));
-		BEA_OK(None, visit(*node.m_valueNode));
+		if (node.m_valueNode)
+			BEA_OK(None, visit(*node.m_valueNode));
 
 		return Result<None>();
 	}

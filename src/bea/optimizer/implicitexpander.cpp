@@ -633,30 +633,34 @@ checkRightType:
 	/* Visit "return" statement */
 	Result<None> ImplicitExpander::visitReturnStatement(ReturnStatementNode& node) {
 
-		Node& rNode = *node.m_node;
+		if (node.m_node) {
 
-		node.m_node = BEA_OK(None, makeExplicitCast(
-			*node.m_atom.type,
-			getReplacement(
-				std::move(node.m_node),
-				BEA_OK(None, visit(rNode))
-			)
-		));
+			Node& rNode = *node.m_node;
+			node.m_node = BEA_OK(None, makeExplicitCast(
+				*node.m_atom.type,
+				getReplacement(
+					std::move(node.m_node),
+					BEA_OK(None, visit(rNode))
+				)
+			));
+		}
 		return Mode::Nothing;
 	}
 
 	/* Visit "let" statement */
 	Result<None> ImplicitExpander::visitLetStatement(LetStatementNode& node) {
 
-		Node& rTypeNode = *node.m_typeNode;
-		Node& rValueNode = *node.m_valueNode;
+		if (node.m_typeNode) {
 
-		if (node.m_typeNode)
+			Node& rTypeNode = *node.m_typeNode;
 			node.m_typeNode = getReplacement(
 				std::move(node.m_typeNode),
 				BEA_OK(None, visit(rTypeNode))
 			);
-		if (node.m_valueNode)
+		}
+		if (node.m_valueNode) {
+
+			Node& rValueNode = *node.m_valueNode;
 			node.m_valueNode = BEA_OK(None, makeExplicitCast(
 				*node.m_atom.type,
 				getReplacement(
@@ -664,6 +668,7 @@ checkRightType:
 					BEA_OK(None, visit(rValueNode))
 				)
 			));
+		}
 		return Mode::Nothing;
 	}
 

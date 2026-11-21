@@ -238,12 +238,15 @@ namespace bea {
 				),
 			};
 		}
-		Node& elseClauseNode = *node.m_elseClauseNode;
+		if (node.m_elseClauseNode) {
 
-		node.m_elseClauseNode = getReplacement(
-			std::move(node.m_elseClauseNode),
-			BEA_OK(None, visit(elseClauseNode))
-		);
+			Node& elseClauseNode = *node.m_elseClauseNode;
+
+			node.m_elseClauseNode = getReplacement(
+				std::move(node.m_elseClauseNode),
+				BEA_OK(None, visit(elseClauseNode))
+			);
+		}
 		return Mode::Nothing;
 	}
 
@@ -335,6 +338,14 @@ namespace bea {
 	/* Visit "return" statement */
 	Result<None> NodeOptimizerVisitor::visitReturnStatement(ReturnStatementNode& node) {
 
+		if (node.m_node) {
+
+			Node& rNode = *node.m_node;
+			node.m_node = getReplacement(
+				std::move(node.m_node),
+				BEA_OK(None, visit(rNode))
+			);
+		}
 		return Mode::Nothing;
 	}
 
@@ -377,17 +388,22 @@ namespace bea {
 	/* Visit "let" statement */
 	Result<None> NodeOptimizerVisitor::visitLetStatement(LetStatementNode& node) {
 
-		Node& typeNode = *node.m_typeNode;
-		Node& valueNode = *node.m_valueNode;
+		if (node.m_typeNode) {
 
-		node.m_typeNode = getReplacement(
-			std::move(node.m_typeNode),
-			BEA_OK(None, visit(typeNode))
-		);
-		node.m_valueNode = getReplacement(
-			std::move(node.m_valueNode),
-			BEA_OK(None, visit(valueNode))
-		);
+			Node& typeNode = *node.m_typeNode;
+			node.m_typeNode = getReplacement(
+				std::move(node.m_typeNode),
+				BEA_OK(None, visit(typeNode))
+			);
+		}
+		if (node.m_valueNode) {
+
+			Node& valueNode = *node.m_valueNode;
+			node.m_valueNode = getReplacement(
+				std::move(node.m_valueNode),
+				BEA_OK(None, visit(valueNode))
+			);
+		}
 		return Mode::Nothing;
 	}
 
@@ -431,16 +447,18 @@ namespace bea {
 	Result<None> NodeOptimizerVisitor::visitClassFieldStatement(ClassFieldStatementNode& node) {
 
 		Node& typeNode = *node.m_typeNode;
-		Node& valueNode = *node.m_valueNode;
-
 		node.m_typeNode = getReplacement(
 			std::move(node.m_typeNode),
 			BEA_OK(None, visit(typeNode))
 		);
-		node.m_valueNode = getReplacement(
-			std::move(node.m_valueNode),
-			BEA_OK(None, visit(valueNode))
-		);
+		if (node.m_valueNode) {
+
+			Node& valueNode = *node.m_valueNode;
+			node.m_valueNode = getReplacement(
+				std::move(node.m_valueNode),
+				BEA_OK(None, visit(valueNode))
+			);
+		}
 		return Mode::Nothing;
 	}
 
