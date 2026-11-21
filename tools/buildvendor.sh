@@ -11,3 +11,15 @@ cd build
 cmake ..
 make
 cd ../../..
+
+cd vendor/qbe
+make
+cd ../..
+
+cd vendor/slkwvr
+make
+cd ../..
+
+mkdir -pv vendor/bin
+cp -v vendor/qbe/qbe vendor/bin
+cp -v vendor/slkwvr/slkwvr vendor/bin

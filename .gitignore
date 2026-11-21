@@ -2,6 +2,7 @@
 /obj
 /lib
 /bin
+/vendor/bin
 /*.make
 /Makefile
 build/

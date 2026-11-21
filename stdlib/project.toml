@@ -1,6 +1,6 @@
 [project]
 name="std"
-kind="lib"
+type="lib"
 
 [project.options]
 noStdlib=true

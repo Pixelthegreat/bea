@@ -80,6 +80,7 @@ namespace bea {
 			const char *arg = argv[i];
 			if (arg[0] == '-') {
 
+				/* Target */
 				if (!std::strcmp(arg, "-T") || !std::strcmp(arg, "--target")) {
 
 					const char *target = argv[++i];
@@ -97,6 +98,12 @@ namespace bea {
 							progname, target
 						));
 				}
+
+				/* Verbose command output */
+				else if (!std::strcmp(arg, "-v") || !std::strcmp(arg, "--verbose"))
+					Project::s_verbose = true;
+
+				/* Error */
 				else
 					return Result<None>(std::format(
 						"{}: Unrecognized option '{}'",

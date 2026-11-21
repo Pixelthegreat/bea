@@ -55,7 +55,7 @@
 				},
 				"okay": {
 					"type": "Boolean",
-					"briefDescription": "okay Indicates if the result is a success",
+					"briefDescription": "Indicates if the result is a success",
 					"description": ""
 				}
 			},
@@ -80,8 +80,8 @@
 					"genericParameters": {
 					},
 					"parameters": {
-						"T": {
-							"type": "value",
+						"value": {
+							"type": "T",
 							"description": "The value"
 						}
 					},
@@ -97,8 +97,8 @@
 					"genericParameters": {
 					},
 					"parameters": {
-						"Error": {
-							"type": "error",
+						"error": {
+							"type": "Error",
 							"description": "The error"
 						}
 					},

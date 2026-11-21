@@ -4,3 +4,9 @@
 [submodule "vendor/reproc"]
 	path = vendor/reproc
 	url = https://github.com/daandemeyer/reproc
+[submodule "vendor/qbe"]
+	path = vendor/qbe
+	url = git://c9x.me/qbe.git
+[submodule "vendor/slkwvr"]
+	path = vendor/slkwvr
+	url = https://github.com/Pixelthegreat/slkwvr

@@ -3,8 +3,8 @@
 #include <filesystem>
 #include <fstream>
 #include <tomlc17.h>
-#include <reproc/run.h>
 #include <bea/core.hpp>
+#include <bea/process.hpp>
 #include <bea/hash.hpp>
 #include <bea/lexer.hpp>
 #include <bea/parser.hpp>
@@ -15,12 +15,14 @@
 #include <bea/analyzer/globalresolver.hpp>
 #include <bea/analyzer/localresolver.hpp>
 #include <bea/analyzer/documenter.hpp>
+#include <bea/analyzer/compiler.hpp>
 #include <bea/project.hpp>
 
 namespace bea {
 
 	std::string Project::s_defaultURL = "";
 	std::string Project::s_globalPath;
+	bool Project::s_verbose = false;
 
 	std::vector<std::unique_ptr<Project>> Project::s_projects;
 
@@ -113,11 +115,30 @@ namespace bea {
 				source->index, stages * m_sources.size(), 40,
 				source->shortPath
 			);
-			BEA_OK(None, buildSourceStage1(*source));
+			if (source->kind == SourceKind::Bea)
+				BEA_OK(None, buildSourceStage1(*source));
+
+			/* Compile C file */
+			else if (source->kind == SourceKind::C) {
+
+				std::string objPath = std::format(
+					"{}/output.o",
+					source->outputPath
+				);
+				BEA_OK(None, runProcess({
+					"cc", "-c", "-o",
+					objPath.c_str(),
+					source->path.c_str()
+				}, s_verbose));
+				if (s_verbose) std::cout << std::endl;
+			}
 		}
 
 		/* Second stage: Analysis and compilation */
 		for (std::unique_ptr<Source>& source: m_sources) {
+
+			if (source->kind != SourceKind::Bea)
+				continue;
 
 			printProgressBar(
 				source->index + m_sources.size(),
@@ -128,14 +149,81 @@ namespace bea {
 		}
 
 		/* Link project */
+		const char *prefix = "";
+		const char *extension = "";
+
+		if (m_type == Type::Library) {
+
+			prefix = "lib";
+			extension = ".a";
+		}
 		std::string buildOutput = std::format(
-			"build/{}/{}", targetToString(m_target), m_name
+			"{}/build/{}/{}{}{}",
+			m_path,
+			targetToString(m_target),
+			prefix,
+			m_name,
+			extension
 		);
 		printProgressBar(
 			40, 40, 40,
 			buildOutput
 		);
+		std::vector<std::string> inputs{};
 
+		/* Add objects to list */
+		for (std::unique_ptr<Source>& source: m_sources)
+			inputs.emplace_back(std::format(
+				"{}/output.o",
+				source->outputPath
+			));
+
+		/* Add libraries to list */
+		if (m_type == Type::Executable) {
+
+			for (std::unique_ptr<Project>& project: s_projects) {
+
+				if (project.get() == this ||
+				    project->m_type != Type::Library)
+					continue;
+				inputs.emplace_back(std::format(
+					"{}/build/{}/lib{}.a",
+					project->m_path,
+					targetToString(project->m_target),
+					project->m_name
+				));
+			}
+		}
+
+		/* Run linker */
+		if (m_type == Type::Executable) {
+
+			std::vector<const char *> ccldArguments = {
+				"cc", "-o", buildOutput.c_str(),
+			};
+			for (const std::string& input: inputs)
+				ccldArguments.push_back(input.c_str());
+
+			BEA_OK(None, runProcess(
+				std::move(ccldArguments),
+				s_verbose
+			));
+		}
+
+		/* Run archiver */
+		else if (m_type == Type::Library) {
+
+			std::vector<const char *> arArguments = {
+				"ar", "cr", buildOutput.c_str()
+			};
+			for (const std::string& input: inputs)
+				arArguments.push_back(input.c_str());
+
+			BEA_OK(None, runProcess(
+				std::move(arArguments),
+				s_verbose
+			));
+		}
 		return Result<None>();
 	}
 
@@ -160,19 +248,9 @@ namespace bea {
 			m_name
 		);
 
-		const char *argv[] = {
+		BEA_OK(None, runProcess({
 			path.c_str(),
-			NULL,
-		};
-		int code = reproc_run(argv, (reproc_options){0});
-
-		if (code < 0) return Result<None>(std::format(
-			"Can't run '{}': {}", m_name,
-			reproc_strerror(code)
-		));
-		else if (code) return Result<None>(std::format(
-			"Execution failed (code %d)", code
-		));
+		}, s_verbose));
 		return Result<None>();
 	}
 
@@ -379,14 +457,13 @@ namespace bea {
 			"--recursive",
 			NULL,
 		};
-		int code = reproc_run(argv, (reproc_options){0});
-
-		if (code < 0) return Result<None>(std::format(
-			"Can't run 'git': {}", reproc_strerror(code)
-		));
-		else if (code) return Result<None>(std::format(
-			"Can't fetch '{}'", m_url
-		));
+		BEA_OK(None, runProcess({
+			"git", "clone",
+			m_url.c_str(),
+			m_path.c_str(),
+			"--quiet",
+			"--recursive",
+		}));
 		return Result<None>();
 	}
 
@@ -399,51 +476,61 @@ namespace bea {
 			std::filesystem::path entryPath = entry.path();
 
 			/* Search another directory */
-			if (entry.is_directory())
+			if (entry.is_directory()) {
+
 				BEA_OK(None, locateSources(std::format(
 					"{}/{}", path,
 					entryPath.filename().string()
 				)));
+				continue;
+			}
+			SourceKind kind;
+
+			std::string extension = entryPath.extension().string();
+			if (extension == ".bea")
+				kind = SourceKind::Bea;
+			else if (extension == ".c")
+				kind = SourceKind::C;
+			else
+				continue;
 
 			/* Source file */
-			else if (entryPath.extension().string() == ".bea") {
+			std::string shortPath = std::format(
+				"{}/{}", path, entryPath.filename().string()
+			);
+			Name moduleName = {
+				m_name,
+				entryPath.stem()
+			};
+			Hash hash(
+				(const std::uint8_t *)shortPath.c_str(),
+				shortPath.length()
+			);
 
-				std::string shortPath = std::format(
-					"{}/{}", path, entryPath.filename().string()
-				);
-				Name moduleName = {
-					m_name,
-					entryPath.stem()
-				};
-				Hash hash(
-					(const std::uint8_t *)shortPath.c_str(),
-					shortPath.length()
-				);
+			/* Determine paths */
+			std::string entryPathString = entryPath.string();
+			std::string outputPath = std::format(
+				"{}/build/{}/cache/{}",
+				m_path, targetToString(m_target),
+				hash.toString()
+			);
+			std::filesystem::create_directories(outputPath);
 
-				/* Determine paths */
-				std::string entryPathString = entryPath.string();
-				std::string outputPath = std::format(
-					"{}/build/{}/cache/{}",
-					m_path, targetToString(m_target),
-					hash.toString()
-				);
-				std::filesystem::create_directories(outputPath);
+			/* Add source */
+			std::unique_ptr<Source> source =
+				std::make_unique<Source>();
 
-				/* Add source */
-				std::unique_ptr<Source> source =
-					std::make_unique<Source>();
+			source->kind = kind;
+			source->path = std::move(entryPathString);
+			source->outputPath = std::move(outputPath);
+			source->shortPath = std::move(shortPath);
+			source->moduleName = std::move(moduleName);
+			source->recompile = true;
 
-				source->path = std::move(entryPathString);
-				source->outputPath = std::move(outputPath);
-				source->shortPath = std::move(shortPath);
-				source->moduleName = std::move(moduleName);
-				source->recompile = true;
+			if (source->recompile && m_name != "std")
+				m_rebuild = true;
 
-				if (source->recompile && m_name != "std")
-					m_rebuild = true;
-
-				m_sources.emplace_back(std::move(source));
-			}
+			m_sources.emplace_back(std::move(source));
 		}
 		return Result<None>();
 	}
@@ -572,8 +659,6 @@ namespace bea {
 		}
 
 		/* Optimization passes */
-		std::cout << "== BEFORE ==\n" << *source.node << std::endl;
-
 		StatementSimplifier statementSimplifier(*source.context);
 		BEA_OK(None, statementSimplifier.visit(*source.node));
 
@@ -583,7 +668,67 @@ namespace bea {
 		ConstantFolder constantFolder(*source.context);
 		BEA_OK(None, constantFolder.visit(*source.node));
 
-		std::cout << "== AFTER ==\n" << *source.node << "\n" << std::endl;
+		/* Compile to slkwvr */
+		std::string swPath = std::format(
+			"{}/output.sw", source.outputPath
+		);
+		std::ofstream swStream(swPath);
+		if (!swStream.is_open())
+			return Result<None>(
+				std::format(
+					"Can't open file '{}': {}",
+					swPath, std::strerror(errno)
+				)
+			);
+		Compiler compiler(*source.context, swStream);
+		BEA_OK(None, compiler.analyze(*source.node));
+
+		swStream.close();
+
+		/* Slkwvr to QBE */
+		const char *beaPath = std::getenv("BEA_PATH");
+
+		std::string swBinPath = std::format(
+			"{}/vendor/bin/slkwvr",
+			beaPath
+		);
+		std::string qbeBinPath = std::format(
+			"{}/vendor/bin/qbe",
+			beaPath
+		);
+		std::string qbePath = std::format(
+			"{}/output.qbe",
+			source.outputPath
+		);
+		BEA_OK(None, runProcess({
+			swBinPath.c_str(),
+			swPath.c_str(),
+			qbePath.c_str()
+		}, s_verbose));
+
+		/* QBE to assembly */
+		std::string asmPath = std::format(
+			"{}/output.s",
+			source.outputPath
+		);
+		BEA_OK(None, runProcess({
+			qbeBinPath.c_str(),
+			"-o",
+			asmPath.c_str(),
+			qbePath.c_str()
+		}, s_verbose));
+
+		/* Assembly to object */
+		std::string objPath = std::format(
+			"{}/output.o",
+			source.outputPath
+		);
+		BEA_OK(None, runProcess({
+			"cc", "-c", "-o",
+			objPath.c_str(),
+			asmPath.c_str()
+		}, s_verbose));
+		if (s_verbose) std::cout << std::endl;
 
 		return Result<None>();
 	}

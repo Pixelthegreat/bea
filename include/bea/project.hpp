@@ -44,9 +44,21 @@ namespace bea {
 		};
 
 		/*
+		 * Project source kind
+		 */
+		enum class SourceKind {
+			Bea = 0,
+			C,
+
+			Count,
+		};
+
+		/*
 		 * Project source
 		 */
 		struct Source {
+			SourceKind kind;
+
 			std::size_t index = 0;
 			std::string path{};
 			std::string outputPath{};
@@ -76,6 +88,7 @@ namespace bea {
 
 		static std::string s_defaultURL;
 		static std::string s_globalPath;
+		static bool s_verbose;
 
 		const std::string& getPath() const { return m_path; }
 		const std::string& getURL() const { return m_url; }
