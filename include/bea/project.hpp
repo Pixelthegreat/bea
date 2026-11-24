@@ -89,6 +89,7 @@ namespace bea {
 		static std::string s_defaultURL;
 		static std::string s_globalPath;
 		static bool s_verbose;
+		static bool s_buildAll;
 
 		const std::string& getPath() const { return m_path; }
 		const std::string& getURL() const { return m_url; }
@@ -105,6 +106,11 @@ namespace bea {
 			const std::string& url = s_defaultURL,
 			Target target = Target::Debug
 		);
+
+		/*
+		 * Build all projects
+		 */
+		static Result<None> buildAll();
 
 		/*
 		 * Build project
@@ -183,15 +189,27 @@ namespace bea {
 		/*
 		 * Read source dependencies
 		 */
-		Result<None> readSourceDependencies(Source& source);
+		Result<None> readSourceDependencies(
+			Source& source,
+			std::ostream& depStream
+		);
 
 		/*
 		 * Get source dependency for name
 		 */
 		Result<SourceDependency *> getSourceDependency(
 			Source& source,
+			std::ostream& depStream,
 			const Name& name,
 			const Position& position
+		);
+
+		/*
+		 * Check if file is newer than other
+		 */
+		static bool fileNewerThan(
+			const std::string& a,
+			const std::string& b
 		);
 	};
 }

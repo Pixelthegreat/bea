@@ -34,8 +34,11 @@ extern Object *__std__assign(Object *object, size_t index, Class *class) {
 /* cast object */
 extern Object *__std__cast(Object *object, uint32_t id) {
 
+	if (object->class->interfaces[0]->id == id)
+		return object;
+
 	object = object->root;
-	for (size_t i = 0; i < object->class->count; i++) {
+	for (size_t i = 1; i < object->class->count; i++) {
 
 		Interface *interface = object->class->interfaces[i];
 		if (interface->id == id)

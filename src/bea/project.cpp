@@ -23,6 +23,7 @@ namespace bea {
 	std::string Project::s_defaultURL = "";
 	std::string Project::s_globalPath;
 	bool Project::s_verbose = false;
+	bool Project::s_buildAll = false;
 
 	std::vector<std::unique_ptr<Project>> Project::s_projects;
 
@@ -65,9 +66,15 @@ namespace bea {
 		if (s_projects.empty())
 			s_globalPath = path;
 
-		s_projects.emplace_back(std::make_unique<Project>(path, url, target));
-		Project& project = *s_projects[s_projects.size()-1];
+		s_projects.insert(
+			s_projects.begin(),
+			std::make_unique<Project>(
+				path, url, target
+			)
+		);
+		Project& project = *s_projects[0];
 
+		/* Load project information */
 		if (!std::filesystem::exists(path)) {
 
 			if (!url.empty()) BEA_OK(Project *, project.fetch());
@@ -88,7 +95,21 @@ namespace bea {
 		for (std::size_t i = 0; i < project.m_sources.size(); i++)
 			project.m_sources[i]->index = i;
 
+		/* Check dependencies */
+		for (Project *dependency: project.m_dependencies) {
+
+			if (dependency->m_rebuild)
+				project.m_rebuild = true;
+		}
 		return Result<Project *>(&project);
+	}
+
+	/* Build all projects */
+	Result<None> Project::buildAll() {
+
+		for (std::unique_ptr<Project>& project: s_projects)
+			BEA_OK(None, project->build());
+		return Result<None>();
 	}
 
 	/* Build project */
@@ -96,10 +117,6 @@ namespace bea {
 
 		if (!m_rebuild) return Result<None>();
 		m_rebuild = false;
-
-		/* Build dependencies */
-		for (Project *project: m_dependencies)
-			BEA_OK(None, project->build());
 
 		std::cout <<
 			"Building " << m_name <<
@@ -674,6 +691,52 @@ namespace bea {
 			);
 			std::filesystem::create_directories(outputPath);
 
+			/* Determine if source should be recompiled */
+			bool recompile = false;
+
+			std::string objPath = std::format(
+				"{}/output.o", outputPath
+			);
+			if (s_buildAll)
+				recompile = true;
+			else if (fileNewerThan(entryPathString, objPath))
+				recompile = true;
+			else {
+				/* Open dependency list */
+				std::ifstream depStream(std::format(
+					"{}/dep.list", outputPath
+				), std::ios::binary);
+
+				std::vector<char> stringData;
+				stringData.resize(1024);
+
+				if (depStream.is_open()) {
+					while (!depStream.eof()) {
+
+						/* Read line */
+						depStream.getline(
+							stringData.data(),
+							stringData.capacity()
+						);
+						std::size_t len = std::strlen(
+							stringData.data()
+						);
+						if (len && stringData[len-1] == '\n')
+							stringData[--len] = 0;
+						if (!len) continue;
+
+						/* Check dependency */
+						std::string path(stringData.data());
+						if (fileNewerThan(path, objPath)) {
+
+							recompile = true;
+							break;
+						}
+					}
+					depStream.close();
+				}
+			}
+
 			/* Add source */
 			std::unique_ptr<Source> source =
 				std::make_unique<Source>();
@@ -683,10 +746,9 @@ namespace bea {
 			source->outputPath = std::move(outputPath);
 			source->shortPath = std::move(shortPath);
 			source->moduleName = std::move(moduleName);
-			source->recompile = true;
+			source->recompile = recompile;
 
-			if (source->recompile)
-				m_rebuild = true;
+			if (recompile) m_rebuild = true;
 
 			m_sources.emplace_back(std::move(source));
 		}
@@ -752,10 +814,24 @@ namespace bea {
 		if (!source.recompile)
 			return Result<None>();
 
+		/* Resolve dependencies */
+		std::string depPath = std::format(
+			"{}/dep.list", source.outputPath
+		);
+		std::ofstream depStream(depPath, std::ios::binary);
+		if (!depStream.is_open())
+			return Result<None>(std::format(
+				"Can't open file '{}': {}",
+				depPath, std::strerror(errno)
+			));
+
 		source.dependencyDelta = 1;
 		while (source.dependencyDelta)
-			BEA_OK(None, readSourceDependencies(source));
+			BEA_OK(None, readSourceDependencies(source, depStream));
 
+		depStream.close();
+
+		/* Error if there is at least one unresolved reference left */
 		for (
 			const Context::Reference& reference:
 			source.context->m_externalReferences
@@ -893,8 +969,10 @@ namespace bea {
 	}
 
 	/* Read source dependencies */
-	Result<None> Project::readSourceDependencies(Source& source) {
-
+	Result<None> Project::readSourceDependencies(
+		Source& source,
+		std::ostream& depStream
+	) {
 		source.dependencyDelta = 0;
 
 		for (
@@ -913,6 +991,7 @@ namespace bea {
 				);
 			BEA_OK(None, getSourceDependency(
 				source,
+				depStream,
 				reference.name,
 				reference.position
 			));
@@ -945,6 +1024,7 @@ namespace bea {
 	/* Get source dependency for name */
 	Result<Project::SourceDependency *> Project::getSourceDependency(
 		Source& source,
+		std::ostream& depStream,
 		const Name& name,
 		const Position& position
 	) {
@@ -1030,7 +1110,27 @@ namespace bea {
 			dependency->project = project;
 			dependency->shortPath = std::move(shortPathStream.str());
 			dependency->outputPath = std::move(outputPath);
+
+			depStream <<
+				project->m_path << "/" <<
+				dependency->shortPath << ".bea\n";
 		}
 		return Result<SourceDependency *>(dependency);
+	}
+
+	/* Check if file is newer than other */
+	bool Project::fileNewerThan(
+		const std::string& a,
+		const std::string& b
+	) {
+		if (!std::filesystem::exists(b))
+			return true;
+
+		std::filesystem::file_time_type aType =
+			std::filesystem::last_write_time(a);
+		std::filesystem::file_time_type bType =
+			std::filesystem::last_write_time(b);
+
+		return aType >= bType;
 	}
 }

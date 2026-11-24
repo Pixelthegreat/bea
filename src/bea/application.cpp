@@ -37,7 +37,7 @@ namespace bea {
 
 		if (!std::strcmp(s_command, "build")) {
 
-			result = project->build();
+			result = Project::buildAll();
 
 			if (!result.okay) {
 
@@ -50,7 +50,7 @@ namespace bea {
 		}
 		else if (!std::strcmp(s_command, "run")) {
 
-			result = project->build();
+			result = Project::buildAll();
 
 			if (!result.okay) {
 
@@ -103,6 +103,10 @@ namespace bea {
 				else if (!std::strcmp(arg, "-v") || !std::strcmp(arg, "--verbose"))
 					Project::s_verbose = true;
 
+				/* Build all */
+				else if (!std::strcmp(arg, "-B") || !std::strcmp(arg, "--build-all"))
+					Project::s_buildAll = true;
+
 				/* Error */
 				else
 					return Result<None>(std::format(
@@ -138,8 +142,12 @@ namespace bea {
 		std::cout <<
 			"Usage: " << progname << " <command> ...\n"
 			"\nCommands:\n"
-			"    help               Show this help message\n"
-			"    build [directory]  Build project\n"
-			"    run [directory]    Run project\n";
+			"    help                  Show this help message\n"
+			"    build [directory]     Build project\n"
+			"    run [directory]       Run project\n"
+			"\nBuild options:\n"
+			"    -B|--build-all        Build all sources\n"
+			"    -T|--target <target>  Build target (debug or release)\n"
+			"    -v|--verbose          Print verbose command output\n";
 	}
 }
