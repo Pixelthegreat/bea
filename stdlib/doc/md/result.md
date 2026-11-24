@@ -48,7 +48,7 @@ _Generic parameters:_
 _Fields:_
 - `value: T`: The value carried by the result
 - `error: std::result::Error`: The optional error carried by the result
-- `okay: Boolean`: okay Indicates if the result is a success
+- `okay: Boolean`: Indicates if the result is a success
 
 ---
 
@@ -72,7 +72,7 @@ func init(value: T) -> std::none::None
 Brief: Construct result with value
 
 _Parameters:_
-- `T: value`: The value
+- `value: T`: The value
 
 _Returns:_
 - `std::none::None`
@@ -86,7 +86,7 @@ func init(error: std::result::Error) -> std::none::None
 Brief: Construct fail result with error
 
 _Parameters:_
-- `Error: error`: The error
+- `error: Error`: The error
 
 _Returns:_
 - `std::none::None`

@@ -1,0 +1,128 @@
+#!/usr/bin/env python3
+#
+# Author: Elliot Kohlmyer
+# Date: November 24th, 2026
+# Purpose: Bount lines of code
+#
+import os
+import argparse
+
+# constants #
+PROGNAME = 'bloc'
+
+OUTPUT_FORMAT = """Total Files: {total_files}
+Counted Files: {counted_files}
+Total lines: {total_lines}
+Code lines: {code_lines}"""
+
+# line counter #
+class LineCounter:
+    def __init__(self):
+        self.total_files = 0
+        self.counted_files = 0
+        self.total_lines = 0
+        self.code_lines = 0
+
+        self.line_chars = 0
+        self.fp = None
+        self.cc = None
+
+    # advance file #
+    def advance(self):
+        self.cc = self.fp.read(1)
+        if not self.cc: self.cc = None
+
+        if self.cc == '\n':
+            self.total_lines += 1
+            if self.line_chars: self.code_lines += 1
+            self.line_chars = 0
+
+    # count lines in files of directory #
+    def count_directory(self, dir_path):
+        for path in os.listdir(dir_path):
+            self.total_files += 1
+            path = os.path.join(dir_path, path)
+
+            if os.path.isdir(path):
+                self.count_directory(path)
+
+            elif os.path.splitext(path)[1] in ('.c', '.cpp', '.h', '.hpp', '.bea'):
+                with open(path, 'r') as fp:
+                    self.fp = fp
+                    self.advance()
+                    self.count_file_a()
+                    self.fp = None
+                    self.counted_files += 1
+
+    # count c-style file #
+    def count_file_a(self):
+        while self.cc is not None:
+
+            # whitespace #
+            if self.cc in ' \r\t\n':
+                self.advance()
+
+            # comment #
+            elif self.cc == '/':
+                self.advance()
+
+                if self.cc == '/':
+                    while self.cc is not None and self.cc != '\n':
+                        self.advance()
+
+                elif self.cc == '*':
+                    self.advance()
+
+                    while self.cc is not None:
+                        if self.cc == '*':
+                            self.advance()
+
+                            if self.cc == '/':
+                                self.advance()
+                                break
+                        else:
+                            self.advance()
+
+                else: self.line_chars += 1
+
+            # string #
+            elif self.cc in '\'"':
+                delimeter = self.cc
+                self.line_chars += 1
+
+                self.advance()
+                while self.cc is not None and self.cc != delimeter:
+                    self.line_chars += 1
+                    self.advance()
+
+                if self.cc is not None:
+                    self.line_chars += 1
+                    self.advance()
+
+            # other #
+            else:
+                self.line_chars += 1
+                self.advance()
+
+# main #
+def main():
+    parser = argparse.ArgumentParser(
+            prog=PROGNAME,
+            description='Bount lines of code'
+            )
+    parser.add_argument('directory')
+
+    args = parser.parse_args()
+    line_counter = LineCounter()
+
+    line_counter.count_directory(args.directory)
+
+    print(OUTPUT_FORMAT.format(
+        total_files=line_counter.total_files,
+        counted_files=line_counter.counted_files,
+        total_lines=line_counter.total_lines,
+        code_lines=line_counter.code_lines
+    ))
+
+if __name__ == '__main__':
+    main()

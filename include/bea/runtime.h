@@ -1,3 +1,8 @@
+/*
+ * Copyright 2026, Elliot Kohlmyer
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
 #ifndef BEA_RUNTIME_H
 #define BEA_RUNTIME_H
 

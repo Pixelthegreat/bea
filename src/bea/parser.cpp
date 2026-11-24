@@ -1,3 +1,8 @@
+/*
+ * Copyright 2026, Elliot Kohlmyer
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
 #include <format>
 #include <bea/core.hpp>
 #include <bea/parser.hpp>
@@ -53,7 +58,8 @@ namespace bea {
 	/* Parse file */
 	Parser::Result Parser::parse() {
 
-		advance();
+		advance(Skip::EndLine);
+
 		std::unique_ptr<BlockNode> node = std::make_unique<BlockNode>();
 		node->m_position = m_token->position;
 
