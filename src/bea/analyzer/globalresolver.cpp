@@ -249,7 +249,8 @@ namespace bea {
 				node.m_position,
 				"Global declaration can't have inferred type"
 			);
-		BEA_OK(None, visit(*node.m_valueNode));
+		if (node.m_valueNode)
+			BEA_OK(None, visit(*node.m_valueNode));
 
 		/* Declare variables */
 		for (const Name& name: node.m_names) {
