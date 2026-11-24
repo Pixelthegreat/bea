@@ -125,11 +125,18 @@ namespace bea {
 					"{}/output.o",
 					source->outputPath
 				);
-				BEA_OK(None, runProcess({
+				std::vector<const char *> ccArguments = {
 					"cc", "-c", "-o",
 					objPath.c_str(),
 					source->path.c_str()
-				}, s_verbose));
+				};
+				for (const std::string& argument: m_options.cflags)
+					ccArguments.push_back(argument.c_str());
+
+				BEA_OK(None, runProcess(
+					std::move(ccArguments),
+					s_verbose
+				));
 				if (s_verbose) std::cout << std::endl;
 			}
 		}
@@ -195,14 +202,101 @@ namespace bea {
 			}
 		}
 
+		/* Generate initialization table */
+		std::string initQbePath = std::format(
+			"{}/build/{}/cache/inittab.qbe",
+			m_path, targetToString(m_target)
+		);
+		std::string initAsmPath = std::format(
+			"{}/build/{}/cache/inittab.s",
+			m_path, targetToString(m_target)
+		);
+		std::string initObjPath = std::format(
+			"{}/build/{}/cache/inittab.o",
+			m_path, targetToString(m_target)
+		);
+		std::ofstream initQbeStream(initQbePath, std::ios::binary);
+		if (!initQbeStream.is_open())
+			return Result<None>(std::format(
+				"Can't open file '{}': {}",
+				initQbePath,
+				std::strerror(errno)
+			));
+		initQbeStream << "export function l $";
+
+		if (m_type == Type::Library)
+			initQbeStream << m_name << "____init";
+		else
+			initQbeStream << "____beainit";
+
+		initQbeStream << "() {\n@start\n";
+
+		/* Add library initializers */
+		if (m_type == Type::Executable) {
+
+			for (std::unique_ptr<Project>& project: s_projects) {
+
+				if (this == project.get() ||
+				    project->m_type != Type::Library)
+					continue;
+				initQbeStream <<
+					"call $" << project->m_name <<
+					"____init()\n";
+			}
+		}
+
+		/* Add module initializers */
+		for (std::unique_ptr<Source>& source: m_sources) {
+
+			if (source->kind != SourceKind::Bea)
+				continue;
+
+			initQbeStream << "call $";
+			for (const std::string component: source->moduleName)
+				initQbeStream << component << "__";
+			initQbeStream << "__init()\n";
+		}
+
+		/* Add call to main */
+		if (m_type == Type::Executable)
+			initQbeStream <<
+				"%r0 =l call $__std__main(l $" <<
+				m_name << "__main__main____0)\n";
+		else
+			initQbeStream << "%r0 =l copy 0\n";
+		initQbeStream << "ret %r0\n}\n";
+		initQbeStream.close();
+
+		const char *beaPath = getenv("BEA_PATH");
+		std::string qbePath = std::format(
+			"{}/vendor/bin/qbe", beaPath
+		);
+
+		/* QBE to assembly, assembly to object */
+		BEA_OK(None, runProcess({
+			qbePath.c_str(), "-o",
+			initAsmPath.c_str(),
+			initQbePath.c_str()
+		}, s_verbose));
+
+		BEA_OK(None, runProcess({
+			"cc", "-c", "-o",
+			initObjPath.c_str(),
+			initAsmPath.c_str()
+		}, s_verbose));
+
 		/* Run linker */
 		if (m_type == Type::Executable) {
 
 			std::vector<const char *> ccldArguments = {
 				"cc", "-o", buildOutput.c_str(),
+				initObjPath.c_str()
 			};
 			for (const std::string& input: inputs)
 				ccldArguments.push_back(input.c_str());
+
+			for (const std::string& argument: m_options.ldflags)
+				ccldArguments.push_back(argument.c_str());
 
 			BEA_OK(None, runProcess(
 				std::move(ccldArguments),
@@ -214,7 +308,8 @@ namespace bea {
 		else if (m_type == Type::Library) {
 
 			std::vector<const char *> arArguments = {
-				"ar", "cr", buildOutput.c_str()
+				"ar", "cr", buildOutput.c_str(),
+				initObjPath.c_str()
 			};
 			for (const std::string& input: inputs)
 				arArguments.push_back(input.c_str());
@@ -258,6 +353,41 @@ namespace bea {
 	std::string Project::localPath(const std::string& path) {
 
 		return std::format("{}/{}", m_path, path);
+	}
+
+	/* Substiute configuration parameters */
+	std::string Project::substituteConfigParameters(const char *source) {
+
+		std::ostringstream stream;
+		for (; *source; source++) {
+
+			if (*source != '%') {
+
+				stream << *source;
+				continue;
+			}
+			source++;
+			if (*source != '(') {
+
+				stream << *source;
+				continue;
+			}
+			source++;
+			std::ostringstream nameStream;
+
+			for (; *source && *source != ')'; source++)
+				nameStream << *source;
+			if (*source != ')') source--;
+
+			std::string name = nameStream.str();
+			if (name == "path")
+				stream << m_path;
+			else if (name == "url")
+				stream << m_url;
+			else if (name == "target")
+				stream << targetToString(m_target);
+		}
+		return stream.str();
 	}
 
 	/* Print progress bar */
@@ -320,6 +450,8 @@ namespace bea {
 		toml_datum_t type = toml_seek(result.toptab, "project.type");
 		toml_datum_t noStdlib = toml_seek(result.toptab, "project.options.noStdlib");
 		toml_datum_t genDocs = toml_seek(result.toptab, "project.options.genDocs");
+		toml_datum_t cflags = toml_seek(result.toptab, "project.options.cflags");
+		toml_datum_t ldflags = toml_seek(result.toptab, "project.options.ldflags");
 		toml_datum_t dependencies = toml_seek(result.toptab, "project.dependencies");
 
 		if (name.type != TOML_STRING) {
@@ -350,6 +482,32 @@ namespace bea {
 					"Unknown project type '{}'",
 					type.u.str.ptr
 				));
+		}
+
+		/* Parse cflags and ldflags */
+		if (cflags.type == TOML_ARRAY) {
+
+			for (int32_t i = 0; i < cflags.u.arr.size; i++) {
+
+				toml_datum_t *datum = cflags.u.arr.elem+i;
+				if (datum->type != TOML_STRING)
+					continue;
+				m_options.cflags.emplace_back(
+					substituteConfigParameters(datum->u.str.ptr)
+				);
+			}
+		}
+		if (ldflags.type == TOML_ARRAY) {
+
+			for (int32_t i = 0; i < ldflags.u.arr.size; i++) {
+
+				toml_datum_t *datum = ldflags.u.arr.elem+i;
+				if (datum->type != TOML_STRING)
+					continue;
+				m_options.ldflags.emplace_back(
+					substituteConfigParameters(datum->u.str.ptr)
+				);
+			}
 		}
 
 		/* Standard library dependency */
@@ -527,7 +685,7 @@ namespace bea {
 			source->moduleName = std::move(moduleName);
 			source->recompile = true;
 
-			if (source->recompile && m_name != "std")
+			if (source->recompile)
 				m_rebuild = true;
 
 			m_sources.emplace_back(std::move(source));
@@ -612,6 +770,7 @@ namespace bea {
 				)
 			);
 		}
+		source.context->resolveStrayTypeIDs();
 		source.context->clearDeadFrames();
 
 		/* Local resolver analysis */

@@ -11,7 +11,9 @@ namespace bea {
 	 */
 	class IntegerNode : public Node {
 	public:
-		IntegerNode(std::intmax_t value) : m_value(value) {}
+		IntegerNode(std::intmax_t value)
+			: m_value(value),
+			  Node(true) {}
 
 		std::intmax_t m_value;
 	protected:
@@ -24,7 +26,9 @@ namespace bea {
 	 */
 	class FloatNode : public Node {
 	public:
-		FloatNode(double value) : m_value(value) {}
+		FloatNode(double value)
+			: m_value(value),
+			  Node(true) {}
 
 		double m_value;
 	protected:
@@ -37,7 +41,9 @@ namespace bea {
 	 */
 	class StringNode : public Node {
 	public:
-		StringNode(const std::string& value) : m_value(value) {}
+		StringNode(const std::string& value)
+			: m_value(value),
+			  Node(true) {}
 
 		const std::string& m_value;
 	protected:

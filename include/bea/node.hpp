@@ -28,6 +28,11 @@ namespace bea {
 
 		bool flagDynamic = false;
 		bool flagExpanded = false;
+		bool flagExpression = false;
+		bool flagSubstituted = false;
+
+		Atom(bool flagExpression = false)
+			: flagExpression(flagExpression) {}
 
 		/*
 		 * Make copy of atom
@@ -40,6 +45,9 @@ namespace bea {
 	 */
 	class Node {
 	public:
+		Node(bool flagExpression = false)
+			: m_atom(flagExpression) {}
+
 		Position m_position;
 		Atom m_atom;
 

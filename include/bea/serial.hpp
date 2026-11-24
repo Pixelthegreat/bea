@@ -144,6 +144,7 @@ namespace bea {
 		const Name& m_moduleName;
 		const std::string& m_sourcePath;
 		std::size_t m_inClass = 0;
+		Type *m_classType = nullptr;
 
 		Pair<Name> readUse();
 		std::pair<Name, VariableInfo> readLet();

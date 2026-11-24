@@ -164,8 +164,15 @@ namespace bea {
 		const TypeID *otherTypeID
 	) const {
 
+		if (base == BaseType::Any) {
+
+			if (other.base != BaseType::Any)
+				return TypeEquality::None;
+			return TypeEquality::Equivalent;
+		}
+
 		/* Object types */
-		if (base == BaseType::Object) {
+		else if (base == BaseType::Object) {
 
 			if (this == &other)
 				return TypeEquality::Equivalent;
@@ -237,6 +244,83 @@ namespace bea {
 		return TypeEquality::Equivalent;
 	}
 
+	/* Get size of type */
+	std::size_t Type::getSize() {
+
+		if (size) return size;
+
+		switch (base) {
+			case BaseType::U8:
+			case BaseType::I8:
+				size = 1;
+				break;
+			case BaseType::U16:
+			case BaseType::I16:
+				size = 2;
+				break;
+			case BaseType::U32:
+			case BaseType::I32:
+			case BaseType::F32:
+				size = 4;
+				break;
+			case BaseType::U64:
+			case BaseType::I64:
+			case BaseType::F64:
+				size = 8;
+				break;
+			case BaseType::Any:
+				size = 16;
+				break;
+
+			/* Calculate object size */
+			case BaseType::Object:
+				size = 28; /* Header */
+
+				for (auto& pair: object.publicMembers) {
+
+					pair.second.position = size;
+					size += pair.second.type->type->getSize();
+				}
+				for (auto& pair: object.privateMembers) {
+
+					pair.second.position = size;
+					size += pair.second.type->type->getSize();
+				}
+				for (auto& implementation: object.implementations) {
+
+					implementation.position = size;
+					size += implementation.type->type->getSize();
+				}
+				break;
+		}
+		return size;
+	}
+
+	/* Get size of vtable for type */
+	std::size_t Type::getVtableSize() {
+
+		if (vtableSize) return vtableSize;
+		vtableSize = 12;
+
+		for (const auto& pair: object.publicMembers) {
+
+			if (!pair.second.flagAbstract)
+				continue;
+			pair.second.type->type->function.vtablePosition =
+				vtableSize;
+			vtableSize += 8;
+		}
+		for (const auto& pair: object.privateMembers) {
+
+			if (!pair.second.flagAbstract)
+				continue;
+			pair.second.type->type->function.vtablePosition =
+				vtableSize;
+			vtableSize += 8;
+		}
+		return vtableSize;
+	}
+
 	/* Compare type identifiers */
 	TypeEquality TypeID::equalTo(const TypeID& other) const {
 
@@ -284,7 +368,8 @@ namespace bea {
 	std::unique_ptr<TypeID> substituteTypes(
 		const TypeID& typeID,
 		const std::vector<GenericInfo>& genericParameters,
-		const std::vector<GenericInfo>& genericArguments
+		const std::vector<GenericInfo>& genericArguments,
+		bool *flagSubstituted
 	) {
 		std::unique_ptr<TypeID> newTypeID =
 			std::make_unique<TypeID>(typeID);
@@ -303,6 +388,8 @@ namespace bea {
 				newTypeID = std::make_unique<TypeID>(
 					*argument.substitutedType
 				);
+				if (flagSubstituted)
+					*flagSubstituted = true;
 				break;
 			}
 		}
@@ -317,7 +404,8 @@ namespace bea {
 				substituteTypes(
 					*typeID.generics[i].substitutedType,
 					genericParameters,
-					genericArguments
+					genericArguments,
+					flagSubstituted
 				);
 			newTypeID->generics[i].substitutedType =
 				std::move(genericTypeID);

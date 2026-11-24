@@ -8,18 +8,21 @@ namespace bea {
 	/* Make copy of atom */
 	Atom Atom::copy() {
 
-		return {
-			.type = type? std::make_unique<TypeID>(*type): nullptr,
-			.typeEquality = typeEquality,
-			.argumentTypeEqualities = argumentTypeEqualities,
-			.operationImpl = operationImpl,
-			.operationImpl2 = operationImpl2,
-			.overloadID = overloadID,
-			.variable = variable,
-			.scopeID = scopeID,
-			.flagDynamic = flagDynamic,
-			.flagExpanded = flagExpanded,
-		};
+		Atom atom{};
+
+		atom.type = type? std::make_unique<TypeID>(*type): nullptr;
+		atom.typeEquality = typeEquality;
+		atom.argumentTypeEqualities = argumentTypeEqualities;
+		atom.operationImpl = operationImpl;
+		atom.operationImpl2 = operationImpl2;
+		atom.overloadID = overloadID;
+		atom.variable = variable;
+		atom.scopeID = scopeID;
+		atom.flagDynamic = flagDynamic;
+		atom.flagExpanded = flagExpanded;
+		atom.flagExpression = flagExpression;
+
+		return std::move(atom);
 	}
 
 	/* Default copy implementation */

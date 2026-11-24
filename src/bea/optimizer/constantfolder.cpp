@@ -3,6 +3,26 @@
 
 namespace bea {
 
+	/* Visit variable access */
+	Result<None> ConstantFolder::visitVariableAccess(VariableAccessNode& node) {
+
+		std::intmax_t value;
+
+		if (node.m_name == "true")
+			value = 1;
+		else if (node.m_name == "false")
+			value = 0;
+		else return Mode::Nothing;
+
+		/* Create int */
+		auto intNode = std::make_unique<IntegerNode>(value);
+		intNode->m_atom.type = std::make_unique<TypeID>(
+			m_context.m_booleanType
+		);
+		m_optimizedNodes.emplace_back(std::move(intNode));
+		return Mode::Replace;
+	}
+
 	/* Visit unary operation */
 	Result<None> ConstantFolder::visitUnaryOperation(UnaryOperationNode& node) {
 

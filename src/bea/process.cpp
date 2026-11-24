@@ -45,7 +45,7 @@ namespace bea {
 			));
 		else if (code)
 			return Result<int>(std::format(
-				"Execution failed (code %d)",
+				"Execution failed (code {})",
 				code
 			));
 		return Result<int>();

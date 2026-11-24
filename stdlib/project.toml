@@ -5,3 +5,5 @@ type="lib"
 [project.options]
 noStdlib=true
 genDocs="doc/json"
+cflags=["-I%(path)/../include", "-g"]
+ldflags=["-g"]

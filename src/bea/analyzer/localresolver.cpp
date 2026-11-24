@@ -102,6 +102,7 @@ namespace bea {
 			std::make_unique<TypeID>(*info->type)
 		);
 		node.m_atom.overloadID = info->overloadID;
+		node.m_atom.scopeID = m_context.m_frames.size()-1;
 
 		return Result<None>();
 	}
@@ -230,13 +231,17 @@ namespace bea {
 				node.m_leftNode.get()
 			);
 		if (indexNode)
-			node.m_atom.type = std::make_unique<TypeID>(
-				*indexNode->m_atom.type->
-				generics[0].substitutedType
+			node.m_atom.type = registerTypeID(
+				std::make_unique<TypeID>(
+					*indexNode->m_atom.type->
+					generics[0].substitutedType
+				)
 			);
 		else
-			node.m_atom.type = std::make_unique<TypeID>(
-				*node.m_leftNode->m_atom.type
+			node.m_atom.type = registerTypeID(
+				std::make_unique<TypeID>(
+					*node.m_leftNode->m_atom.type
+				)
 			);
 
 		/* Check if operator is implemented */
@@ -413,8 +418,10 @@ checkRightType:
 				m_context.m_booleanType
 			);
 		else
-			node.m_atom.type = std::make_unique<TypeID>(
-				*node.m_leftNode->m_atom.type
+			node.m_atom.type = registerTypeID(
+				std::make_unique<TypeID>(
+					*node.m_leftNode->m_atom.type
+				)
 			);
 
 		/* Check if operator is implemented */
@@ -916,7 +923,8 @@ checkRightType:
 		node.m_atom.type = substituteTypes(
 			*typeID,
 			type->object.genericParameters,
-			node.m_node->m_atom.type->generics
+			node.m_node->m_atom.type->generics,
+			&node.m_atom.flagSubstituted
 		);
 		return Result<None>();
 	}
@@ -1072,7 +1080,9 @@ checkRightType:
 		itemVariable.type = registerTypeID(
 			std::make_unique<TypeID>(*typeID)
 		);
-		node.m_atom.type = std::make_unique<TypeID>(*itemVariable.type);
+		node.m_atom.type = registerTypeID(
+			std::make_unique<TypeID>(*itemVariable.type)
+		);
 		node.m_atom.scopeID = m_context.m_frames.size()-1;
 
 		/* Visit body */
@@ -1139,8 +1149,10 @@ checkRightType:
 					*node.m_node->m_atom.type
 				)
 			);
-		node.m_atom.type = std::make_unique<TypeID>(
-			*m_returnType
+		node.m_atom.type = registerTypeID(
+			std::make_unique<TypeID>(
+				*m_returnType
+			)
 		);
 		return Result<None>();
 	}
@@ -1231,6 +1243,7 @@ checkRightType:
 					)
 				);
 		}
+		node.m_atom.scopeID = m_context.m_frames.size()-1;
 		return Result<None>();
 	}
 
@@ -1251,6 +1264,7 @@ checkRightType:
 			node.m_name, node.m_atom.overloadID
 		));
 		Type *type = info->type->type;
+		node.m_atom.type = std::make_unique<TypeID>(type);
 
 		Frame& frame = *m_context.pushFrame();
 		if (!node.m_static && m_classType) {
@@ -1267,7 +1281,9 @@ checkRightType:
 
 				if (parameter.type == GenericType::Type)
 					generic.substitutedType = registerTypeID(
-						std::make_unique<TypeID>(parameter.name)
+						std::make_unique<TypeID>(
+							parameter.name
+						)
 					);
 				else
 					generic.substitutedValue = 0;
@@ -1517,6 +1533,7 @@ checkRightType:
 				);
 			pair.second.flagImplemented = false;
 		}
+		node.m_atom.operationImpl = m_implementation;
 		return Result<None>();
 	}
 
@@ -1547,7 +1564,9 @@ checkRightType:
 			info.flagStatic = pair.second.flagStatic;
 			info.overloadID = pair.second.overloadID;
 			info.scopeID = pair.second.scopeID;
-			info.type = std::make_unique<TypeID>(*pair.second.type);
+			info.type = registerTypeID(
+				std::make_unique<TypeID>(*pair.second.type)
+			);
 		}
 		for (
 			std::pair<Name, VariableInfo>& pair:
@@ -1562,11 +1581,13 @@ checkRightType:
 			info.flagStatic = pair.second.flagStatic;
 			info.overloadID = pair.second.overloadID;
 			info.scopeID = pair.second.scopeID;
-			info.type = std::make_unique<TypeID>(*pair.second.type);
+			info.type = registerTypeID(
+				std::make_unique<TypeID>(*pair.second.type)
+			);
 		}
 
 		/* Create temporary constants for generic parameters */
-		for (const GenericInfo& parameter: type->object.genericParameters) {
+		/*for (const GenericInfo& parameter: type->object.genericParameters) {
 
 			if (parameter.type == GenericType::Type) {
 
@@ -1585,7 +1606,8 @@ checkRightType:
 				VariableInfo& entry = frame.newEntry(parameter.name);
 				entry.type = std::make_unique<TypeID>(m_context.m_intType);
 			}
-		}
+		}*/
+		frame.m_types = std::move(type->object.internalTypes);
 
 		/* Visit nodes */
 		m_classType = type;
@@ -1625,7 +1647,9 @@ checkRightType:
 		m_classType = nullptr;
 		m_blockLevel--;
 
+		type->object.internalTypes = std::move(frame.m_types);
 		m_context.popFrame();
+
 		return Result<None>();
 	}
 
@@ -1633,10 +1657,14 @@ checkRightType:
 	std::unique_ptr<TypeID> LocalResolver::registerTypeID(
 		std::unique_ptr<TypeID> typeID
 	) {
-		if (!typeID->type)
-			typeID->type = m_context.getType(
+		if (!typeID->type) {
+
+			Result<Type *> result = m_context.getType(
 				typeID->name, true
-			).value;
+			);
+			if (result.okay)
+				typeID->type = result.value;
+		}
 		return std::move(typeID);
 	}
 

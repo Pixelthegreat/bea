@@ -168,6 +168,7 @@ namespace bea {
 		std::size_t overloadID = 0;
 		std::unique_ptr<TypeID> type = nullptr;
 		std::size_t scopeID = 0;
+		std::size_t position = 0;
 	};
 
 	/*
@@ -201,6 +202,7 @@ namespace bea {
 		std::unique_ptr<TypeID> returnType;
 		OrderedMap<Name, VariableInfo> parameters;
 		std::vector<GenericInfo> genericParameters;
+		std::size_t vtablePosition = 0;
 
 		FunctionType() : genericParameters(0) {}
 	};
@@ -212,6 +214,7 @@ namespace bea {
 		std::unique_ptr<TypeID> type;
 		OrderedMap<Name, VariableInfo> members;
 		std::unordered_map<Name, std::unique_ptr<Type>> internalTypes;
+		std::size_t position = 0;
 	};
 
 	struct ObjectType {
@@ -245,6 +248,8 @@ namespace bea {
 		Name name;
 		FunctionType function;
 		ObjectType object;
+		std::size_t size = 0;
+		std::size_t vtableSize = 0;
 
 		Type() {}
 
@@ -270,6 +275,12 @@ namespace bea {
 			const TypeID *typeID = nullptr,
 			const TypeID *otherTypeID = nullptr
 		) const;
+
+		/*
+		 * Get size
+		 */
+		std::size_t getSize();
+		std::size_t getVtableSize();
 	};
 
 	std::ostream& operator<<(std::ostream& stream, const Type& type);
@@ -329,7 +340,8 @@ namespace bea {
 	std::unique_ptr<TypeID> substituteTypes(
 		const TypeID& typeID,
 		const std::vector<GenericInfo>& genericParameters,
-		const std::vector<GenericInfo>& genericArguments
+		const std::vector<GenericInfo>& genericArguments,
+		bool *flagSubstituted = nullptr
 	);
 }
 

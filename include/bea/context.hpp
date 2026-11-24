@@ -165,6 +165,11 @@ namespace bea {
 		Result<None> resolveReferences(bool internal = false);
 
 		/*
+		 * Resolve stray type identifiers
+		 */
+		void resolveStrayTypeIDs();
+
+		/*
 		 * Resolve module
 		 */
 		Result<None> resolveModule(

@@ -682,7 +682,9 @@ checkRightType:
 		Type *leftType = typeID.type;
 		Type *rightType = node->m_atom.type->type;
 
-		if (!leftType || !rightType)
+		if (!leftType || !rightType ||
+		    leftType->base == BaseType::Any ||
+		    rightType->base == BaseType::Any)
 			return node;
 
 		/* Object types */

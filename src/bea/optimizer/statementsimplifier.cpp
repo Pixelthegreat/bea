@@ -15,6 +15,7 @@ namespace bea {
 		blockNode->m_atom.type = std::make_unique<TypeID>(
 			*node.m_atom.type
 		);
+		blockNode->m_atom.flagExpression = true;
 
 		/* let result = expr */
 		std::vector<Name> names = {"result"};
@@ -34,6 +35,8 @@ namespace bea {
 			publicMembers.data()[2].second;
 
 		auto varNode1 = std::make_unique<VariableAccessNode>("result");
+		varNode1->m_atom.scopeID = 1;
+
 		auto memberNode1 = std::make_unique<NamedAccessNode>(
 			std::move(varNode1), "okay"
 		);
@@ -59,6 +62,8 @@ namespace bea {
 			publicMembers.data()[1].second;
 
 		auto varNode2 = std::make_unique<VariableAccessNode>("result");
+		varNode2->m_atom.scopeID = 1;
+
 		auto memberNode2 = std::make_unique<NamedAccessNode>(
 			std::move(varNode2), "error"
 		);
@@ -113,6 +118,8 @@ namespace bea {
 			publicMembers.data()[0].second;
 
 		auto varNode3 = std::make_unique<VariableAccessNode>("result");
+		varNode3->m_atom.scopeID = 1;
+
 		auto memberNode3 = std::make_unique<NamedAccessNode>(
 			std::move(varNode3), "value"
 		);

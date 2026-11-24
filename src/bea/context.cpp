@@ -110,6 +110,9 @@ namespace bea {
 	/* Pop stack frame */
 	void Context::popFrame() {
 
+		if (m_frames.size() <= 1)
+			return;
+
 		m_deadFrames.emplace_back(std::move(
 			m_frames[m_frames.size()-1]
 		));
@@ -218,6 +221,22 @@ namespace bea {
 			reference.resolved = true;
 		}
 		return Result<None>();
+	}
+
+	/* Resolve stray type identifiers */
+	void Context::resolveStrayTypeIDs() {
+
+		for (TypeID *typeID: m_strayTypeIDs) {
+
+			if (typeID->type)
+				continue;
+			Result<Type *> result = getType(
+				typeID->name
+			);
+			if (!result.okay)
+				continue;
+			typeID->type = result.value;
+		}
 	}
 
 	/* Resolve module */

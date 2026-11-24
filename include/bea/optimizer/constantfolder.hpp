@@ -19,6 +19,7 @@ namespace bea {
 		ConstantFolder(Context& context)
 			: m_context(context) {}
 
+		virtual Result<None> visitVariableAccess(VariableAccessNode& node) override;
 		virtual Result<None> visitUnaryOperation(UnaryOperationNode& node) override;
 		virtual Result<None> visitBinaryOperation(BinaryOperationNode& node) override;
 		virtual Result<None> visitCast(CastNode& node) override;

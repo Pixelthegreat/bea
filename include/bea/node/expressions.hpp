@@ -11,8 +11,13 @@ namespace bea {
 	 */
 	class VariableAccessNode : public Node {
 	public:
-		VariableAccessNode(const Name& name) : m_name(name) {}
-		VariableAccessNode(Name&& name) : m_name(name) {}
+		VariableAccessNode(const Name& name)
+			: m_name(name),
+			  Node(true) {}
+
+		VariableAccessNode(Name&& name)
+			: m_name(name),
+			  Node(true) {}
 
 		const Name& getName() const { return m_name; }
 
@@ -34,7 +39,8 @@ namespace bea {
 		)
 			: m_operation(operation),
 			  m_node(std::move(node)),
-			  m_postfix(postfix) {}
+			  m_postfix(postfix),
+			  Node(true) {}
 
 		const std::string& m_operation;
 		bool m_postfix;
@@ -59,7 +65,8 @@ namespace bea {
 		)
 			: m_operation(operation),
 			  m_leftNode(std::move(leftNode)),
-			  m_rightNode(std::move(rightNode)) {}
+			  m_rightNode(std::move(rightNode)),
+			  Node(true) {}
 
 		const std::string& m_operation;
 
@@ -85,7 +92,8 @@ namespace bea {
 		)
 			: m_operation(operation),
 			  m_leftNode(std::move(leftNode)),
-			  m_rightNode(std::move(rightNode)) {}
+			  m_rightNode(std::move(rightNode)),
+			  Node(true) {}
 
 		const std::string& m_operation;
 
@@ -105,7 +113,8 @@ namespace bea {
 	class CarryResultNode : public Node {
 	public:
 		CarryResultNode(std::unique_ptr<Node>&& node)
-			: m_node(std::move(node)) {}
+			: m_node(std::move(node)),
+			  Node(true) {}
 
 		Node& getNode() const { return *m_node; }
 
@@ -121,7 +130,8 @@ namespace bea {
 	class NewNode : public Node {
 	public:
 		NewNode(std::unique_ptr<Node>&& typeNode)
-			: m_typeNode(std::move(typeNode)) {}
+			: m_typeNode(std::move(typeNode)),
+			  Node(true) {}
 
 		std::vector<std::unique_ptr<Node>> m_argumentNodes;
 
@@ -143,7 +153,8 @@ namespace bea {
 			std::unique_ptr<Node>&& valueNode
 		)
 			: m_typeNode(std::move(typeNode)),
-			  m_valueNode(std::move(valueNode)) {}
+			  m_valueNode(std::move(valueNode)),
+			  Node(true) {}
 
 		Node& getTypeNode() const { return *m_typeNode; }
 		Node& getValueNode() const { return *m_valueNode; }
@@ -173,7 +184,9 @@ namespace bea {
 	 */
 	class CallNode : public Node {
 	public:
-		CallNode(std::unique_ptr<Node>&& node) : m_node(std::move(node)) {}
+		CallNode(std::unique_ptr<Node>&& node)
+			: m_node(std::move(node)),
+			  Node(true) {}
 
 		std::vector<std::unique_ptr<Node>> m_argumentNodes;
 
@@ -195,14 +208,16 @@ namespace bea {
 			const Name& name
 		)
 			: m_node(std::move(node)),
-			  m_name(name) {}
+			  m_name(name),
+			  Node(true) {}
 
 		NamedAccessNode(
 			std::unique_ptr<Node>&& node,
 			Name&& name
 		)
 			: m_node(std::move(node)),
-			  m_name(std::move(name)) {}
+			  m_name(std::move(name)),
+			  Node(true) {}
 
 		Node& getNode() const { return *m_node; }
 		const Name& getName() const { return m_name; }
@@ -224,7 +239,8 @@ namespace bea {
 			std::unique_ptr<Node>&& indexNode
 		)
 			: m_node(std::move(node)),
-			  m_indexNode(std::move(indexNode)) {}
+			  m_indexNode(std::move(indexNode)),
+			  Node(true) {}
 
 		Node& getNode() const { return *m_node; }
 		Node& getIndexNode() const { return *m_indexNode; }
@@ -246,7 +262,8 @@ namespace bea {
 			std::unique_ptr<Node>&& endNode
 		)
 			: m_startNode(std::move(startNode)),
-			  m_endNode(std::move(endNode)) {}
+			  m_endNode(std::move(endNode)),
+			  Node(true) {}
 
 		Node& getStartNode() const { return *m_startNode; }
 		Node& getEndNode() const { return *m_endNode; }

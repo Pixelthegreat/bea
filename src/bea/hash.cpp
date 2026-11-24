@@ -27,6 +27,32 @@ namespace bea {
 		m_value += (std::uint32_t)data[size-1];
 	}
 
+	/* Calculate hash from name */
+	void Hash::calculateValueName(const Name& name) {
+
+		std::ostringstream stream;
+		stream << name;
+
+		std::string string = stream.str();
+		calculateValue(
+			(const std::uint8_t *)string.c_str(),
+			string.length()
+		);
+	}
+
+	/* Calculate hash from type identifier */
+	void Hash::calculateValueTypeID(const TypeID& typeID) {
+
+		std::ostringstream stream;
+		stream << typeID;
+
+		std::string string = stream.str();
+		calculateValue(
+			(const std::uint8_t *)string.c_str(),
+			string.length()
+		);
+	}
+
 	/* Convert hash to string */
 	std::string Hash::toString() const {
 

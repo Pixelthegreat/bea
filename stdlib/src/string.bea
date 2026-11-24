@@ -4,6 +4,8 @@ module string
  * @brief String object
  */
 pub class String {
+	pointer: Int
+	mode: Int
 
 	/*
 	 * @brief Construct empty string

@@ -128,6 +128,8 @@ namespace bea {
 		struct {
 			bool noStdlib = false;
 			std::string genDocs{};
+			std::vector<std::string> cflags{};
+			std::vector<std::string> ldflags{};
 		} m_options;
 
 		bool m_rebuild = false;
@@ -140,6 +142,12 @@ namespace bea {
 		 * path
 		 */
 		std::string localPath(const std::string& path);
+
+		/*
+		 * Substitute %(...) params in config
+		 * string
+		 */
+		std::string substituteConfigParameters(const char *source);
 
 		/*
 		 * Print progress bar
