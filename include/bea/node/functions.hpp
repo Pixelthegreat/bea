@@ -91,10 +91,12 @@ namespace bea {
 		FuncBlockStatementNode(
 			const Name& name,
 			std::unique_ptr<Node>&& returnTypeNode,
-			std::unique_ptr<Node>&& bodyNode
+			std::unique_ptr<Node>&& bodyNode,
+			bool hollow
 		)
 			: FuncStatementNode(name, std::move(returnTypeNode)),
-			  m_bodyNode(std::move(bodyNode)) {}
+			  m_bodyNode(std::move(bodyNode)),
+			  m_hollow(hollow) {}
 
 		FuncBlockStatementNode(
 			Name&& name,
@@ -107,6 +109,7 @@ namespace bea {
 		Node& getBodyNode() const { return *m_bodyNode; }
 
 		std::unique_ptr<Node> m_bodyNode;
+		bool m_hollow = false;
 	protected:
 		virtual Result<None> visit(NodeVisitor& visitor) override;
 	};

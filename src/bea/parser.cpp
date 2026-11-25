@@ -396,13 +396,21 @@ namespace bea {
 		}
 
 		auto bodyNode = std::make_unique<BlockNode>();
+		bool hollow = false;
+
 		if (m_token->matchSymbol("{"))
 			BEA_OK(NodeP, parseBlock(*bodyNode));
 
+		else if (m_token->matchAttribute("#hollow")) {
+
+			hollow = true;
+			advance();
+		}
 		auto node = std::make_unique<FuncBlockStatementNode>(
 			std::move(name),
 			std::move(returnTypeNode),
-			std::move(bodyNode)
+			std::move(bodyNode),
+			hollow
 		);
 		node->m_position = position;
 		node->m_abstract = isAbstract;
@@ -1151,6 +1159,9 @@ namespace bea {
 		else if (m_token->matchSymbol(".."))
 			return parseRange(std::move(factor));
 
+		else if (m_token->matchKeyword("as"))
+			return parseCallCast(std::move(factor));
+
 		return std::move(factor);
 	}
 
@@ -1285,6 +1296,23 @@ namespace bea {
 
 		auto node = std::make_unique<RangeNode>(
 			std::move(factor), std::move(endNode)
+		);
+		node->m_position = position;
+
+		return Result(std::move(node));
+	}
+
+	/* Parse call cast */
+	Parser::Result Parser::parseCallCast(NodeP factor) {
+
+		Position position = m_token->position;
+		advance();
+
+		NodeP typeNode = BEA_OK(NodeP, parseType());
+
+		auto node = std::make_unique<CastNode>(
+			std::move(typeNode),
+			std::move(factor)
 		);
 		node->m_position = position;
 

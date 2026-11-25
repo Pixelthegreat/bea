@@ -8,7 +8,7 @@
 
 namespace bea {
 
-	/* output type to stream */
+	/* Output type to stream */
 	std::ostream& operator<<(std::ostream& stream, TokenType type) {
 		switch (type) {
 			using enum TokenType;
@@ -19,6 +19,7 @@ namespace bea {
 			case Symbol: return stream << "Symbol";
 			case Identifier: return stream << "Identifier";
 			case Keyword: return stream << "Keyword";
+			case Attribute: return stream << "Attribute";
 			case Comment: return stream << "Comment";
 			case EndLine: return stream << "EndLine";
 			case EndFile: return stream << "EndFile";
@@ -26,25 +27,31 @@ namespace bea {
 		return stream;
 	}
 
-	/* match against a type and value */
+	/* Match against a type and value */
 	bool Token::match(TokenType type, const char *value) const {
 
 		return this->type == type and this->value == value;
 	}
 
-	/* match against a keyword value */
+	/* Match against a keyword value */
 	bool Token::matchKeyword(const char *value) const {
 
 		return match(TokenType::Keyword, value);
 	}
 
-	/* match against a symbol value */
+	/* Match against a symbol value */
 	bool Token::matchSymbol(const char *value) const {
 
 		return match(TokenType::Symbol, value);
 	}
 
-	/* output to stream */
+	/* Match against an attribute value */
+	bool Token::matchAttribute(const char *value) const {
+
+		return match(TokenType::Attribute, value);
+	}
+
+	/* Output to stream */
 	std::ostream& operator<<(std::ostream& stream, const Token& token) {
 
 		return stream << token.type << ":'" << token.value << "'";

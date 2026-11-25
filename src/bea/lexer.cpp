@@ -99,6 +99,10 @@ namespace bea {
 			else if (std::strchr(s_identifier, m_cc))
 				BEA_OK(None, makeIdentifier());
 
+			/* Attribute */
+			else if (m_cc == '#')
+				BEA_OK(None, makeAttribute());
+
 			/* String */
 			else if (m_cc == '"')
 				BEA_OK(None, makeString());
@@ -399,6 +403,27 @@ namespace bea {
 			}
 		}
 		commitToken(start, type);
+		return Result<None>();
+	}
+
+	/* Generate attribute token */
+	Result<None> Lexer::makeAttribute() {
+
+		Position start = m_position;
+		m_sstream << m_cc;
+		advance();
+
+		if (!std::strchr(s_identifier, m_cc))
+			return Result<None>(
+				m_position,
+				"Expected attribute name after '#'"
+			);
+		while (m_cc && std::strchr(s_identifier, m_cc)) {
+
+			m_sstream << m_cc;
+			advance();
+		}
+		commitToken(start, TokenType::Attribute);
 		return Result<None>();
 	}
 }

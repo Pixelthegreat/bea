@@ -112,7 +112,7 @@ typedef enum StringMode {
 
 typedef struct String {
 	Object _base;
-	void *pointer;
+	uint8_t *pointer;
 	uint64_t mode;
 } __attribute__((packed)) String;
 

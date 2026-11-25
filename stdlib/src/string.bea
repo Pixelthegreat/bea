@@ -15,5 +15,5 @@ pub class String {
 	/*
 	 * @brief Construct empty string
 	 */
-	pub func init()!
+	pub func init() #hollow
 }

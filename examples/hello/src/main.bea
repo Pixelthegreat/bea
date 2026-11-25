@@ -26,10 +26,11 @@ class A<T> {
 }
 let global: Int = 0
 
-pub func stuff() -> Result<None> {
-}
+pub func stuff() -> Result<None> #hollow
 
 pub func main() -> Result<None> {
+
+	0 as Float
 
 	let a = new A<Int>(new A<Int>(), 1, 2)
 	//a.a = a
@@ -37,4 +38,5 @@ pub func main() -> Result<None> {
 	a.c = 11
 
 	a.b + a.c
+	"Hello, world!"
 }

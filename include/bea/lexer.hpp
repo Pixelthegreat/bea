@@ -74,5 +74,10 @@ namespace bea {
 
 		static const char *s_digit, *s_identifier;
 		static const char *s_keywords[];
+
+		/*
+		 * Create attribute
+		 */
+		Result<None> makeAttribute();
 	};
 }

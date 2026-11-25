@@ -42,6 +42,8 @@ namespace bea {
 		virtual Result<None> visitBlock(BlockNode& node) override;
 
 		virtual Result<None> visitInteger(IntegerNode& node) override;
+		virtual Result<None> visitFloat(FloatNode& node) override;
+		virtual Result<None> visitString(StringNode& node) override;
 
 		virtual Result<None> visitVariableAccess(VariableAccessNode& node) override;
 		virtual Result<None> visitAssignment(AssignmentNode& node) override;
@@ -63,7 +65,9 @@ namespace bea {
 		std::ostream& m_stream;
 		std::ostringstream m_initStream;
 		std::ostringstream m_ctorStream;
+
 		std::ostringstream m_dummyStream;
+		std::ostringstream m_globalStream;
 
 		bool m_useStream = false;
 		bool m_useInitStream = false;
@@ -75,6 +79,8 @@ namespace bea {
 		Type *m_returnType = nullptr;
 
 		bool m_noPushBlockScope = false;
+
+		std::size_t m_stringID = 0;
 
 		std::vector<std::vector<std::pair<Name, BaseType>>> m_rcScope;
 

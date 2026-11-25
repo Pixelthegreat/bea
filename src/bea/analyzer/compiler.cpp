@@ -14,6 +14,9 @@ namespace bea {
 
 		BEA_OK(None, visit(node));
 
+		m_stream << m_globalStream.str();
+		m_globalStream.str("");
+
 		m_stream <<
 			"$" << SerialName(m_context.m_moduleName) <<
 			"____init :: proc() u64 {\n";
@@ -114,6 +117,57 @@ namespace bea {
 			node.m_value <<
 			baseType(node.m_atom.type->type->base);
 
+		return Result<None>();
+	}
+
+	/* Visit float constant */
+	Result<None> Compiler::visitFloat(FloatNode& node) {
+
+		Type *type = node.m_atom.type->type;
+
+		uint64_t value = *(uint64_t *)&node.m_value;
+		if (type->base == BaseType::F32) {
+
+			float fValue = (float)node.m_value;
+			value = (uint64_t)*(uint32_t *)&fValue;
+		}
+		scopeStream() << value << baseType(type->base);
+
+		return Result<None>();
+	}
+
+	/* Visit string constant */
+	Result<None> Compiler::visitString(StringNode& node) {
+
+		std::size_t id = m_stringID++;
+
+		std::ostringstream nameStream;
+		nameStream <<
+			"$" << SerialName(m_context.m_moduleName) <<
+			"____str" << id;
+
+		std::string name = nameStream.str();
+		nameStream.str("");
+
+		/* Write string data */
+		m_globalStream << name << "data :: ptr \"";
+		for (char c: node.m_value) {
+
+			if (c == '\n')
+				m_globalStream << "\\n";
+			else if (c == '"')
+				m_globalStream << "\\\"";
+			else if (c == '\\')
+				m_globalStream << "\\\\";
+		}
+		m_globalStream << "\"u8\n" << name << " :: ptr {}\n";
+
+		/* Write string object initializer */
+		m_initStream <<
+			"*ptr " << name << " = $__std__string__newconst(" <<
+			name << ")ptr\n";
+
+		scopeStream() << name;
 		return Result<None>();
 	}
 
@@ -707,6 +761,9 @@ namespace bea {
 
 	/* Visit "func" statement with block body */
 	Result<None> Compiler::visitFuncBlockStatement(FuncBlockStatementNode& node) {
+
+		if (node.m_hollow)
+			return Result<None>();
 
 		BEA_OK(None, visitFuncStatement(node));
 		m_useStream = true;

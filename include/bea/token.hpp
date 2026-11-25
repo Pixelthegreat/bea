@@ -20,6 +20,7 @@ namespace bea {
 		Symbol,
 		Identifier,
 		Keyword,
+		Attribute,
 
 		Comment,
 
@@ -50,6 +51,8 @@ namespace bea {
 		bool matchKeyword(const char *value) const;
 
 		bool matchSymbol(const char *value) const;
+
+		bool matchAttribute(const char *value) const;
 	};
 
 	std::ostream& operator<<(std::ostream& stream, const Token& token);

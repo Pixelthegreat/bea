@@ -117,6 +117,7 @@ namespace bea {
 		Result parseCarryResult(std::unique_ptr<Node> factor);
 		Result parseIncrementDecrement(std::unique_ptr<Node> factor);
 		Result parseRange(std::unique_ptr<Node> factor);
+		Result parseCallCast(std::unique_ptr<Node> factor);
 
 		Result parseFactor();
 		Result parseNewExpression();
