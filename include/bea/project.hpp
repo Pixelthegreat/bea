@@ -113,6 +113,15 @@ namespace bea {
 		);
 
 		/*
+		 * Create default project (Does not
+		 * load it)
+		 */
+		static Result<None> createProject(
+			const char *path,
+			const char *name = nullptr
+		);
+
+		/*
 		 * Build all projects
 		 */
 		static Result<None> buildAll();

@@ -28,8 +28,8 @@ extern Object *__std__string__newconst(uint8_t *literal) {
 }
 
 /* initialize string object */
-extern Object *std__string__String__init____0(String *string) {
+extern Object *std__string__String__init____0(Object *object) {
 
-	string->_base.class->destructor = (ObjectDestructor)dtor;
-	return NULL;
+	object->class->destructor = (ObjectDestructor)dtor;
+	return NULL; /* std::none::None */
 }

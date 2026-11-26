@@ -109,6 +109,78 @@ namespace bea {
 		return Result<Project *>(&project);
 	}
 
+	/* Create default project */
+	Result<None> Project::createProject(
+		const char *path,
+		const char *name
+	) {
+		if (name && !std::strcmp(name, "."))
+			name = "hello";
+		else if (!name) {
+
+			name = std::strrchr(path, '/');
+			if (name) name++;
+			else name = "hello";
+		}
+
+		/* Check for path conflicts */
+		std::string projectTomlPath = std::format(
+			"{}/project.toml", path
+		);
+		std::string srcPath = std::format(
+			"{}/src", path
+		);
+		std::string srcMainBeaPath = std::format(
+			"{}/src/main.bea", path
+		);
+		if (std::filesystem::exists(projectTomlPath))
+			return Result<None>(std::format(
+				"File '{}' already exists",
+				projectTomlPath
+			));
+
+		/* Create files */
+		std::filesystem::create_directories(srcPath);
+
+		std::ofstream stream(projectTomlPath, std::ios::binary);
+		if (!stream.is_open())
+			return Result<None>(std::format(
+				"Can't open file '{}': {}",
+				projectTomlPath,
+				std::strerror(errno)
+			));
+		stream <<
+			"[project]\nname=\"" << name << "\"\n" <<
+			"type=\"exec\"\n";
+		stream.close();
+
+		stream = std::ofstream(srcMainBeaPath, std::ios::binary);
+		if (!stream.is_open())
+			return Result<None>(std::format(
+				"Can't open file '{}': {}",
+				srcMainBeaPath,
+				std::strerror(errno)
+			));
+		stream <<
+			"module main\n\n"
+			"use std::io\n\n"
+			"pub func main() {\n\n"
+			"\tio::println(\"Hello, world!\")\n"
+			"}\n";
+		stream.close();
+
+		/* Output message */
+		std::cout <<
+			"\e[1;32mCreated executable project '" << name << "'\e[0m\n\n"
+			"  You can change the name in 'project.toml'. You can\n"
+			"  also change the 'type' field to 'lib' to turn it into\n"
+			"  a library project.\n\n"
+			"  See the documentation for more configuration info!" <<
+			std::endl;
+
+		return Result<None>();
+	}
+
 	/* Build all projects */
 	Result<None> Project::buildAll() {
 

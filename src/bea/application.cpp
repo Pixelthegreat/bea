@@ -22,6 +22,7 @@ namespace bea {
 	Result<None> Application::run(int argc, const char **argv) {
 
 		BEA_OK(None, parseArguments(argc, argv));
+		Result<None> result;
 
 		if (!std::strcmp(s_command, "help")) {
 
@@ -29,19 +30,26 @@ namespace bea {
 			return Result<None>();
 		}
 
-		/* Load project */
-		Project *project = BEA_OK(
-			None, Project::loadProject(
-				s_projectPath,
-				Project::s_defaultURL,
-				s_target
-			)
-		);
+		/* Create project */
+		else if (!std::strcmp(s_command, "create"))
+			BEA_OK(None, Project::createProject(s_projectPath));
 
-		Result<None> result;
+		else if (!std::strcmp(s_command, "init"))
+			BEA_OK(None, Project::createProject(
+				/* s_projectPath here is used as the name instead */
+				".", s_projectPath
+			));
 
-		if (!std::strcmp(s_command, "build")) {
+		/* Build project */
+		else if (!std::strcmp(s_command, "build")) {
 
+			Project *project = BEA_OK(
+				None, Project::loadProject(
+					s_projectPath,
+					Project::s_defaultURL,
+					s_target
+				)
+			);
 			result = Project::buildAll();
 
 			if (!result.okay) {
@@ -53,8 +61,17 @@ namespace bea {
 			else
 				std::cout << "\e[1;32mBuild successful\e[0m" << std::endl;
 		}
+
+		/* Build and run project */
 		else if (!std::strcmp(s_command, "run")) {
 
+			Project *project = BEA_OK(
+				None, Project::loadProject(
+					s_projectPath,
+					Project::s_defaultURL,
+					s_target
+				)
+			);
 			result = Project::buildAll();
 
 			if (!result.okay) {
@@ -68,6 +85,12 @@ namespace bea {
 				result = project->run();
 			}
 		}
+
+		/* Error */
+		else return Result<None>(std::format(
+			"{}: Unrecognized command '{}'",
+			argv[0], s_command
+		));
 		return result;
 	}
 
@@ -135,8 +158,8 @@ namespace bea {
 
 		if (!s_command)
 			return Result<None>(std::format(
-				"{}: Expected command argument",
-				progname
+				"{}: Expected command (See '{} help')",
+				progname, progname
 			));
 		return Result<None>();
 	}
@@ -148,6 +171,8 @@ namespace bea {
 			"Usage: " << progname << " <command> ...\n"
 			"\nCommands:\n"
 			"    help                  Show this help message\n"
+			"    init [name]           Initialize project in current directory\n"
+			"    create [directory]    Create project in directory\n"
 			"    build [directory]     Build project\n"
 			"    run [directory]       Run project\n"
 			"\nBuild options:\n"
