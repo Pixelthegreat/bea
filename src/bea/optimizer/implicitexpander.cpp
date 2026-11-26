@@ -31,16 +31,13 @@ namespace bea {
 		TypeID& typeID = *node.m_node->m_atom.type;
 		Type *type = node.m_node->m_atom.type->type;
 
-		if (type->base <= BaseType::F64)
+		if (type->base <= BaseType::F64 ||
+		    !node.m_atom.operationImpl)
 			return Mode::Nothing;
 
+		std::unique_ptr<Node> resultNode = nullptr;
+
 		/* cast<std::operator::*>(node) */
-		if (!node.m_atom.operationImpl) {
-
-			m_optimizedNodes.emplace_back(std::move(node.m_node));
-			return Mode::Replace;
-		}
-
 		auto castTypeNode = std::make_unique<TypeNode>(
 			node.m_atom.operationImpl->type->name
 		);
@@ -80,7 +77,7 @@ namespace bea {
 			notNode->m_atom.type = std::make_unique<TypeID>(
 				m_context.m_booleanType
 			);
-			m_optimizedNodes.emplace_back(std::move(notNode));
+			resultNode = std::move(notNode);
 		}
 
 		/* cast.negate() */
@@ -101,7 +98,7 @@ namespace bea {
 			);
 			callNode->m_atom.variable = variable;
 
-			m_optimizedNodes.emplace_back(std::move(callNode));
+			resultNode = std::move(callNode);
 		}
 
 		/* cast.bitwiseNot() */
@@ -122,7 +119,7 @@ namespace bea {
 			);
 			callNode->m_atom.variable = variable;
 
-			m_optimizedNodes.emplace_back(std::move(callNode));
+			resultNode = std::move(callNode);
 		}
 
 		/* Increment or decrement */
@@ -167,8 +164,20 @@ namespace bea {
 			);
 			callNode->m_atom.variable = variable;
 
-			m_optimizedNodes.emplace_back(std::move(callNode));
+			resultNode = std::move(callNode);
 		}
+
+		/* cast<Type>(result) */
+		auto castBackTypeNode = std::make_unique<TypeNode>(type->name);
+		castBackTypeNode->m_atom.type = std::make_unique<TypeID>(type);
+
+		auto castBackNode = std::make_unique<CastNode>(
+			std::move(castBackTypeNode),
+			std::move(resultNode)
+		);
+		castBackNode->m_atom.type = std::make_unique<TypeID>(type);
+
+		m_optimizedNodes.emplace_back(std::move(castBackNode));
 		return Mode::Replace;
 	}
 
@@ -413,14 +422,14 @@ checkRightType:
 			node.m_atom.type->name
 		);
 		finalCastTypeNode->m_atom.type = std::make_unique<TypeID>(
-			*node.m_atom.type
+			node.m_atom.type->type
 		);
 		auto finalCastNode = std::make_unique<CastNode>(
 			std::move(finalCastTypeNode),
 			std::move(callNode)
 		);
 		finalCastNode->m_atom.type = std::make_unique<TypeID>(
-			*node.m_atom.type
+			node.m_atom.type->type
 		);
 		finalCastNode->m_atom.flagDynamic = true;
 

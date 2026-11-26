@@ -5,38 +5,9 @@
  */
 module main
 
-class A<T> {
-	pub a: A<T>
-	pub b: T
-	pub c: Int
+use std::runtime as rt
 
-	pub func init()!
-	pub func init(a: A<T>, b: T, c: Int)! {
-		let local: T = b
-	}
+pub func main() {
 
-	pub abstract func doStuff() {}
-	pub func doStuff2() -> Int => 2
-
-	impl Add {
-		func add(other: Add) -> Add {
-			return this
-		}
-	}
-}
-let global: Int = 0
-
-pub func stuff() -> Result<None> #hollow
-
-pub func main() -> Result<None> {
-
-	0 as Float
-
-	let a = new A<Int>(new A<Int>(), 1, 2)
-	//a.a = a
-	a.b = 10
-	a.c = 11
-
-	a.b + a.c
-	"Hello, world!"
+	rt::println("Hello, world!")
 }

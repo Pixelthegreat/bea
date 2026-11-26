@@ -1,0 +1,19 @@
+/*
+ * Copyright 2026, Elliot Kohlmyer
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+module main
+
+/*
+ * @brief Print string message
+ *
+ * @desc This function is intended to be used either\
+ * for standard library testing or bypassing the I/O\
+ * subsystem in general.
+ *
+ * @param message String The message to print
+ *
+ * @returns None
+ */
+pub func println(message: String) #hollow

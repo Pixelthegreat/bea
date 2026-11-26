@@ -1,0 +1,25 @@
+{
+	"classes": {
+	},
+	"functions": {
+		"std::runtime::println#0": {
+			"signature": "func std::runtime::println(message: std::string::String) -> std::none::None",
+			"briefDescription": "Print string message",
+			"description": "This function is intended to be used either for standard library testing or bypassing the I/O subsystem in general.",
+			"genericParameters": {
+			},
+			"parameters": {
+				"message": {
+					"type": "String",
+					"description": "The message to print"
+				}
+			},
+			"returns": {
+				"type": "None",
+				"description": ""
+			}
+		}
+	},
+	"globals": {
+	}
+}

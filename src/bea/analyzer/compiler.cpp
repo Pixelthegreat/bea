@@ -151,7 +151,9 @@ namespace bea {
 
 		/* Write string data */
 		m_globalStream << name << "data :: ptr \"";
-		for (char c: node.m_value) {
+		for (std::size_t i = 0; i < node.m_value.length(); i++) {
+
+			char c = node.m_value[i];
 
 			if (c == '\n')
 				m_globalStream << "\\n";
@@ -159,15 +161,17 @@ namespace bea {
 				m_globalStream << "\\\"";
 			else if (c == '\\')
 				m_globalStream << "\\\\";
+			else
+				m_globalStream << c;
 		}
 		m_globalStream << "\"u8\n" << name << " :: ptr {}\n";
 
 		/* Write string object initializer */
 		m_initStream <<
-			"*ptr " << name << " = $__std__string__newconst(" <<
-			name << ")ptr\n";
+			"*ptr " << name << " = $__std__string__newconst(*ptr " <<
+			name << "data)ptr\n";
 
-		scopeStream() << name;
+		scopeStream() << "*ptr " << name;
 		return Result<None>();
 	}
 
@@ -374,6 +378,158 @@ namespace bea {
 			scopeStream() << "%__p" << (i-1);
 		}
 		scopeStream() << ")ptr";
+
+		if (anyCount) scopeStream() << "\n}";
+		return Result<None>();
+	}
+
+	/* Visit "cast" expression */
+	Result<None> Compiler::visitCast(CastNode& node) {
+
+		TypeID& typeID = *node.m_atom.type;
+		Type *type = typeID.type;
+
+		if (type->base <= BaseType::F64) {
+
+			scopeStream() << baseType(type->base) << " ";
+			BEA_OK(None, visit(*node.m_valueNode));
+
+			return Result<None>();
+		}
+
+		/* Cast object */
+		Hash hash(typeID);
+
+		scopeStream() << "$__std__cast(";
+		BEA_OK(None, visit(*node.m_valueNode));
+		scopeStream() << ", " << hash.getValue() << "u32)ptr";
+
+		return Result<None>();
+	}
+
+	/* Visit function call */
+	Result<None> Compiler::visitCall(CallNode& node) {
+
+		VariableInfo *variable = node.m_atom.variable;
+		Type *type = variable->type->type;
+
+		Type *returnType = type->function.returnType->type;
+		Type *resultType = node.m_atom.type->type;
+
+		/* Determine function name */
+		Name name{};
+		Node *thisNode = nullptr;
+
+		VariableAccessNode *varNode =
+			dynamic_cast<VariableAccessNode *>(
+				node.m_node.get()
+			);
+		NamedAccessNode *memberNode =
+			dynamic_cast<NamedAccessNode *>(
+				node.m_node.get()
+			);
+		if (varNode) name = varNode->m_name;
+
+		else if (memberNode) {
+
+			thisNode = memberNode->m_node.get();
+			Type *classType = thisNode->m_atom.type->type;
+
+			name = memberNode->m_name;
+			name.components.insert(
+				name.components.begin(),
+				classType->name.components.begin(),
+				classType->name.components.end()
+			);
+		}
+
+		/* Any return value */
+		std::size_t anyCount = 0;
+		std::size_t iota = m_iota++;
+
+		if (returnType->base == BaseType::Any) {
+
+			scopeStream() <<
+				"{\nvar %__return" << iota <<
+				" = [16] {}\n";
+			anyCount++;
+		}
+
+		/* Construct any containers for parameters that require it */
+		std::size_t i = 0;
+		for (std::unique_ptr<Node>& argument: node.m_argumentNodes) {
+
+			auto& parameter = type->function.parameters.data()[i++];
+
+			Type *paramType = parameter.second.type->type;
+			Type *argumentType = argument->m_atom.type->type;
+
+			if (paramType->base != BaseType::Any ||
+			    argumentType->base == BaseType::Any)
+				continue;
+			if (!anyCount++) scopeStream() << "{\n";
+
+			/* Create container */
+			scopeStream() << "var %__p" << (i-1) << " = [16] {}\n";
+			scopeStream() <<
+				"*u64 (%__p" << (i-1) << " + 0ptr) = " <<
+				(int)argumentType->base << "u64\n";
+			scopeStream() <<
+				"*" << baseType(argumentType->base) <<
+				" (%__p" << (i-1) << " + 8ptr) = ";
+
+			BEA_OK(None, visit(*argument));
+			scopeStream() << '\n';
+		}
+
+		/* Name */
+		scopeStream() <<
+			"$" << SerialName(name) << "____" <<
+			variable->overloadID << "(";
+
+		/* Arguments */
+		i = 0;
+		std::size_t j = 0;
+
+		if (returnType->base == BaseType::Any) {
+
+			scopeStream() << "%__return" << iota;
+			j++;
+		}
+		if (thisNode) {
+
+			if (j++) scopeStream() << ", ";
+			BEA_OK(None, visit(*thisNode));
+		}
+		for (std::unique_ptr<Node>& argument: node.m_argumentNodes) {
+
+			if (j++) scopeStream() << ", ";
+			i++;
+
+			auto& parameter = type->function.parameters.data()[i-1];
+
+			Type *paramType = parameter.second.type->type;
+			Type *argumentType = argument->m_atom.type->type;
+
+			if (paramType->base != BaseType::Any ||
+			    argumentType->base == BaseType::Any) {
+
+				BEA_OK(None, visit(*argument));
+				continue;
+			}
+			scopeStream() << "%__p" << (i-1);
+		}
+		scopeStream() << ")";
+
+		/* Any return value */
+		if (returnType->base == BaseType::Any &&
+		    resultType->base != BaseType::Any) {
+
+			scopeStream() <<
+				"ptr\n*" << baseType(resultType->base) <<
+				" (%__return" << iota << " + 8ptr)";
+		}
+		else scopeStream() << baseType(resultType->base);
 
 		if (anyCount) scopeStream() << "\n}";
 		return Result<None>();

@@ -49,6 +49,8 @@ namespace bea {
 		virtual Result<None> visitAssignment(AssignmentNode& node) override;
 		virtual Result<None> visitBinaryOperation(BinaryOperationNode& node) override;
 		virtual Result<None> visitNew(NewNode& node) override;
+		virtual Result<None> visitCast(CastNode& node) override;
+		virtual Result<None> visitCall(CallNode& node) override;
 		virtual Result<None> visitNamedAccess(NamedAccessNode& node) override;
 
 		virtual Result<None> visitReturnStatement(ReturnStatementNode& node) override;
@@ -81,6 +83,7 @@ namespace bea {
 		bool m_noPushBlockScope = false;
 
 		std::size_t m_stringID = 0;
+		std::size_t m_iota = 0;
 
 		std::vector<std::vector<std::pair<Name, BaseType>>> m_rcScope;
 

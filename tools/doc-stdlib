@@ -123,7 +123,7 @@ def generate_md(module_name, input_path, output_path):
         if functions:
             fp.write('## Functions\n\n')
             for name, function in functions.items():
-                generate_md_class(fp, name, function)
+                generate_md_function(fp, name, function)
 
         # Generate global information #
         if globals:

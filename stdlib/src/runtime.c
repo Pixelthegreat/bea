@@ -43,6 +43,9 @@ extern Object *__std__cast(Object *object, uint32_t id) {
 		return object;
 
 	object = object->root;
+	if (object->class->interfaces[0]->id == id)
+		return object;
+
 	for (size_t i = 1; i < object->class->count; i++) {
 
 		Interface *interface = object->class->interfaces[i];
@@ -158,6 +161,17 @@ extern void __std__deleteAny(Any *value) {
 	if (value->type != BaseTypeObject)
 		return;
 	__std__delete((Object *)value->value);
+}
+
+/* print message (std::runtime::println) */
+extern Object *std__runtime__println____0(Object *object) {
+
+	String *message = (String *)object->root;
+
+	printf("%s\n", message->pointer);
+
+	__std__delete(object);
+	return NULL;
 }
 
 /* main */
